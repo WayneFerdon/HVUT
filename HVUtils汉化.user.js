@@ -18,8 +18,8 @@
 // @grant          GM_setClipboard
 // @grant          unsafeWindow
 // @run-at         document-end
-// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HV Utils 汉化.user.js.js
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HV Utils 汉化.user.js.js
+// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js.js
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
