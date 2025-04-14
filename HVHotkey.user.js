@@ -1,16 +1,15 @@
 // ==UserScript==
 // @name         HVHotkey
-// @namespace    http://tampermonkey.net/
 // @version      2025-03-20
-// @description  try to take over the world!
-// @author       You
-// @include      http*://hentaiverse.org/*
-// @include      http*://alt.hentaiverse.org/*
-// @include      http*://e-hentai.org/*
+// @author       WayneFerdon
+// @include      http*://*.hentaiverse.org/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVHotkey.user.js
-// @grant        none
 // ==/UserScript==
+
+if (window.self !== window.top) {
+    return;
+}
 
 function gE(ele, mode, parent) { // 获取元素
   if (typeof ele === 'object') return ele;
@@ -43,19 +42,35 @@ document.addEventListener('keydown', e => {
             return;
         }
     }
+    if(keyCode===32) {//space
+        let minBtn = gE('#monster_nav>:last-child>img');
+        if(gE('img[onclick="do_feed(\'drugs\')"]')){
+            let minLevel = 9999;
+            for (let ui of gE('.mcr>table>tbody>tr', 'all')) {
+                const btn = gE('td>img',ui);
+                if(!btn.onclick) continue;
+                const level = gE('td>div>div:not(last-child)',ui).innerText.replace('+', '');
+                if(level >= minLevel) continue;
+                minLevel = level;
+                minBtn = btn;
+            }
+        }
+        minBtn.click();
+        return;
+    }
     const handlers = [
         [65, '#market_itembuy>.market_itemorders>table>tbody>tr:nth-child(2)'],//a
         [81, '#sellorder_update'],//q
         [68, '#market_itemsell>.market_itemorders>table>tbody>tr:nth-child(2)'],//d
         [69, '#buyorder_update'],//e
-        [37, '#market_itemheader>:first-child>a'],//←
-        [39, '#market_itemheader>:last-child>a']//→
+        [37, '#market_itemheader>:first-child>a,#monster_nav>:first-child>img'],//←
+        [39, '#market_itemheader>:last-child>a,#monster_nav>:last-child>img'],//→
     ]
     for (let [key, selector] of handlers) {
         if (key === -1 || keyCode!==key) continue;
         const ui = gE(selector);
         try{
-            console.log(ui, ui.onclick)
+            console.log(ui, ui.onclick);
             gE(ui).click();
         }
         catch{
