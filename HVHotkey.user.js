@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         HVHotkey
-// @version      2025-03-20
+// @version      2025-04-15
 // @author       WayneFerdon
 // @include      http*://*.hentaiverse.org/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
