@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.a
+// @version        3.0.2.cn.1
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -154,9 +154,9 @@ var settings = {
   monsterLabDefaultSort: '#', // #, name, class, pl, wins, kills, +, gifts, morale, hunger
   monsterLabCloseDefaultPopup: true,
 
-  shrine: false, // record rewards
-  shrineHideItems: ['Figurine', 'Coupon', 'Peerless Voucher'],
-  shrineTrackEquip: ['Peerless', 'Legendary'], // track high quality equipment only
+  shrine: true, // record rewards
+  shrineHideItems: ['Figurine', 'Coupon','Shrine Fortune', 'Bunny Girl'],//, 'Peerless Voucher'],
+  shrineTrackEquip: ['Peerless', 'Legendary', 'Magnificent'], // track high quality equipment only
 
   moogleMail: true, // Advanced MoogleMail-Sender and MoogleMail-Box
   moogleMailCouponClipper: true, // if the subject of MoogleMail contains 'Coupon Clipper' or 'Item Shop', take credits, buy requested items, then send them back.
@@ -647,109 +647,119 @@ if (_isekai) {
 }
 
 // AJAX
-var $ajax = {
+function $doc(h) {
+    const d = document.implementation.createHTMLDocument(''); d.documentElement.innerHTML = h; return d;
+  }
+  var $ajax = {
 
-  interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
-  max: 4,
-  tid: null,
-  conn: 0,
-  index: 0,
-  queue: [],
+    interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
+    max: 4,
+    tid: null,
+    conn: 0,
+    index: 0,
+    queue: [],
 
-  fetch: function (url, data, method, context = {}, headers = {}) {
-    return new Promise((resolve, reject) => {
-      $ajax.add(method, url, data, resolve, reject, context, headers);
-    });
-  },
-  repeat: function (count, func, ...args) {
-    const list = [];
-    for (let i = 0; i < count; i++) {
-      list.push(func(...args));
-    }
-    return list;
-  },
-  add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
-    if (!data) {
-      method = 'GET';
-    } else if (!method) {
-      method = 'POST';
-    }
-    if (method === 'POST') {
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    fetch: function (url, data, method, context = {}, headers = {}) {
+      return new Promise((resolve, reject) => {
+        $ajax.add(method, url, data, resolve, reject, context, headers);
+      });
+    },
+    repeat: function (count, func, ...args) {
+      const list = [];
+      for (let i = 0; i < count; i++) {
+        list.push(func(...args));
       }
-      if (data && typeof data === 'object') {
-        data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+      return list;
+    },
+    add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
+      if (!data) {
+        method = 'GET';
+      } else if (!method) {
+        method = 'POST';
       }
-    } else if (method === 'JSON') {
-      method = 'POST';
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/json';
+      if (method === 'POST') {
+        headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
+        if (data && typeof data === 'object') {
+          data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+        }
+      } else if (method === 'JSON') {
+        method = 'POST';
+        headers['Content-Type'] ??= 'application/json';
+        if (data && typeof data === 'object') {
+          data = JSON.stringify(data);
+        }
       }
-      if (data && typeof data === 'object') {
-        data = JSON.stringify(data);
-      }
-    }
-    context.onload = onload;
-    context.onerror = onerror;
-    $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
-    $ajax.next();
-  },
-  next: function () {
-    if (!$ajax.queue[$ajax.index] || $ajax.error) {
-      return;
-    }
-    if ($ajax.tid) {
-      if (!$ajax.conn) {
-        clearTimeout($ajax.tid);
-        $ajax.timer();
-        $ajax.send();
-      }
-    } else {
-      if ($ajax.conn < $ajax.max) {
-        $ajax.timer();
-        $ajax.send();
-      }
-    }
-  },
-  timer: function () {
-    $ajax.tid = setTimeout(() => {
-      $ajax.tid = null;
+      context.onload = onload;
+      context.onerror = onerror;
+      $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
       $ajax.next();
-    }, $ajax.interval);
-  },
-  send: function () {
-    GM_xmlhttpRequest($ajax.queue[$ajax.index]);
-    $ajax.index++;
-    $ajax.conn++;
-  },
-  onload: function (r) {
-    $ajax.conn--;
-    const text = r.responseText;
-    if (r.status !== 200) {
+    },
+    next: function () {
+      if (!$ajax.queue[$ajax.index] || $ajax.error) {
+        return;
+      }
+      if ($ajax.tid) {
+        if (!$ajax.conn) {
+          clearTimeout($ajax.tid);
+          $ajax.timer();
+          $ajax.send();
+        }
+      } else {
+        if ($ajax.conn < $ajax.max) {
+          $ajax.timer();
+          $ajax.send();
+        }
+      }
+    },
+    timer: function () {
+      var _ns = _isekai ? 'hvuti' : 'hvut';
+      function getValue(k, d, p = _ns + '_') { const v = localStorage.getItem(p + k); return v === null ? d : JSON.parse(v); }
+      function setValue(k, v, p = _ns + '_', r) { localStorage.setItem(p + k, JSON.stringify(v, r)); }
+      function ontimer() {
+        const now = new Date().getTime();
+        const last = getValue('last_post');
+        if (last && last - now < $ajax.interval) {
+          $ajax.next();
+          return;
+        }
+        setValue('last_post', now);
+        $ajax.tid = null;
+        $ajax.next();
+      };
+      $ajax.tid = setTimeout(ontimer, $ajax.interval);
+    },
+    send: function () {
+      GM_xmlhttpRequest($ajax.queue[$ajax.index]);
+      $ajax.index++;
+      $ajax.conn++;
+    },
+    onload: function (r) {
+      $ajax.conn--;
+      const text = r.responseText;
+      if (r.status !== 200) {
+        $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
+        r.context.onerror?.();
+      } else if (text === 'state lock limiter in effect') {
+        if ($ajax.error !== text) {
+          // popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
+          console.error(`${text}\nYour connection speed is so fast that you have reached the maximum connection limit. Try again later.`)
+        }
+        $ajax.error = text;
+        r.context.onerror?.();
+      } else {
+        r.context.onload?.(text);
+        $ajax.next();
+      }
+    },
+    onerror: function (r) {
+      $ajax.conn--;
       $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
       r.context.onerror?.();
-    } else if (text === 'state lock limiter in effect') {
-      if ($ajax.error !== text) {
-        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
-      }
-      $ajax.error = text;
-      r.context.onerror?.();
-    } else {
-      r.context.onload?.(text);
       $ajax.next();
-    }
-  },
-  onerror: function (r) {
-    $ajax.conn--;
-    $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-    r.context.onerror?.();
-    $ajax.next();
-  },
+    },
+  };
 
-};
-
-window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
+window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error, e); });
 
 // RANDOM ENCOUNTER
 var $re = {
@@ -2686,7 +2696,7 @@ var $supply = {
     $supply.battle.outer = $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer');
 
     GM_addStyle(/*css*/`
-    .hvut-bt-div { visibility: hidden; position: relative; top: 20px; width: 599px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
+    .hvut-bt-div { visibility: hidden; position: relative; top: 20px; width: 598px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
     .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
     .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
 
@@ -3393,8 +3403,8 @@ GM_addStyle(/*css*/`
   .hvut-top-menu a:hover { background-color: #fff; }
   .hvut-top-menu-s { padding: 0 5px; background-color: #5C0D11; color: #fff; }
 
-  .hvut-top-quick { margin: 0 15px !important; }
-  .hvut-top-quick > a { display: inline-block; position: relative; margin: 0 1px; width: 42px; font-size: 10.5pt; border-radius: 2px; }
+  //.hvut-top-quick { margin: 0 15px !important; }
+  .hvut-top-quick > a { display: inline-block; position: relative; margin: 0 1px; padding: 0 2px; font-size: 10.5pt; border-radius: 2px; }
   .hvut-top-quick > a:hover { background-color: #fff; }
   .hvut-top-quick > a::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
   .hvut-top-quick > a:hover::after { visibility: visible; }
@@ -3402,6 +3412,26 @@ GM_addStyle(/*css*/`
   .hvut-top-ygm:hover { color: #e00 !important; background-image: none; animation: none; filter: none; }
   @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
 `);
+
+function formatPname(pname) {
+    let [name, type] = pname.split('#');
+    type = type.match(new RegExp('.{1,' + 2 + '}', 'g')).map(t=>{
+        const ch = {
+            'Cl':'布',
+            'Li':'轻',
+            'Hv':'重',
+            'Fr': '火',
+            'Cd': '冰',
+            'Dv': '圣',
+            'Fb': '暗',
+            'El': '电',
+            'Wd': '风'
+        }
+        return ch[t]
+    }).join('');
+    return `${name}${type}`
+}
+
 _top.menu = {
   '角色面板': { s: 'Character', ss: 'ch', text: '主页' },
   '装备': { s: 'Character', ss: 'eq', text: '装备' },
@@ -3580,7 +3610,7 @@ _top.init = function () {
   _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>精力: ${_player.stamina}</span>`]);
   _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
   _top.node.dfct = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.dfct}</span>`]);
-  _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>Persona</span>']);
+  _top.node.persona = $element('div', _top.node.div, ['!width: auto;', '/<span>Persona</span>']);
   if (!_isInIframe && settings.randomEncounter) {
     _top.node.re = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
     $re.clock(_top.node.re);
@@ -3664,18 +3694,18 @@ var $persona = {
     }
     $persona.sub = $element('div', $persona.div, ['.hvut-top-sub']);
 
-    $persona.selector_p = $element('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, {
+    $persona.selector_p = $element('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 100%;' }, {
       change: () => {
         $persona.selector_p.disabled = true;
         $persona.change_p($persona.selector_p.value);
       }
     });
     for (let i = 1; i <= json.plen; i++) {
-      $element('option', $persona.selector_p, { value: i, text: json[i].name });
+      $element('option', $persona.selector_p, { value: i, text: formatPname(json[i].name) });
     }
     $persona.selector_p.value = json.pidx;
 
-    $persona.selector_e = $element('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, {
+    $persona.selector_e = $element('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 100%;' }, {
       change: () => {
         $persona.selector_e.disabled = true;
         $persona.change_e($persona.selector_e.value);
@@ -3703,7 +3733,7 @@ var $persona = {
 
     json.pidx = pidx;
     json.plen = plen;
-    json.pname = json[pidx].name;
+    json.pname = formatPname(json[pidx].name);
     $persona.set_value();
     return checked;
   },
@@ -3757,7 +3787,7 @@ var $persona = {
   },
   set_button: function () {
     const pname = $persona.json.pname || 'Persona ' + $persona.json.pidx;
-    $persona.button.textContent = `${pname.slice(0, 10)} [${$persona.json.eidx}]`;
+    $persona.button.textContent = `${pname} [${$persona.json.eidx}]`;
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
@@ -4175,66 +4205,68 @@ _href.sectors = {
 
 // Subpages
 _subpage = {
-  subpageDict: {
-    true: [ // persistent
-    [[0, 100, 500, 510], // 主页
-  101, 102, 103, 104,
-  203, 402, 411, 412, 413,
-  502, 503,
-  ],
-    [[410, 411, 412, 413, 414, 415, 416]],// 市场
-      [[421, 422, 423, 424, 425, 426]],// 市场买单
-      [[431, 432, 433, 434, 435, 436]],// 市场卖单
-      [[201, 202, 203]], // 装备
-      [[502, 503, 504, 505]], // 战斗
-      ],
-        false: [ // isekai
-          [[0, 100, 520], // 主页
-           103, 104,
-           203, 411, 412, 402,
-           501, 502, 503,
-          ],
-          [[410, 411, 412, 413]], // 市场
-          [[421, 422, 423]], // 市场买单
-          [[431, 432, 433]], // 市场卖单
-          [[201, 202, 203]], // 装备
-          [[501, 502, 503, 504, 505]], // 战斗
-        ]
+    subpageDict: {
+        true: [ // persistent
+        [[0, 100, 500, 510], // 主页
+    101, 102, 103, 104,
+    203, 402, 411, 412, 413,
+    502, 503,
+    ],
+        [[410, 411, 412, 413, 414, 415, 416]],// 市场
+            [[421, 422, 423, 424, 425, 426]],// 市场买单
+            [[431, 432, 433, 434, 435, 436]],// 市场卖单
+            [[201, 202, 203, 103]], // 装备
+            [[502, 503, 504, 505]], // 战斗
+            ],
+                false: [ // isekai
+                    [[0, 100, 520], // 主页
+                     103, 104,
+                     203, 411, 412, 402,
+                     501, 502, 503,
+                    ],
+                    [[410, 411, 412, 413]], // 市场
+                    [[421, 422, 423]], // 市场买单
+                    [[431, 432, 433]], // 市场卖单
+                    [[201, 202, 203, 103]], // 装备
+                    [[501, 502, 503, 504, 505]], // 战斗
+                ]
 },
-  supply: [0, 100, 510, 501, 502, 503, 504, 505],
-    getSubpageList: function () {
-      let query = [_isekai, _query.s, _query.ss, _query.filter, _query.screen];
-      // const stocks = {_query.playerstock, _query.marketstock, _query.showobs};
-      while (query.length) {
-        const p = query.pop();
-        if (!p) continue;
-        query.push(p);
-        break;
-      }
-      // console.log('current href query:', query);
+    supply: [0, 100, 510, 501, 502, 503, 504, 505],
+        getSubpageList: function () {
+            if(_query.itemid) return [false, null];
+            let query = [_isekai, _query.s, _query.ss, _query.filter, _query.screen];
+            // const stocks = {_query.playerstock, _query.marketstock, _query.showobs};
+            while (query.length) {
+                const p = query.pop();
+                if (!p) continue;
+                query.push(p);
+                break;
+            }
+            // console.log('current href query:', query);
 
-      const dict = _subpage.subpageDict[!query.shift()];
-      const queryJ = JSON.stringify(query);
-      const sector = (id) => JSON.stringify(_href.sectors[id]);
-      for (let list of dict) {
-        const ids = list.shift();
-        for (const id of ids) {
-          if (sector(id) !== queryJ) continue;
-          if (!list.length) list = ids;
-          return [_subpage.supply.includes(id), list.filter(id => ![sector(id), sector(_href.alias[id])].includes(queryJ))];
-        }
-      }
-      return [false, null];
-    },
-      setStickyContainer: function (length, supply) {
-        const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
+            const dict = _subpage.subpageDict[!query.shift()];
+            const queryJ = JSON.stringify(query);
+            const sector = (id) => JSON.stringify(_href.sectors[id]);
+            for (let list of dict) {
+                const ids = list.shift();
+                for (const id of ids) {
+                    if (sector(id) !== queryJ) continue;
+                    if (!list.length) list = ids;
+                    return [_subpage.supply.includes(id), list.filter(id => ![sector(id), sector(_href.alias[id])].includes(queryJ))];
+                }
+            }
+            return [false, null];
+        },
+            setStickyContainer: function (length, supply) {
+                const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
       pointer-events: none;
-      height: calc(100% + 34.66px + ${length} * 722px);
+      height: calc(100% + 25px + ${length} * 708px);
       position:absolute;
       top: 0;
       width:100%;
+      left:-1px;
     `]);
-        _bottom.node.div.style.cssText += `
+                _bottom.node.div.style.cssText += `
       flex-flow: wrap;
       position: sticky;
       display: flex;
@@ -4246,43 +4278,43 @@ _subpage = {
       background: #000;
       pointer-events: all;
     `
-        stickyContainer.appendChild(_top.node.div);
-        if (supply) $supply.set_sticky();
-        stickyContainer.appendChild(_bottom.node.div);
-        $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
-        _top.node.div.style.cssText += 'pointer-events: all; position: sticky; top: 0; background:#000;'
-      },
-        init: function () {
-          const [supply, hreflist] = _subpage.getSubpageList();
-          if (!hreflist) return;
-          _subpage.setStickyContainer(hreflist.length, supply);
-          const container = $element('div', document.body, ['#hvut-subpageContainer', `!
-      padding: 0;
-      margin: 0;
-      width: 100%;
-      display: grid!important;
-    `]);
-          const iframes = [];
-          hreflist.forEach(p => {
-            const elem = $element('iframe', container, { src: `${_href.get(p)}`, scrolling: 'no', style: 'width: 100%; height: 722px;' });
-            iframes.unshift([elem, p]);
-            elem.onload = () => {
-              const location = elem.contentWindow.location;
-              const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
-              console.log(`subpage onload: ${JSON.stringify(query)}`);
-              if (query.s === 'Battle' && query.ss === undefined) {
-                window.location.href = location.href;
-              }
-            }
-          });
-          window.addEventListener('scroll', function () {
-            for (let [elem, p] of iframes) {
-              if (elem.getBoundingClientRect().y > 724.49 / 2) continue;
-              $supply.set_display_mode((_href.sectors[p][0] === _href.s.bt && _href.sectors[p][1] !== `iw`) ? 'fixed' : 'cancel');
-              break;
-            }
-          });
-        }
+                stickyContainer.appendChild(_top.node.div);
+                if (supply) $supply.set_sticky();
+                stickyContainer.appendChild(_bottom.node.div);
+                $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
+                _top.node.div.style.cssText += 'pointer-events: all; position: sticky; top: 0; background:#000;'
+            },
+                init: function () {
+                    const [supply, hreflist] = _subpage.getSubpageList();
+                    if (!hreflist) return;
+                    _subpage.setStickyContainer(hreflist.length, supply);
+                    const container = $element('div', document.body, ['#hvut-subpageContainer', `!
+            padding: 0;
+            margin: 2px 0 0 0;
+            width: 100%;
+            display: grid!important;
+          `]);
+                    const iframes = [];
+                    hreflist.forEach(p => {
+                        const elem = $element('iframe', container, { src: `${_href.get(p)}`, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
+                        iframes.unshift([elem, p]);
+                        elem.onload = () => {
+                            const location = elem.contentWindow.location;
+                            const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+                            console.log(`subpage onload: ${JSON.stringify(query)}`);
+                            if (query.s === 'Battle' && query.ss === undefined) {
+                                window.location.href = location.href;
+                            }
+                        }
+                    });
+                    window.addEventListener('scroll', function () {
+                        for (let [elem, p] of iframes) {
+                            if (elem.getBoundingClientRect().y > 724.49 / 2) continue;
+                            $supply.set_display_mode((_href.sectors[p][0] === _href.s.bt && _href.sectors[p][1] !== `iw`) ? 'fixed' : 'cancel');
+                            break;
+                        }
+                    });
+                }
 };
 
 _hath = {
@@ -4294,7 +4326,7 @@ _hath = {
         window.open(data.href, '_blank');
       });
     }
-    _bottom.node.div.appendChild(ui);
+    _bottom?.node?.div?.appendChild(ui);
     return ui;
   },
   perksBtn: {
@@ -7567,8 +7599,8 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                         }
                         item.node.bulk.textContent = '/ ' + item.bulk;
                         item.node.max.textContent = item.max;
-                        $input(['button', '所有'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
                       }
+                      $input(['button', '所有'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
                       if (settings.shrineHideItems.some((h) => name.includes(h))) {
                         tr.classList.add('hvut-none-item');
                       }
