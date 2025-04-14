@@ -1,14 +1,9 @@
 // ==UserScript==
 // @name         HVAA_fit_HVUT
-// @namespace    http://tampermonkey.net/
-// @version      2025-03-20
-// @description  try to take over the world!
-// @author       You
-// @include      http*://hentaiverse.org/*
-// @include      http*://alt.hentaiverse.org/*
-// @include      http*://e-hentai.org/*
+// @version      2025-04-15
+// @author       WayneFerdon
+// @include      http*://*.hentaiverse.org/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
-// @grant        none
 // @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVAA_fit_HVUT.user.js
 // ==/UserScript==
 
