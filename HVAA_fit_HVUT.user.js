@@ -2,7 +2,7 @@
 // @name         HVAA_fit_HVUT
 // @version      2025-04-15
 // @author       WayneFerdon
-// @include      http*://*.hentaiverse.org/*
+// @include      http*://*hentaiverse.org/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVAA_fit_HVUT.user.js
 // ==/UserScript==
