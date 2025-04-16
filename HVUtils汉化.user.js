@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.1
+// @version        3.0.2.cn.2
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -23,6 +23,14 @@
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
+if(MAIN_URL){
+  if(window.location.href.startsWith('https://')) {
+    MAIN_URL = MAIN_URL.replace('http:', 'https:');
+  } else {
+    MAIN_URL = MAIN_URL.replace('https:', 'http:');
+  }
+}
+
 var settings = {
 
   // [GLOBAL]
@@ -647,9 +655,6 @@ if (_isekai) {
 }
 
 // AJAX
-function $doc(h) {
-    const d = document.implementation.createHTMLDocument(''); d.documentElement.innerHTML = h; return d;
-  }
   var $ajax = {
 
     interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
@@ -661,7 +666,7 @@ function $doc(h) {
 
     fetch: function (url, data, method, context = {}, headers = {}) {
       return new Promise((resolve, reject) => {
-        $ajax.add(method, url, data, resolve, reject, context, headers);
+        $ajax.add(url, data, method, resolve, reject, context, headers);
       });
     },
     repeat: function (count, func, ...args) {
@@ -671,12 +676,8 @@ function $doc(h) {
       }
       return list;
     },
-    add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
-      if (!data) {
-        method = 'GET';
-      } else if (!method) {
-        method = 'POST';
-      }
+    add: function (url, data, method, onload, onerror, context = {}, headers = {}) {
+      method = data ? 'GET' : method ?? 'POST';
       if (method === 'POST') {
         headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
         if (data && typeof data === 'object') {
@@ -4350,6 +4351,7 @@ _hath = {
   },
   asyncCreatPriceDisplay: function () { // 发起 AJAX 请求以获取页面内容
     $ajax.fetch('https://e-hentai.org/exchange.php?t=hath').then(response => {
+      if(!response) return;
       // 解析响应并提取所需的数据
       const priceElement = new DOMParser().parseFromString(response, 'text/html').querySelector('td:nth-of-type(5)'); // 获取第5个 td 元素
       if (!priceElement) {
@@ -6894,7 +6896,9 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                 _es.update_credits = function (html) {
                   const doc = $doc(html);
                   const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-                  $id('networth').textContent = 'Credits: ' + networth.toLocaleString();
+                  if($id('networth')) {
+                    $id('networth').textContent = 'Credits: ' + networth.toLocaleString();
+                  }
                 };
 
                 _es.edit_filter = function (n) {
