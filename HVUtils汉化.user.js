@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.2
+// @version        3.0.2.cn.3
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -23,12 +23,13 @@
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
-if(MAIN_URL){
+try{
   if(window.location.href.startsWith('https://')) {
     MAIN_URL = MAIN_URL.replace('http:', 'https:');
   } else {
     MAIN_URL = MAIN_URL.replace('https:', 'http:');
   }
+} catch (e) {
 }
 
 var settings = {
@@ -677,7 +678,7 @@ if (_isekai) {
       return list;
     },
     add: function (url, data, method, onload, onerror, context = {}, headers = {}) {
-      method = data ? 'GET' : method ?? 'POST';
+      method = !data ? 'GET' : method ?? 'POST';
       if (method === 'POST') {
         headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
         if (data && typeof data === 'object') {
