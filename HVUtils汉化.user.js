@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.3
+// @version        3.0.2.cn.4
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -18,8 +18,8 @@
 // @grant          GM_setClipboard
 // @grant          unsafeWindow
 // @run-at         document-end
-// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
+// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
