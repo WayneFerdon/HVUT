@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.4
+// @version        3.0.2.cn.3
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -18,8 +18,8 @@
 // @grant          GM_setClipboard
 // @grant          unsafeWindow
 // @run-at         document-end
-// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
+// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
@@ -36,6 +36,8 @@ var settings = {
 
   // [GLOBAL]
   randomEncounter: false, // Random Encounter Notification
+
+  subpage: false,
 
   reGallery: true, // use it on the gallery
   reGalleryAlt: false, // open RE links to alt.hentaiverse.org on the gallery
@@ -656,110 +658,110 @@ if (_isekai) {
 }
 
 // AJAX
-  var $ajax = {
+var $ajax = {
 
-    interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
-    max: 4,
-    tid: null,
-    conn: 0,
-    index: 0,
-    queue: [],
+  interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
+  max: 4,
+  tid: null,
+  conn: 0,
+  index: 0,
+  queue: [],
 
-    fetch: function (url, data, method, context = {}, headers = {}) {
-      return new Promise((resolve, reject) => {
-        $ajax.add(url, data, method, resolve, reject, context, headers);
-      });
-    },
-    repeat: function (count, func, ...args) {
-      const list = [];
-      for (let i = 0; i < count; i++) {
-        list.push(func(...args));
+  fetch: function (url, data, method, context = {}, headers = {}) {
+    return new Promise((resolve, reject) => {
+      $ajax.add(url, data, method, resolve, reject, context, headers);
+    });
+  },
+  repeat: function (count, func, ...args) {
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push(func(...args));
+    }
+    return list;
+  },
+  add: function (url, data, method, onload, onerror, context = {}, headers = {}) {
+    method = !data ? 'GET' : method ?? 'POST';
+    if (method === 'POST') {
+      headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
+      if (data && typeof data === 'object') {
+        data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
       }
-      return list;
-    },
-    add: function (url, data, method, onload, onerror, context = {}, headers = {}) {
-      method = !data ? 'GET' : method ?? 'POST';
-      if (method === 'POST') {
-        headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
-        if (data && typeof data === 'object') {
-          data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-        }
-      } else if (method === 'JSON') {
-        method = 'POST';
-        headers['Content-Type'] ??= 'application/json';
-        if (data && typeof data === 'object') {
-          data = JSON.stringify(data);
-        }
+    } else if (method === 'JSON') {
+      method = 'POST';
+      headers['Content-Type'] ??= 'application/json';
+      if (data && typeof data === 'object') {
+        data = JSON.stringify(data);
       }
-      context.onload = onload;
-      context.onerror = onerror;
-      $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
-      $ajax.next();
-    },
-    next: function () {
-      if (!$ajax.queue[$ajax.index] || $ajax.error) {
+    }
+    context.onload = onload;
+    context.onerror = onerror;
+    $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
+    $ajax.next();
+  },
+  next: function () {
+    if (!$ajax.queue[$ajax.index] || $ajax.error) {
+      return;
+    }
+    if ($ajax.tid) {
+      if (!$ajax.conn) {
+        clearTimeout($ajax.tid);
+        $ajax.timer();
+        $ajax.send();
+      }
+    } else {
+      if ($ajax.conn < $ajax.max) {
+        $ajax.timer();
+        $ajax.send();
+      }
+    }
+  },
+  timer: function () {
+    var _ns = _isekai ? 'hvuti' : 'hvut';
+    function getValue(k, d, p = _ns + '_') { const v = localStorage.getItem(p + k); return v === null ? d : JSON.parse(v); }
+    function setValue(k, v, p = _ns + '_', r) { localStorage.setItem(p + k, JSON.stringify(v, r)); }
+    function ontimer() {
+      const now = new Date().getTime();
+      const last = getValue('last_post');
+      if (last && last - now < $ajax.interval) {
+        $ajax.next();
         return;
       }
-      if ($ajax.tid) {
-        if (!$ajax.conn) {
-          clearTimeout($ajax.tid);
-          $ajax.timer();
-          $ajax.send();
-        }
-      } else {
-        if ($ajax.conn < $ajax.max) {
-          $ajax.timer();
-          $ajax.send();
-        }
-      }
-    },
-    timer: function () {
-      var _ns = _isekai ? 'hvuti' : 'hvut';
-      function getValue(k, d, p = _ns + '_') { const v = localStorage.getItem(p + k); return v === null ? d : JSON.parse(v); }
-      function setValue(k, v, p = _ns + '_', r) { localStorage.setItem(p + k, JSON.stringify(v, r)); }
-      function ontimer() {
-        const now = new Date().getTime();
-        const last = getValue('last_post');
-        if (last && last - now < $ajax.interval) {
-          $ajax.next();
-          return;
-        }
-        setValue('last_post', now);
-        $ajax.tid = null;
-        $ajax.next();
-      };
-      $ajax.tid = setTimeout(ontimer, $ajax.interval);
-    },
-    send: function () {
-      GM_xmlhttpRequest($ajax.queue[$ajax.index]);
-      $ajax.index++;
-      $ajax.conn++;
-    },
-    onload: function (r) {
-      $ajax.conn--;
-      const text = r.responseText;
-      if (r.status !== 200) {
-        $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-        r.context.onerror?.();
-      } else if (text === 'state lock limiter in effect') {
-        if ($ajax.error !== text) {
-          // popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
-          console.error(`${text}\nYour connection speed is so fast that you have reached the maximum connection limit. Try again later.`)
-        }
-        $ajax.error = text;
-        r.context.onerror?.();
-      } else {
-        r.context.onload?.(text);
-        $ajax.next();
-      }
-    },
-    onerror: function (r) {
-      $ajax.conn--;
+      setValue('last_post', now);
+      $ajax.tid = null;
+      $ajax.next();
+    };
+    $ajax.tid = setTimeout(ontimer, $ajax.interval);
+  },
+  send: function () {
+    GM_xmlhttpRequest($ajax.queue[$ajax.index]);
+    $ajax.index++;
+    $ajax.conn++;
+  },
+  onload: function (r) {
+    $ajax.conn--;
+    const text = r.responseText;
+    if (r.status !== 200) {
       $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
       r.context.onerror?.();
+    } else if (text === 'state lock limiter in effect') {
+      if ($ajax.error !== text) {
+        // popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
+        console.error(`${text}\nYour connection speed is so fast that you have reached the maximum connection limit. Try again later.`)
+      }
+      $ajax.error = text;
+      r.context.onerror?.();
+    } else {
+      r.context.onload?.(text);
       $ajax.next();
-    },
-  };
+    }
+  },
+  onerror: function (r) {
+    $ajax.conn--;
+    $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
+    r.context.onerror?.();
+    $ajax.next();
+  },
+};
 
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error, e); });
 
@@ -3416,22 +3418,23 @@ GM_addStyle(/*css*/`
 `);
 
 function formatPname(pname) {
-    let [name, type] = pname.split('#');
-    type = type.match(new RegExp('.{1,' + 2 + '}', 'g')).map(t=>{
-        const ch = {
-            'Cl':'布',
-            'Li':'轻',
-            'Hv':'重',
-            'Fr': '火',
-            'Cd': '冰',
-            'Dv': '圣',
-            'Fb': '暗',
-            'El': '电',
-            'Wd': '风'
-        }
-        return ch[t]
-    }).join('');
-    return `${name}${type}`
+  let [name, type] = pname.split('#');
+  if(!type) return pname;
+  type = type.match(new RegExp('.{1,' + 2 + '}', 'g')).map(t=>{
+    const ch = {
+      'Cl':'布',
+      'Li':'轻',
+      'Hv':'重',
+      'Fr': '火',
+      'Cd': '冰',
+      'Dv': '圣',
+      'Fb': '暗',
+      'El': '电',
+      'Wd': '风'
+    }
+    return ch[t]
+  }).join('');
+  return `${name}${type}`
 }
 
 _top.menu = {
@@ -3603,23 +3606,23 @@ _top.init = function () {
       text = `[${new_mail}]`;
       cn = 'hvut-top-ygm';
     }
-    const a = $element('a', quick_div, { textContent: text, href: href, dataset: { desc: t } });
+    const a = $element('a', quick_div, { textContent: text, href: href + (m.ss === 'ab' ? '&tree=general' : m.ss === 'mk' ? '&filter=co' : ''), dataset: { desc: t } });
     if (cn) {
       a.className = cn;
     }
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>精力: ${_player.stamina}</span>`]);
-  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
-  _top.node.dfct = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.dfct}</span>`]);
+  _top.node.stamina = $element('div', _top.node.div, ['!width: auto;', `/<span>精力: ${_player.stamina}</span>`]);
+  _top.node.level = $element('div', _top.node.div, ['!width: auto;', `/<span>Lv.${_player.level}</span>`]);
+  _top.node.dfct = $element('div', _top.node.div, ['!width: auto;', `/<span>${_player.dfct}</span>`]);
   _top.node.persona = $element('div', _top.node.div, ['!width: auto;', '/<span>Persona</span>']);
   if (!_isInIframe && settings.randomEncounter) {
-    _top.node.re = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
+    _top.node.re = $element('div', _top.node.div, ['!width: auto; cursor: pointer;']);
     $re.clock(_top.node.re);
   }
   if (!settings.topMenuIntegrate * 9 + settings.topMenuLinks.length <= 19) {
     const current = _isekai ? '异世界' : '永久区';
-    _top.node.server = $element('div', _top.node.div, ['!width: 80px;', '.hvut-top-server', `/<span>${current}</span>`]);
+    _top.node.server = $element('div', _top.node.div, ['!width: auto;', '.hvut-top-server', `/<span>${current}</span>`]);
     _top.node.server.style.marginLeft = settings.topMenuAlign ? '' : 'auto';
   }
   $id('navbar').after(_top.node.div);
@@ -4118,14 +4121,12 @@ if (settings.showLottery) {
 
 _href = {
   get: function (sector) {
-    const [s, ss, filter, screen] = sector instanceof Array ? sector : _href.sectors[sector];
+    const [s, ss, screen] = sector instanceof Array ? sector : _href.sectors[sector];
     if (!s) return undefined;
     let href = `?s=${s}`;
     if (!ss) return href;
     href += `&ss=${ss}`;
-    if (!filter) return href;
-    if (screen) href += `&screen=${screen}`;
-    href += `&filter=${filter}`;
+    if (_query.screen) href += `&screen=${_query.screen}`;
     if (_query.playerstock) href += `&playerstock=on`;
     if (_query.marketstock) href += `&marketstock=on`;
     if (_query.showobs) href += `&showobs=on`;
@@ -4147,7 +4148,7 @@ _href = {
     410: 411,
   },
   mk: {
-    sector: (f, sc) => [_href.s.bz, `mk`, f, sc],
+    sector: (f, sc) => [_href.s.bz, `mk`],
     bi: (f) => _href.mk.sector(f, _href.sc.bi),
     so: (f) => _href.mk.sector(f, _href.sc.so),
     bo: (f) => _href.mk.sector(f, _href.sc.bo),
@@ -4170,29 +4171,6 @@ _href.sectors = {
   401: [_href.s.ch, `it`], // 物品仓库
   402: [_href.s.bz, `is`], // 物品商店
   410: [_href.s.bz, `mk`], // 市场
-  411: _href.mk.bi(`co`), // 消耗品市场
-  412: _href.mk.bi(`ma`), // 材料市场
-  413: _href.mk.bi(`tr`), // 奖杯市场
-  414: _href.mk.bi(`ar`), // 文物市场
-  415: _href.mk.bi(`fi`), // 小马雕像市场
-  416: _href.mk.bi(`mo`), // 怪物物品市场
-
-  421: _href.mk.so(`co`), // 消耗品市场买单
-  422: _href.mk.so(`ma`), // 材料市场买单
-  423: _href.mk.so(`tr`), // 奖杯市场买单
-  424: _href.mk.so(`ar`), // 文物市场买单
-  425: _href.mk.so(`fi`), // 小马雕像市场买单
-  426: _href.mk.so(`mo`), // 怪物物品市场买单
-
-  431: _href.mk.bo(`co`), // 消耗品市场卖单
-  432: _href.mk.bo(`ma`), // 材料市场卖单
-  433: _href.mk.bo(`tr`), // 奖杯市场卖单
-  434: _href.mk.bo(`ar`), // 文物市场卖单
-  435: _href.mk.bo(`fi`), // 小马雕像市场卖单
-  436: _href.mk.bo(`mo`), // 怪物物品市场卖单
-
-  440: [_href.s.bz, `mk`, undefined, `marketlog`], // 市场账号记录
-  450: [_href.s.bz, `mk`, undefined, `sellorder`], // 市场交易记录
 
   500: [_href.s.bt], // 战斗（主界面）
   501: [_href.s.bt, `tw`], // 塔楼
@@ -4207,60 +4185,94 @@ _href.sectors = {
 
 // Subpages
 _subpage = {
-    subpageDict: {
-        true: [ // persistent
-        [[0, 100, 500, 510], // 主页
-    101, 102, 103, 104,
-    203, 402, 411, 412, 413,
-    502, 503,
-    ],
-        [[410, 411, 412, 413, 414, 415, 416]],// 市场
-            [[421, 422, 423, 424, 425, 426]],// 市场买单
-            [[431, 432, 433, 434, 435, 436]],// 市场卖单
-            [[201, 202, 203, 103]], // 装备
-            [[502, 503, 504, 505]], // 战斗
-            ],
-                false: [ // isekai
-                    [[0, 100, 520], // 主页
-                     103, 104,
-                     203, 411, 412, 402,
-                     501, 502, 503,
-                    ],
-                    [[410, 411, 412, 413]], // 市场
-                    [[421, 422, 423]], // 市场买单
-                    [[431, 432, 433]], // 市场卖单
-                    [[201, 202, 203, 103]], // 装备
-                    [[501, 502, 503, 504, 505]], // 战斗
-                ]
+  subpageDict: {
+    true: [ // persistent
+    [[0, 100, 500, 510], // 主页
+  101, 102, 103, 104,
+  203, 402, 410,
+  502, 503,
+  ],
+    [[410]],// 市场
+      [[421, 422, 423, 424, 425, 426]],// 市场买单
+      [[431, 432, 433, 434, 435, 436]],// 市场卖单
+      [[201, 202, 203, 103]], // 装备
+      [[502, 503, 504, 505]], // 战斗
+      [[104]], // 技能
+      ],
+        false: [ // isekai
+          [[0, 100, 500], // 主页
+           103, 104,
+           203, 410, 402,
+           501, 502, 503,
+          ],
+          [[410]], // 市场
+          [[421, 422, 423]], // 市场买单
+          [[431, 432, 433]], // 市场卖单
+          [[201, 202, 203, 103]], // 装备
+          [[501, 502, 503, 504, 505]], // 战斗
+          [[104]], // 技能
+        ]
 },
-    supply: [0, 100, 510, 501, 502, 503, 504, 505],
-        getSubpageList: function () {
-            if(_query.itemid) return [false, null];
-            let query = [_isekai, _query.s, _query.ss, _query.filter, _query.screen];
-            // const stocks = {_query.playerstock, _query.marketstock, _query.showobs};
-            while (query.length) {
-                const p = query.pop();
-                if (!p) continue;
-                query.push(p);
-                break;
-            }
-            // console.log('current href query:', query);
+  supply: [0, 100, 510, 501, 502, 503, 504, 505],
+    getSubpageList: function () {
+      if(_query.itemid && _query.itemid !== '0') return [false, null, null, null];
+      let query = [!_isekai, _query.s, _query.ss];
+      while (query.length) {
+        const p = query.pop();
+        if (!p) continue;
+        query.push(p);
+        break;
+      }
+      const dict = _subpage.subpageDict[query.shift()];
+      const queryJ = JSON.stringify(query);
+      const sector = (id) => JSON.stringify(_href.sectors[id]);
+      let filtingSector;
+      let filterNow;
+      let filters;
+      let filterName;
 
-            const dict = _subpage.subpageDict[!query.shift()];
-            const queryJ = JSON.stringify(query);
-            const sector = (id) => JSON.stringify(_href.sectors[id]);
-            for (let list of dict) {
-                const ids = list.shift();
-                for (const id of ids) {
-                    if (sector(id) !== queryJ) continue;
-                    if (!list.length) list = ids;
-                    return [_subpage.supply.includes(id), list.filter(id => ![sector(id), sector(_href.alias[id])].includes(queryJ))];
-                }
-            }
-            return [false, null];
-        },
-            setStickyContainer: function (length, supply) {
-                const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
+      if(_query.tree){
+        filterName = 'tree';
+        filterNow = _query.tree;
+        filtingSector = 104;
+        filters = [
+          'general',
+          'onehanded',
+          'twohanded',
+          'dualwield',
+          'niten',
+          'staff',
+          'cloth',
+          'light',
+          'heavy',
+          'deprecating1',
+          'deprecating2',
+          'supportive1',
+          'supportive2',
+          'elemental',
+          'forbidden',
+          'divine',
+        ];
+      } else if(_query.filter) {
+        filterName = 'filter'
+        filterNow = _query.filter;
+        filtingSector = 410;
+        filters = _isekai ? ['co', 'ma', 'tr'] : [ 'co', 'ma', 'tr', 'ar', 'fi', 'mo' ];
+      }
+
+      for (let list of dict) {
+        const ids = list.shift();
+        for (const id of ids) {
+          if (sector(id) !== queryJ) continue;
+          if (!list.length) list = ids;
+          filters = filters?.filter(s=>filterNow != s).map(s=>'&' + filterName + '='+s);
+          return [_subpage.supply.includes(id), list.filter(id => ![sector(id), sector(_href.alias[id])].includes(queryJ)), filters, filtingSector];
+        }
+      }
+      return [false, null, null, null];
+    },
+      setStickyContainer: function (length, supply) {
+        const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
       pointer-events: none;
       height: calc(100% + 25px + ${length} * 708px);
       position:absolute;
@@ -4268,7 +4280,7 @@ _subpage = {
       width:100%;
       left:-1px;
     `]);
-                _bottom.node.div.style.cssText += `
+        _bottom.node.div.style.cssText += `
       flex-flow: wrap;
       position: sticky;
       display: flex;
@@ -4280,43 +4292,53 @@ _subpage = {
       background: #000;
       pointer-events: all;
     `
-                stickyContainer.appendChild(_top.node.div);
-                if (supply) $supply.set_sticky();
-                stickyContainer.appendChild(_bottom.node.div);
-                $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
-                _top.node.div.style.cssText += 'pointer-events: all; position: sticky; top: 0; background:#000;'
-            },
-                init: function () {
-                    const [supply, hreflist] = _subpage.getSubpageList();
-                    if (!hreflist) return;
-                    _subpage.setStickyContainer(hreflist.length, supply);
-                    const container = $element('div', document.body, ['#hvut-subpageContainer', `!
+        stickyContainer.appendChild(_top.node.div);
+        if (supply) $supply.set_sticky();
+        stickyContainer.appendChild(_bottom.node.div);
+        $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
+        _top.node.div.style.cssText += 'justify-content: space-evenly;pointer-events: all; position: sticky; top: 0; background:#000;'
+      },
+        setSubpage: function (container, iframes, p, t) {
+          const elem = $element('iframe', container, { src: `${_href.get(_href.sectors[p])}` + t, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
+            iframes.unshift([elem, p]);
+            elem.onload = () => {
+              const location = elem.contentWindow.location;
+              const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+              console.log(`subpage onload: ${JSON.stringify(query)}`);
+              if (query.s === 'Battle' && query.ss === undefined) {
+                window.location.href = location.href;
+              }
+            }
+        },
+        init: function () {
+          if(!settings.subpage){
+            return;
+          }
+          const [supply, hreflist, filters, filtingSector] = _subpage.getSubpageList();
+          var length = (hreflist?.length ?? 0) + (filters?.length ?? 0);
+          if (length === 0) return;
+          _subpage.setStickyContainer(length, supply);
+          const container = $element('div', document.body, ['#hvut-subpageContainer', `!
             padding: 0;
             margin: 2px 0 0 0;
             width: 100%;
             display: grid!important;
           `]);
-                    const iframes = [];
-                    hreflist.forEach(p => {
-                        const elem = $element('iframe', container, { src: `${_href.get(p)}`, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
-                        iframes.unshift([elem, p]);
-                        elem.onload = () => {
-                            const location = elem.contentWindow.location;
-                            const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
-                            console.log(`subpage onload: ${JSON.stringify(query)}`);
-                            if (query.s === 'Battle' && query.ss === undefined) {
-                                window.location.href = location.href;
-                            }
-                        }
-                    });
-                    window.addEventListener('scroll', function () {
-                        for (let [elem, p] of iframes) {
-                            if (elem.getBoundingClientRect().y > 724.49 / 2) continue;
-                            $supply.set_display_mode((_href.sectors[p][0] === _href.s.bt && _href.sectors[p][1] !== `iw`) ? 'fixed' : 'cancel');
-                            break;
-                        }
-                    });
-                }
+          const iframes = [];
+          filters?.forEach(t => {
+            _subpage.setSubpage(container, iframes, filtingSector, t);
+          });
+          hreflist?.forEach(p => {
+            _subpage.setSubpage(container, iframes, p, '');
+          });
+          window.addEventListener('scroll', function () {
+            for (let [elem, p] of iframes) {
+              if (elem.getBoundingClientRect().y > 724.49 / 2) continue;
+              $supply.set_display_mode((_href.sectors[p][0] === _href.s.bt && _href.sectors[p][1] !== `iw`) ? 'fixed' : 'cancel');
+              break;
+            }
+          });
+        }
 };
 
 _hath = {
@@ -6904,8 +6926,8 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
 
                 _es.edit_filter = function (n) {
                   const filter = {
-                    protect: { key: 'es_protect', default: settings.equipmentShopProtectFilter, comment: '// 防止你的贵重装备被全选，需要修改过滤器请使用英文' },
-                    bazaar: { key: 'es_bazaar', default: settings.equipmentShopBazaarFilter, comment: '// 在商店页面隐藏垃圾装备，需要修改过滤器请使用英文' },
+                    protect: { key: 'es_protect', default: settings.equipmentShopProtectFilter, comment: '//#tip 防止你的贵重装备被全选，需要修改过滤器请使用英文' },
+                    bazaar: { key: 'es_bazaar', default: settings.equipmentShopBazaarFilter, comment: '//#tip 在商店页面隐藏垃圾装备，需要修改过滤器请使用英文' },
                   }[n];
                   const cnDict = {
                     'Axe': '斧', 'Club': '棍', 'Rapier': '西洋剑', 'Shortsword': '短剑', 'Wakizashi': '脇差',
@@ -6924,24 +6946,21 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                   popup_text(filter.comment + '\n\n' + filter.current.join('\n'), 'width: 600px; height: 500px; white-space: pre;', [
                     {
                       value: '保存过滤器', click: (w, t) => {
-                        const edited = t.value.split('\n').filter((f) => f && !f.startsWith('//'));
+                        const edited = t.value.split('\n').filter((f) => f && f !== '' && !f.startsWith('//#'));
                         const error = [];
-                        let isCommented = false;
                         const commented = [];
                         edited.forEach((f, i) => {
+                          let isCommented = false;
+                          let isTranslated = false;
                           if (f.startsWith('//')) {
-                            isCommented = true;
                             commented.push(f);
                             return;
                           }
-                          if (!isCommented) {
-                            let t = f;
-                            for (let cn in cnDict) {
-                              t = t.replace(cn, cnDict[cn]);
-                            }
-                            commented.push('// ' + t);
-                            isCommented = false;
+                          let t = f;
+                          for (let cn in cnDict) {
+                            t = t.replace(cn, cnDict[cn]);
                           }
+                          commented.push('//#cn' + t);
                           commented.push(f);
                           try {
                             eval(f.toLowerCase().replace(/[-a-z ]+/g, (s) => { s = s.trim(); return !s ? '' : 'true'; }));
@@ -7357,15 +7376,17 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                       item.node.span.textContent = `(${item.recieved}/${item.requests})`;
 
                       rewards.forEach((n) => {
-                        const r = item.type === 'Trophy' ? n.split(' ')[0] : n;
+                        let r = item.type === 'Trophy' ? n.split(' ')[0] : n;
                         if (!_ss.log[item.log][r]) {
                           _ss.log[item.log][r] = 0;
                         }
                         _ss.log[item.log][r]++;
-
                         if (!results[r]) {
                           results[r] = _ss.create_listitem(r);
                           item.node.ul.appendChild(results[r].li);
+                        }
+                        if(item.type === 'Trophy' ){
+                          results[r].li.appendChild(_ss.create_listitem(n).li);
                         }
                         if (!results[r].count) {
                           results[r].li.classList.remove('hvut-none');
@@ -7373,7 +7394,6 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                             results[results[r].group].li.classList.remove('hvut-none');
                           }
                         }
-
                         results[r].count++;
                         if (results[r].group) {
                           results[results[r].group].count++;
