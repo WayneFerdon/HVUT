@@ -4,7 +4,7 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.4
+// @version        3.0.2.cn.5
 // @date           2023-12-31
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
@@ -18,8 +18,8 @@
 // @grant          GM_setClipboard
 // @grant          unsafeWindow
 // @run-at         document-end
-// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
+// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVUtils汉化.user.js
 // ==/UserScript==
 
 var _isekai = location.pathname.includes('/isekai/');
@@ -35,9 +35,9 @@ try{
 var settings = {
 
   // [GLOBAL]
+  subpage: true,
+  // subpage: false,
   randomEncounter: false, // Random Encounter Notification
-
-  subpage: false,
 
   reGallery: true, // use it on the gallery
   reGalleryAlt: false, // open RE links to alt.hentaiverse.org on the gallery
@@ -2277,11 +2277,7 @@ var $supply = {
             `});
     $supply.battle.sticky.style.cssText += `height: ${visible ? 'calc(25.25px + 100%)' : '0'}`;
     $supply.battle.container.style.cssText = `
-              position: sticky;
-              top: 57.55px;
-              pointer-events: all;
-              visibility: visible;
-              height: ${visible ? '417px' : 0};
+              height: ${visible ? '453px' : 0};
             `
   },
   on_sticky_hover: function (evt) {
@@ -2700,15 +2696,15 @@ var $supply = {
     $supply.battle.outer = $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer');
 
     GM_addStyle(/*css*/`
-    .hvut-bt-div { visibility: hidden; position: relative; top: 20px; width: 598px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
-    .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-    .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
+    .hvut-bt { visibility: hidden; position: sticky; top: 30px; width: 598px; height: 453px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; pointer-events: all; visibility: visible;}
+    .hvut-bt-div { visibility: hidden; position: relative; top: 20px; width: 598px; height: 453px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
+    .hvut-bt-div > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
+    .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; left:-1px; top: -1px; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
 
-    .hvut-bt-sticky { position: absolute; top: -25.25px; left: 0; width: calc(100% - 2px); height: 0; border: unset!important; /*visibility: hidden;*/}
-    .hvut-bt-sticky::before { border: 1px solid;}
+    .hvut-bt-sticky { top: -25.25px; left: 1px; width: calc(100% - 2px); height: 0; margin: 0; padding: 21px 0 0; list-style: none; display: flex; flex-direction: column; justify-content: center; }
+    .hvut-bt-sticky::before { border: 1px solid; content: attr(data-header); position: absolute; top: 0; width: calc(100% - 1px); border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
     .hvut-bt-sticky-loading::before { color: #f0f;}
     .hvut-bt-sticky-warn::before { color: #e00;}
-    /*.hvut-bt-stickyTop { position: absolute; top: 0; width: 100%; height: 21.25px; }*/
     .hvut-bt-equip { position: absolute; top: 0; left: 0; width: 400px; height: 286px; }
     .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
     .hvut-bt-equip li:last-child { border-bottom: none; }
@@ -2728,6 +2724,7 @@ var $supply = {
     .hvut-bt-inventory { left: 0; width: 400px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
     .hvut-bt-inventory > li { width: 32%; overflow: hidden; }
     .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
+    .hvut-bt-inventory::before {content: attr(data-header); position: absolute; left:-0.5px; top: 0.5px; width: 400px; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
 
     .hvut-bt-enchant { position: absolute; top: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
     .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
@@ -2738,20 +2735,23 @@ var $supply = {
     .hvut-bt-day span:nth-child(2) { font-weight: bold; }
     .hvut-bt-nostock span { color: #999 !important; cursor: default; }
 
-    .hvut-bt-bottom {min-height: 103.5px; top: 314px; height: fit-content; display: flex; flex-direction: row; flex-wrap: wrap; width: 600px; justify-content: space-between;}
+    .hvut-bt-bottom { width: calc(100% + 1px); visibility: hidden; position: relative; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap;  min-height: 103.5px; top: 314px; display: flex; justify-content: space-between; }
+    .hvut-bt-bottom > ul {  margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
+    .hvut-bt-bottom > .hvut-bt-repairall::before { content: attr(data-header); position: absolute; left: 407px; top: 0.5px; width: 190px border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
 
+    .hvut-bt-repairall::before {content: attr(data-header); position: absolute; left:-0.5px; top: 0.5px; width: 190px; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
     .hvut-bt-repair { position: absolute; top: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
     .hvut-bt-repair:hover { background-color: #fff; }
-    .hvut-bt-repairall { width: 190px; cursor: pointer; }
+    .hvut-bt-repairall { width: 190px; cursor: pointer; left: 407px;}
     .hvut-bt-repairall:hover { background-color: #fff; }
     `);
-    $supply.battle.container = $element('div', $id('hvut-stickyContainer') ?? $id('mainpane'), ['.hvut-bt-div'], (e) => { $supply.click(e); });
+    $supply.battle.container = $element('div', $id('hvut-stickyContainer') ?? $id('mainpane'), ['.hvut-bt'], (e) => { $supply.click(e); });
     $supply.battle.sticky = $element('ul', $supply.battle.container, ['.hvut-bt-sticky hvut-bt-sticky-loading', /*'!visibility: hidden',*/ { dataset: { header: '装备及库存' } }]);
     $supply.battle.div = $element('div', $supply.battle.sticky, ['.hvut-bt-div', `!top: -9px`], (e) => { $supply.click(e); });
     $supply.battle.equip = $element('ul', $supply.battle.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }]);
     $supply.battle.enchant = $element('ul', $supply.battle.div, ['.hvut-bt-enchant', { dataset: { header: '装备附魔' } }]);
     $supply.battle.repair = $element('ul', $supply.battle.div, ['.hvut-bt-repair', { dataset: { header: '修理装备', action: 'repair' } }]);
-    $supply.battle.bottom = $element('div', $supply.battle.div, ['.hvut-bt-bottom hvut-bt-div', '!left: 0; ']);
+    $supply.battle.bottom = $element('div', $supply.battle.div, ['.hvut-bt-bottom', '!left: 0; ']);
     $supply.battle.inventory = $element('ul', $supply.battle.bottom, ['.hvut-bt-inventory', { dataset: { header: '补给品库存' } }]);
     $supply.battle.repairall = $element('ul', $supply.battle.bottom, ['.hvut-bt-repairall', { dataset: { header: '修理全部', action: 'repairall' } }]);
     $supply.set_battle_visible(true);
@@ -4274,17 +4274,18 @@ _subpage = {
       setStickyContainer: function (length, supply) {
         const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
       pointer-events: none;
-      height: calc(100% + 25px + ${length} * 708px);
+      height: calc(100% + 25px + 5px + ${length} * 708px);
       position:absolute;
-      top: 0;
+      top: -5px;
       width:100%;
       left:-1px;
+      z-index: 2;
     `]);
         _bottom.node.div.style.cssText += `
       flex-flow: wrap;
       position: sticky;
       display: flex;
-      top: calc(max(27.23px, 100% - 22.5px));
+      top: max(119.23px, calc(100% - 22.5px));
       left: -1px;
       border: 1px solid;
       font-size: 10pt;
@@ -4296,13 +4297,14 @@ _subpage = {
         if (supply) $supply.set_sticky();
         stickyContainer.appendChild(_bottom.node.div);
         $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
-        _top.node.div.style.cssText += 'justify-content: space-evenly;pointer-events: all; position: sticky; top: 0; background:#000;'
+        _top.node.div.style.cssText += 'justify-content: space-evenly;pointer-events: all; position: sticky; top: 0px; background:#000;'
       },
         setSubpage: function (container, iframes, p, t) {
-          const elem = $element('iframe', container, { src: `${_href.get(_href.sectors[p])}` + t, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
+          const elem = $element('iframe', container, {src: `${_href.get(_href.sectors[p])}` + t, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
             iframes.unshift([elem, p]);
             elem.onload = () => {
               const location = elem.contentWindow.location;
+              elem.contentWindow.document.body.classList.add(`iframe-body`);
               const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
               console.log(`subpage onload: ${JSON.stringify(query)}`);
               if (query.s === 'Battle' && query.ss === undefined) {
@@ -4311,9 +4313,6 @@ _subpage = {
             }
         },
         init: function () {
-          if(!settings.subpage){
-            return;
-          }
           const [supply, hreflist, filters, filtingSector] = _subpage.getSubpageList();
           var length = (hreflist?.length ?? 0) + (filters?.length ?? 0);
           if (length === 0) return;
@@ -4321,7 +4320,9 @@ _subpage = {
           const container = $element('div', document.body, ['#hvut-subpageContainer', `!
             padding: 0;
             margin: 2px 0 0 0;
-            width: 100%;
+            width: calc(100% + 2px);
+            left: -2px;
+            position: relative;
             display: grid!important;
           `]);
           const iframes = [];
@@ -4355,7 +4356,7 @@ _hath = {
   },
   perksBtn: {
     bottom: 22.5,
-    text: '购买Hath能力',
+    text: '购买能力',
     id: 'buyHathButton',
     href: 'https://e-hentai.org/hathperks.php',
   },
@@ -4406,7 +4407,9 @@ _hath = {
 };
 
 if (!_isInIframe) {
-  _subpage.init();
+  if(settings.subpage){
+    _subpage.init();
+  }
   _hath.init();
 }
 
@@ -7717,7 +7720,12 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
                           case 'bid':
                           case 'ask':
                             Object.entries(_mk.items).forEach(([n, v]) => {
-                              v.input.value = v[type] || _mk.prices[n][type] || '';
+                              if(v === undefined){
+                                return;
+                              }
+                              let mkp = _mk.prices[n];
+                              mkp = mkp ? mkp[type] : ''
+                              v.input.value = v[type] || mkp || '';
                             });
                             break;
                           case 'update':
