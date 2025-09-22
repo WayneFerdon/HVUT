@@ -4,7 +4,7 @@
 // @author       WayneFerdon
 // @include      http*://*hentaiverse.org/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/main/HVHotkey.user.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVHotkey.user.js
 // ==/UserScript==
 
 if (window.self !== window.top) {
