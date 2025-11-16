@@ -9,6 +9,10 @@
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
 // @match          *://e-hentai.org/*
+
+// @exclude *://*hentaiverse.org/isekai/?s=Battle*
+// @exclude *://*hentaiverse.org/isekai/?s=Battle
+
 // @connect        hentaiverse.org
 // @connect        e-hentai.org
 // @grant          GM_getValue
@@ -25,9 +29,9 @@
 var _isekai = location.pathname.includes('/isekai/');
 try{
   if(window.location.href.startsWith('https://')) {
-    MAIN_URL = MAIN_URL.replace('http:', 'https:');
+    unsafeWindow.MAIN_URL = unsafeWindow.MAIN_URL.replace('http:', 'https:');
   } else {
-    MAIN_URL = MAIN_URL.replace('https:', 'http:');
+    unsafeWindow.MAIN_URL = unsafeWindow.MAIN_URL.replace('https:', 'http:');
   }
 } catch (e) {
 }
@@ -51,13 +55,13 @@ var settings = {
 
   topMenuAlign: 'left', // '' (blank, default), 'left', 'center', 'right', or 'space-between', 'space-around', space-evenly'
   topMenuIntegrate: true, // integrate menus into one button
-  topMenuLinks: ['角色面板', '技能', '装备', '装备强化', '训练', '雪花祭坛', '怪物实验室', '物品仓库', '装备仓库', '物品商店', '装备商店', '交易市场', '竞技场', '塔楼', '浴血擂台', '道具界', '装备重铸', '压榨界'],
+  topMenuLinks: ['角色面板', '技能', '训练', '怪物实验室', '物品仓库', '物品商店', '交易市场', '装备', '装备强化', '雪花祭坛', '装备仓库', '装备商店', '竞技场', '塔楼', '浴血擂台', '道具界', '装备重铸', '压榨界'],
   confirmStaminaRestorative: true, // confirm whether to use a stamina restorative item
   disableStaminaRestorative: 85, // disable a stamina restorative button when your stamina is higher than this
   warnLowStamina: 2, // warn when your stamina is lower than this
 
   showCredits: true, // show your credits balance on all pages
-  showEquipSlots: 2, // show Equip Inventory Slots; 0:disable, 1:battle pages only, 2:always
+  showEquipSlots: 1, // show Equip Inventory Slots; 0:disable, 1:battle pages only, 2:always
   showLottery: true, // show weapon and armor that are currently in the lottery
 
   equipSort: true, // sort equipment list, order by category
@@ -1596,6 +1600,7 @@ var $equip = {
     }
     const equiplist = Array.from($qsa('div[onmouseover*="equips.set"]', node)).map((div) => {
       const eq = $equip.parse.div(div);
+      if (!eq.node) { return; }
       eq.node.wrapper = div.parentNode;
       if (eq.info.customname) {
         div.classList.add('hvut-eq-customname');
@@ -3443,11 +3448,11 @@ _top.menu = {
   '技能': { s: 'Character', ss: 'ab', text: '技能' },
   '训练': { s: 'Character', ss: 'tr', isekai: false, text: '训练' },
   '物品仓库': { s: 'Character', ss: 'it', text: '物品' },
-  '装备仓库': { s: 'Character', ss: 'in', text: '装备库' },
+  '装备仓库': { s: _isekai ? 'Bazaar' : 'Character', ss: _isekai ? 'am' : 'in', text: '装备库' },
   '设置': { s: 'Character', ss: 'se', text: '设置' },
   '前往异世界': { s: 'Character', href: '/isekai/', isekai: false, text: '异世界' },
   '前往永久区': { s: 'Character', href: '/', isekai: true, text: '永久区' },
-  '装备商店': { s: 'Bazaar', ss: 'es', text: '装备店' },
+  '装备商店': { s: 'Bazaar', ss: _isekai ? 'am&screen=sell' : 'es', text: '装备店' },
   '物品商店': { s: 'Bazaar', ss: 'is', text: '物品店' },
   '雪花祭坛': { s: 'Bazaar', ss: 'ss', text: '祭坛' },
   '交易市场': { s: 'Bazaar', ss: 'mk', text: '市场' },
@@ -3842,14 +3847,14 @@ var $persona = {
         _top.node.div.appendChild(_top.node.message);
       }
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.persona.firstElementChild.style.color = '#e00';
+      _top.node.persona.firstElementChild.style.color = '#f22';
     }
     _top.node.stamina.firstElementChild.style.color = '';
     if (_player.condition.includes('你已经筋疲力尽') || _player.accuracy || _player.stamina < settings.warnLowStamina) {
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.stamina.firstElementChild.style.color = '#e00';
+      _top.node.stamina.firstElementChild.style.color = '#f22';
     } else if (_player.condition.includes('你现在精力充沛')) {
-      _top.node.stamina.firstElementChild.style.color = '#03c';
+      _top.node.stamina.firstElementChild.style.color = '#0af';
     }
   },
   parse_stats_pane: function (doc) {
@@ -3876,7 +3881,7 @@ var $persona = {
       stats_pane[text] = number;
     });
 
-    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.test($qs('.spn', doc).textContent) && RegExp.$1;
+    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.test($qs('.spn', doc)?.textContent) && RegExp.$1;
     const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
     const spell_damage = stats_pane[spell_type + ' EDB'];
     const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
@@ -3952,6 +3957,7 @@ if (settings.showEquipSlots === 2 || settings.showEquipSlots === 1 && _query.s =
     _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
     const html = await $ajax.fetch('?s=Character&ss=in');
     const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
+
     const inventory = parseInt(exec[1]);
     const storage = parseInt(exec[2] || 0);
     const slots = parseInt(exec[3]);
@@ -4167,6 +4173,7 @@ _href.sectors = {
   201: [_href.s.ch, `eq`], // 装备
   202: [_href.s.ch, `in`], // 装备仓库
   203: [_href.s.bz, `es`], // 装备商店
+  204: [_href.s.bz, `am`], // 装备商店
 
   401: [_href.s.ch, `it`], // 物品仓库
   402: [_href.s.bz, `is`], // 物品商店
@@ -4195,20 +4202,22 @@ _subpage = {
     [[410]],// 市场
       [[421, 422, 423, 424, 425, 426]],// 市场买单
       [[431, 432, 433, 434, 435, 436]],// 市场卖单
-      [[201, 202, 203, 103]], // 装备
+      [[201], 202], // 装备
+      [[202, 203, 103]], // 装备
       [[502, 503, 504, 505]], // 战斗
       [[104]], // 技能
       ],
         false: [ // isekai
           [[0, 100, 500], // 主页
            103, 104,
-           203, 410, 402,
+           204, 410, 402,
            501, 502, 503,
           ],
           [[410]], // 市场
           [[421, 422, 423]], // 市场买单
           [[431, 432, 433]], // 市场卖单
-          [[201, 202, 203, 103]], // 装备
+          [[201], 204], // 装备
+          [[204, 103]], // 装备
           [[501, 502, 503, 504, 505]], // 战斗
           [[104]], // 技能
         ]
@@ -5089,6 +5098,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       _eq.show_base();
       _eq.equiplist = $equip.list($id('eqsb'), false);
       _eq.equiplist.forEach((eq) => {
+        if (!eq?.node) return;
         eq.node.div.textContent = eq.node.div.textContent;
         $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']).append(
           $element('span', null, [(eq.info.soulbound ? 'Soulbound' : 'Lv.' + eq.info.level), (eq.info.soulbound || !eq.info.tradeable ? '.hvut-eq-untradeable' : '')]), ' : ',
@@ -7574,6 +7584,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
 
                     $ajax.fetch('?s=Character&ss=in').then((html) => {
                       const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
+                      if (!exec) return;
                       _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
                       _ss.equip.capacity = parseInt(exec[3]);
                       _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;
