@@ -10,8 +10,7 @@
 // @match          *://*.hentaiverse.org/*
 // @match          *://e-hentai.org/*
 
-// @exclude *://*hentaiverse.org/isekai/?s=Battle*
-// @exclude *://*hentaiverse.org/isekai/?s=Battle
+// @exclude *://*hentaiverse.org/isekai/*
 
 // @connect        hentaiverse.org
 // @connect        e-hentai.org
