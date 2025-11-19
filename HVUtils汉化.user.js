@@ -1,188 +1,51 @@
 // ==UserScript==
-// @name           HV Utils 汉化
+// @name           HV Utils
 // @namespace      HVUT
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.2.cn.5
-// @date           2023-12-31
+// @version        4.0.0
+// @date           2025-11-15
 // @author         sssss2
 // @match          *://*.hentaiverse.org/*
 // @match          *://e-hentai.org/*
-
-// @exclude *://*hentaiverse.org/isekai/*
-
 // @connect        hentaiverse.org
 // @connect        e-hentai.org
+// @exclude        *://hentaiverse.org/equip/*
+// @exclude        *://alt.hentaiverse.org/equip/*
+// @exclude        *://hentaiverse.org/isekai/equip/*
+// @exclude        *://alt.hentaiverse.org/isekai/equip/*
+// @exclude        *://hentaiverse.org/isekai/*
+// @exclude        *://alt.hentaiverse.org/isekai/*
 // @grant          GM_getValue
 // @grant          GM_setValue
+// @grant          GM_deleteValue
 // @grant          GM_addStyle
 // @grant          GM_xmlhttpRequest
 // @grant          GM_setClipboard
 // @grant          unsafeWindow
 // @run-at         document-end
-// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
-// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils汉化.user.js
 // ==/UserScript==
 
-var _isekai = location.pathname.includes('/isekai/');
-try{
-  if(window.location.href.startsWith('https://')) {
-    unsafeWindow.MAIN_URL = unsafeWindow.MAIN_URL.replace('http:', 'https:');
-  } else {
-    unsafeWindow.MAIN_URL = unsafeWindow.MAIN_URL.replace('https:', 'http:');
-  }
-} catch (e) {
-}
+const settings = {
 
-var settings = {
+  // [GENERAL]
+  reNotification: true,
+  reGallery: true,
+  reGalleryAlt: false,
+  reBeep: [0.2, 500, 0.5], // [volume, frequency, duration]
 
-  // [GLOBAL]
-  subpage: true,
-  // subpage: false,
-  randomEncounter: false, // Random Encounter Notification
+  topMenuIntegration: true,
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Equip Inventory', 'Equipment Shop', 'Item Shop', 'The Market', 'Monster Lab', 'The Shrine', 'MoogleMail', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  confirmStaminaRestorative: true,
+  disableStaminaRestorative: 79,
+  warnLowStamina: 10,
 
-  reGallery: true, // use it on the gallery
-  reGalleryAlt: false, // open RE links to alt.hentaiverse.org on the gallery
-  reBeep: { volume: 0, frequency: 500, time: 0.5, delay: 1 }, // beep when a RE is ready; set volume to 0 to disable
-  // you can test the beep by removing slashes in front of the following line
-  // reBeepTest: setTimeout(() => play_beep(settings.reBeep), 100),
-  reBattleCSS: 'top: 10px; left: 600px; position: absolute; cursor: pointer; font-size: 10pt; font-weight: bold;', // modify top and left to locate the timer
-
-  reloadBattleURL: 1, // when entering the battle; 0:do nothing, 1:change the url only (recommended), 2:reload the page
-  ajaxRound: true, // support Monsterbation
-
-  topMenuAlign: 'left', // '' (blank, default), 'left', 'center', 'right', or 'space-between', 'space-around', space-evenly'
-  topMenuIntegrate: true, // integrate menus into one button
-  topMenuLinks: ['角色面板', '技能', '训练', '怪物实验室', '物品仓库', '物品商店', '交易市场', '装备', '装备强化', '雪花祭坛', '装备仓库', '装备商店', '竞技场', '塔楼', '浴血擂台', '道具界', '装备重铸', '压榨界'],
-  confirmStaminaRestorative: true, // confirm whether to use a stamina restorative item
-  disableStaminaRestorative: 85, // disable a stamina restorative button when your stamina is higher than this
-  warnLowStamina: 2, // warn when your stamina is lower than this
-
-  showCredits: true, // show your credits balance on all pages
-  showEquipSlots: 1, // show Equip Inventory Slots; 0:disable, 1:battle pages only, 2:always
-  showLottery: true, // show weapon and armor that are currently in the lottery
-
-  equipSort: true, // sort equipment list, order by category
-  equipColor: true, // set background colors for equipment; Default colors: peerless red, legendary orange, magnificent blue, exquisite green
-
-  equipmentKeyFunctions: true, // support some keyboard actions when mouse over the equipment
-  // 'V': open equipment links in a new tab, instead of in a popup
-  // 'L': show link code [url=...]...[/url]
-  equipmentMouseFunctions: true, // support some mouse actions when mouse over the equipment
-  // doubleclick : open equipment links
-
-  // [CHARACTER]
-  character: true,
-  characterExpandStatsByDefault: true,
-  equipment: true,
-  equipmentStatsAnalyzer: true, // calculate magic score, proficiency, resist chance of monsters and expected damage
-  abilities: true, // show current and maximum level of every ability, and set ability to the required level in one click
-  training: true, // calculate costs
-  trainingTimer: true, // plan training to a preset level and start training automatically
-  itemInventory: true, // WTS forum code generator
-  equipInventory: true, // WTS forum code generator
-  equipInventoryIntegration: true, // integrate all equip types on the default inventory page
-  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
-  equipNameCode: [
-    'Peerless : quality=rainbow, name=bold',
-    'Legendary : quality=#f90, quality=bold',
-    'Magnificent : quality=#69f',
-    'Exquisite : quality=#3c3',
-    '(Rapier || Shortsword) && Slaughter : type=bold, suffix=bold ; Ethereal : prefix=#f00 ; (Hallowed || Demonic) : prefix=#f90',
-    '(Club || Axe) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    '(Rapier || Wakizashi) && (Balance || Nimble) && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    'Wakizashi && (Nimble || Battlecaster) && (Fiery || Arctic || Shocking || Tempestuous) : prefix=#f00, type=bold, suffix=bold',
-    '(Estoc || Katana || Longsword || Mace) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    'Oak && Hallowed && Heimdall : prefix=#f00, type=bold, suffix=bold',
-    'Willow && (Shocking || Tempestuous || Demonic) && Destruction : prefix=#f00, type=bold, suffix=bold',
-    'Katalox && Hallowed && (Destruction || Heimdall || Heaven-sent) : prefix=#f90, type=bold',
-    'Katalox && Demonic && (Destruction || Fenrir || Demon-fiend) : prefix=#f90, type=bold',
-    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Destruction : prefix=#f00, type=bold, suffix=bold',
-    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Elementalist : prefix=$f90, type=bold',
-    'Redwood && (Fiery && Surtr || Arctic && Niflheim || Shocking && Mjolnir || Tempestuous && Freyr) : prefix=#f90, type=bold',
-    'Force Shield : type=bold ; Protection || Dampening || Deflection : suffix=bold',
-    'Buckler && (Barrier || Battlecaster) : type=bold, suffix=bold ; Reinforced : prefix=#f90',
-    'Phase : type=bold ; Radiant || Charged : prefix=#f00 ; Mystic || Frugal : prefix=#f90',
-    'Cotton && (Elementalist || Heaven-sent || Demon-fiend) : suffix=bold ; Charged : prefix=#f00 ; Elementalist && Shoes || (Heaven-sent || Demon-fiend) && Robe : slot=bold',
-    'Shade && Shadowdancer : type=bold, suffix=bold ; Savage : prefix=#f00 ; Agile : prefix=#f90',
-    'Power : type=bold ; Savage : prefix=#f90 ; Slaughter : suffix=bold ; Savage && Slaughter : prefix=#f00',
-    'Plate && Shielding : prefix=#f90',
-  ],
-  settings: true,
-
-  // [BAZAAR]
-  equipmentShop: true, // sell and salvage equipment at once
-  equipmentShopIntegration: true, // integrate all equip types on the default shop page
-  equipmentShopShowLevel: true, // show equipment's level
-  equipmentShopShowPAB: true, // show equipment's pab
-  equipmentShopConfirm: 1, // 0:no, 1:confirm 'unwise' actions (e.g. selling mag cotton or salvaging shade), 2:confirm all actions
-
-  equipmentShopProtectFilter: [ // prevent YOUR valuable equipment from being selected by 'Select All' button
-    'Peerless',
-    'Legendary',
-    'Magnificent && (Rapier || Shortsword) && Slaughter',
-    'Magnificent && (Force Shield || Buckler && Barrier)',
-    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
-    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
-    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
-    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
-    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
-    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
-    'Magnificent && (Radiant || Charged) && Phase',
-    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
-    'Magnificent && (Savage || Agile) && Shadowdancer',
-    'Magnificent && Power && Slaughter',
-  ],
-  equipmentShopAutoLock: true, // automatically lock protected equipment
-
-  equipmentShopBazaarFilter: [ // check valuable equipment in BAZZAR, then hide all other trash
-    'Peerless',
-    'Legendary',
-    'Magnificent && Rapier && Slaughter',
-    'Magnificent && (Force Shield || Buckler && Barrier)',
-    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
-    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
-    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
-    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
-    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
-    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
-    'Magnificent && (Radiant || Charged) && Phase',
-    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
-    'Magnificent && (Savage || Agile) && Shadowdancer',
-    'Magnificent && Power && Slaughter',
-    'Magnificent && Power',
-    '(Magnificent || Exquisite) && (Rapier || Shortsword) && Slaughter && (Eth || Fie || Arc || Shoc || Tem || Hal || Dem)',
-    '(Magnificent || Exquisite) && Katana && Slaughter && Ethereal',
-    '(Magnificent || Exquisite) && Wakizashi && (Balance || Nimble) && (Eth || Fie || Arc || Shoc || Tem || Hal || Dem)',
-    '(Magnificent || Exquisite) && (Force Shield || Buckler && Barrier || Kite Shield)',
-    '(Magnificent || Exquisite) && Shade && (Shadowdancer || Fleet)',
-    '(Magnificent || Exquisite) && Power && Slaughter',
-  ],
-  equipmentShopBazaarCheckIW: true, // check IWed equipment in BAZZAR
-
-  itemShop: true,
-  market: true,
-
-  monsterLab: true, // record gifts, and feed crystals or chaos tokens to monsters
-  monsterLabDefaultSort: '#', // #, name, class, pl, wins, kills, +, gifts, morale, hunger
-  monsterLabCloseDefaultPopup: true,
-
-  shrine: true, // record rewards
-  shrineHideItems: ['Figurine', 'Coupon','Shrine Fortune', 'Bunny Girl'],//, 'Peerless Voucher'],
-  shrineTrackEquip: ['Peerless', 'Legendary', 'Magnificent'], // track high quality equipment only
-
-  moogleMail: true, // Advanced MoogleMail-Sender and MoogleMail-Box
-  moogleMailCouponClipper: true, // if the subject of MoogleMail contains 'Coupon Clipper' or 'Item Shop', take credits, buy requested items, then send them back.
-  moogleMailDarkDescent: true, // if the subject of MoogleMail contains 'Dark Descent' or 'reforge', take equipment, reforge, then send it back.
-  moogleMailTemplate: {
-    //'WTS': { 'to': '', 'subject': '', 'body': '' },
-    //'WTB': { 'to': '', 'subject': '', 'body': '' },
-    //'Free': { 'to': '', 'subject': 'Free Potions', 'body': '500 x Health Draught\n500 x Mana Draught\n200 x Spirit Draught\n100 x Health Potion\n100 x Mana Potion\n50 x Spirit Potion', attach: true },
-  },
-
-  lottery: true,
-  lotteryCheck: [
+  showCredits: 0, // 0:disable, 2:always
+  showEquipSlots: 1, // 0:disable, 1:on battle pages only, 2:always
+  trainingNotification: true,
+  lotteryNotification: true,
+  lotteryFilters: [
     'Rapier && Slaughter',
     'Ethereal && (Rapier || Wakizashi) && (Balance || Nimble)',
     'Wakizashi && Battlecaster',
@@ -201,467 +64,707 @@ var settings = {
     'Power && Savage && Balance',
   ],
 
+  // [EQUIPMENT]
+  equipInventoryIntegration: true,
+  equipSort: true,
+  equipColor: true,
+  equipHoverFunctions: true,
+  equipTouchFunctions: false,
+  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  equipNameCode: [
+    'Peerless : quality=rainbow, name=bold',
+    'Legendary : quality=#f90, quality=bold',
+    'Magnificent : quality=#69f',
+    'Exquisite : quality=#3c3',
+    '(Rapier || Shortsword) && Slaughter : type=bold, suffix=bold ; Ethereal : prefix=#f00 ; (Hallowed || Demonic) : prefix=#f90',
+    '(Club || Axe) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    '(Rapier || Wakizashi) && (Balance || Nimble) && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    'Wakizashi && (Nimble || Battlecaster) && (Fiery || Arctic || Shocking || Tempestuous) : prefix=#f00, type=bold, suffix=bold',
+    '(Estoc || Katana || Longsword || Mace) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    'Oak && Hallowed && Heimdall : prefix=#f00, type=bold, suffix=bold',
+    'Willow && (Shocking || Tempestuous || Demonic) && Destruction : prefix=#f00, type=bold, suffix=bold',
+    'Katalox && Hallowed && (Destruction || Heimdall || Heaven-sent) : prefix=#f90, type=bold',
+    'Katalox && Demonic && (Destruction || Fenrir || Demon-fiend) : prefix=#f90, type=bold',
+    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Destruction : prefix=#f00, type=bold, suffix=bold',
+    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Elementalist : prefix=#f90, type=bold',
+    'Redwood && (Fiery && Surtr || Arctic && Niflheim || Shocking && Mjolnir || Tempestuous && Freyr) : prefix=#f90, type=bold',
+    'Force Shield : type=bold ; Protection || Dampening || Deflection : suffix=bold',
+    'Buckler && (Barrier || Battlecaster) : type=bold, suffix=bold ; Reinforced : prefix=#f90',
+    'Phase : type=bold ; Radiant || Charged : prefix=#f00 ; Mystic || Frugal : prefix=#f90',
+    'Cotton && (Elementalist || Heaven-sent || Demon-fiend) : suffix=bold ; Charged : prefix=#f00 ; Elementalist && Shoes || (Heaven-sent || Demon-fiend) && Robe : slot=bold',
+    'Shade && Shadowdancer : type=bold, suffix=bold ; Savage : prefix=#f00 ; Agile : prefix=#f90',
+    'Power : type=bold ; Savage : prefix=#f90 ; Slaughter : suffix=bold ; Savage && Slaughter : prefix=#f00',
+    'Plate && Shielding : prefix=#f90',
+  ],
+
+  // [Equipment Shop]
+  equipmentShopIntegration: true,
+  equipmentShopShowLevel: true,
+  equipmentShopShowPAB: true,
+  equipmentShopConfirm: 1, // 0:disable, 1:confirm less-profitable actions, 2:always
+
+  equipmentShopProtectFilters: [
+    'Peerless',
+    'Legendary',
+    'Magnificent && (Rapier || Shortsword) && Slaughter',
+    'Magnificent && (Force Shield || Buckler && Barrier)',
+    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
+    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
+    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
+    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
+    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
+    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
+    'Magnificent && (Radiant || Charged) && Phase',
+    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
+    'Magnificent && (Savage || Agile) && Shadowdancer',
+    'Magnificent && Power && Slaughter',
+  ],
+  equipmentShopAutoLock: true,
+
+  equipmentShopBazaarFilters: [
+    'Peerless',
+    'Legendary',
+    'Magnificent && Rapier && Slaughter',
+    'Magnificent && (Force Shield || Buckler && Barrier)',
+    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
+    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
+    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
+    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
+    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
+    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
+    'Magnificent && (Radiant || Charged) && Phase',
+    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
+    'Magnificent && (Savage || Agile) && Shadowdancer',
+    'Magnificent && Power && Slaughter',
+    '$Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250',
+    '$Exquisite+ && Power && !Warding',
+    '$Superior+ && (Force Shield || Buckler && Barrier || Kite Shield)',
+    '$iw',
+  ],
+
+  monsterLab: true,
+  monsterLabDefaultSort: 'index',
+
+  shrineHideItems: ['Figurine', 'Peerless Voucher'],
+  shrineFilters: ['Peerless', 'Legendary'],
+
+  moogleMail: true,
+  moogleMailCouponClipper: false,
+  moogleMailDarkDescent: false,
+
   // [BATTLE]
-  supplyCheck: true,
-  equipEnchant: true, // Equipment Enchant and Repair Pane
-  equipEnchantPosition: 'left', // position of the pane. left or right
-  equipEnchantWeapon: 4, // number of enchantments for your weapon
-  equipEnchantArmor: 3, // number of enchantments for armors
-  equipEnchantRepairThreshold: 0.7, // if the value is between 0 and 1, it means the condition % of the equipment (e.g., 0.6 => 60%). else if the value is larger than 1, it means a margin to 50% condition (e.g., 55 => 205/300). in this case, the recommended value for grindfest is 55.
-  supplyThreshold: {
-    'Health Draught': 100, 'Mana Draught': 100, 'Spirit Draught': 100,
-    'Health Potion': 100, 'Mana Potion': 100, 'Spirit Potion': 100,
-    'Health Elixir': 30, 'Mana Elixir': 30, 'Spirit Elixir': 30, 'Last Elixir': _isekai ? 0 : 10,
-    'Flower Vase': 30, 'Bubble-Gum': 30,
-    'Caffeinated Candy': 0,
-    'Infusion of Darkness': 0,
-    'Infusion of Darkness': 0,
-    'Infusion of Divinity': 0,
-    'Infusion of Storms': 0,
-    'Infusion of Lightning': 0,
-    'Infusion of Frost': 0,
-    'Infusion of Flames': 0,
-    'Infusion of Gaia': 0,
-    'Scroll of Swiftness': 0,
-    'Scroll of the Avatar': 0,
-    'Scroll of Shadows': 0,
-    'Scroll of Absorption': 30,
-    'Scroll of Life': 0,
-    'Scroll of Protection': 0,
-    'Scroll of the Gods': 30
+  equipEnchantPosition: 'left',
+  equipEnchantWeapon: 4,
+  equipEnchantArmor: 3,
+  equipEnchantRepairThreshold: 55,
+  equipEnchantItemInventory: {
+    'Health Draught': 200,
+    'Mana Draught': 200,
+    'Spirit Draught': 200,
+    'Health Potion': 100,
+    'Mana Potion': 100,
+    'Spirit Potion': 100,
+    'Health Elixir': 10,
+    'Mana Elixir': 10,
+    'Spirit Elixir': 10,
   },
-  equipEnchantCheckArmors: true,
-
-  arena: true,
-  ringofblood: true,
-  grindfest: true,
-  itemWorld: true, // calculate pxp gain and potency level
-
-  // [FORGE]
-  upgrade: true, // calculate materials and costs
-  salvage: true, // warn before salvaging an equipment
-
-
-  // [Item Code Generator]
-  itemCodeTemplate:
-  `
-// set itemCode = {$zero?[color=transparent]$zero[/color]}{$count} x {$name} @ {$price}
-// set unpricedCode = {$zero?[color=transparent]$zero[/color]}{$count} x {$name}
-// set unpricedCode = 0; DELETE THIS LINE TO ADD UNPRICED ITEMS TO THE CODE
-// set stockoutCode = [color=#999][s]{$zero}{$count} x {$name}{$price? @ $price}[/s][/color]
-// set stockDigits = 0
-// set keepStock = 0
-
-[size=3][color=#00B000][Consumables][/color][/size]
-
-// set stockDigits = block
-{Health Draught}
-{Mana Draught}
-{Spirit Draught}
-
-// set stockDigits = block
-{Health Potion}
-{Mana Potion}
-{Spirit Potion}
-
-// set stockDigits = block
-{Health Elixir}
-{Mana Elixir}
-{Spirit Elixir}
-{Last Elixir}
-
-// set stockDigits = block
-{Flower Vase}
-{Bubble-Gum}
-
-// set stockDigits = 0
-{Energy Drink}
-
-// set stockDigits = block
-{Infusion of Flames}
-{Infusion of Frost}
-{Infusion of Lightning}
-{Infusion of Storms}
-{Infusion of Divinity}
-{Infusion of Darkness}
-
-// set stockDigits = block
-{Scroll of Swiftness}
-{Scroll of Protection}
-{Scroll of the Avatar}
-{Scroll of Absorption}
-{Scroll of Shadows}
-{Scroll of Life}
-{Scroll of the Gods}
-// set stockDigits = 0
-
-
-[size=3][color=#BA05B4][Crystals][/color][/size]
-
-{Crystal Pack}
-
-// set keepStock = min( Crystal of Vigor, Crystal of Finesse, Crystal of Swiftness, Crystal of Fortitude, Crystal of Cunning, Crystal of Knowledge )
-{Crystal of Vigor}
-{Crystal of Finesse}
-{Crystal of Swiftness}
-{Crystal of Fortitude}
-{Crystal of Cunning}
-{Crystal of Knowledge}
-
-// set keepStock = min( Crystal of Flames, Crystal of Frost, Crystal of Lightning, Crystal of Tempest, Crystal of Devotion, Crystal of Corruption )
-{Crystal of Flames}
-{Crystal of Frost}
-{Crystal of Lightning}
-{Crystal of Tempest}
-{Crystal of Devotion}
-{Crystal of Corruption}
-// set keepStock = 0
-
-
-[size=3][color=#489EFF][Monster Foods][/color][/size]
-
-// set stockDigits = block
-{Monster Chow}
-{Monster Edibles}
-{Monster Cuisine}
-// set stockDigits = 0
-{Happy Pills}
-
-
-[size=3][color=#f00][Shards][/color][/size]
-
-// set stockDigits = block
-{Voidseeker Shard}
-{Aether Shard}
-{Featherweight Shard}
-{Amnesia Shard}
-
-
-[size=3][color=#f00][Materials][/color][/size]
-
-// set stockDigits = block
-{Scrap Cloth}
-{Scrap Leather}
-{Scrap Metal}
-{Scrap Wood}
-
-// set stockDigits = block
-{Low-Grade Cloth}
-{Mid-Grade Cloth}
-{High-Grade Cloth}
-
-{Low-Grade Leather}
-{Mid-Grade Leather}
-{High-Grade Leather}
-
-{Low-Grade Metals}
-{Mid-Grade Metals}
-{High-Grade Metals}
-
-{Low-Grade Wood}
-{Mid-Grade Wood}
-{High-Grade Wood}
-
-// set stockDigits = block
-{Crystallized Phazon}
-{Shade Fragment}
-{Repurposed Actuator}
-{Defense Matrix Modulator}
-
-
-[size=3][color=#f00][Bindings][/color][/size]
-
-// set stockDigits = block
-{Binding of Slaughter}
-{Binding of Balance}
-{Binding of Isaac}
-{Binding of Destruction}
-{Binding of Focus}
-{Binding of Friendship}
-
-{Binding of Protection}
-{Binding of Warding}
-{Binding of the Fleet}
-{Binding of the Barrier}
-{Binding of the Nimble}
-{Binding of Negation}
-
-{Binding of the Elementalist}
-{Binding of the Heaven-sent}
-{Binding of the Demon-fiend}
-{Binding of the Curse-weaver}
-{Binding of the Earth-walker}
-
-{Binding of Surtr}
-{Binding of Niflheim}
-{Binding of Mjolnir}
-{Binding of Freyr}
-{Binding of Heimdall}
-{Binding of Fenrir}
-
-{Binding of Dampening}
-{Binding of Stoneskin}
-{Binding of Deflection}
-
-{Binding of the Fire-eater}
-{Binding of the Frost-born}
-{Binding of the Thunder-child}
-{Binding of the Wind-waker}
-{Binding of the Thrice-blessed}
-{Binding of the Spirit-ward}
-
-{Binding of the Ox}
-{Binding of the Raccoon}
-{Binding of the Cheetah}
-{Binding of the Turtle}
-{Binding of the Fox}
-{Binding of the Owl}
-
-
-[size=3][color=#0000FF][Figurines][/color][/size]
-
-// set stockDigits = block
-// set keepStock = 1
-{Twilight Sparkle Figurine}
-{Rainbow Dash Figurine}
-{Applejack Figurine}
-{Fluttershy Figurine}
-{Pinkie Pie Figurine}
-{Rarity Figurine}
-{Trixie Figurine}
-{Princess Celestia Figurine}
-{Princess Luna Figurine}
-{Apple Bloom Figurine}
-{Scootaloo Figurine}
-{Sweetie Belle Figurine}
-{Big Macintosh Figurine}
-{Spitfire Figurine}
-{Derpy Hooves Figurine}
-{Lyra Heartstrings Figurine}
-{Octavia Figurine}
-{Zecora Figurine}
-{Cheerilee Figurine}
-{Vinyl Scratch Figurine}
-{Daring Do Figurine}
-{Doctor Whooves Figurine}
-{Berry Punch Figurine}
-{Bon-Bon Figurine}
-{Fluffle Puff Figurine}
-{Angel Bunny Figurine}
-{Gummy Figurine}
-
-// set stockDigits = 0
-// set keepStock = 0
-  `,
-
-
-  // [ITEM PRICE], are used in Equipment Shop, Item Shop, Moogle Mail, Monster Lab and Upgrade
-  itemPrice: {
-
-    'WTS': { // WTS price
-      'Health Draught': 23,
-      'Mana Draught': 45,
-      'Spirit Draught': 45,
-
-      'Health Potion': 45,
-      'Mana Potion': 90,
-      'Spirit Potion': 90,
-
-      'Health Elixir': 450,
-      'Mana Elixir': 900,
-      'Spirit Elixir': 900,
-    },
-
-    'WTB': { // MoogleMail CoD
-      'Health Potion': 45,
-      'Mana Potion': 90,
-      'Spirit Potion': 90,
-
-      'Scrap Cloth': 90,
-      'Scrap Leather': 90,
-      'Scrap Metal': 90,
-      'Scrap Wood': 90,
-      'Energy Cell': 180,
-
-      'ManBearPig Tail': 1300,
-      'Holy Hand Grenade of Antioch': 1300,
-      "Mithra's Flower": 1300,
-      'Dalek Voicebox': 1300,
-      'Lock of Blue Hair': 1300,
-      'Bunny-Girl Costume': 2600,
-      'Hinamatsuri Doll': 2600,
-      'Broken Glasses': 2600,
-      'Black T-Shirt': 5200,
-      'Sapling': 5200,
-      'Unicorn Horn': 5000,
-      'Noodly Appendage': 5000,
-    },
-
-    'Materials': { // Monster Lab, Upgrade and Salvage
-      'Wispy Catalyst': 90,
-      'Diluted Catalyst': 450,
-      'Regular Catalyst': 900,
-      'Robust Catalyst': 2250,
-      'Vibrant Catalyst': 4500,
-      'Coruscating Catalyst': 9000,
-
-      'Legendary Weapon Core': 5000,
-      'Legendary Staff Core': 50000,
-      'Legendary Armor Core': 5000,
-      'Peerless Weapon Core': 500000,
-      'Peerless Staff Core': 2500000,
-      'Peerless Armor Core': 500000,
-
-      'Scrap Cloth': 90,
-      'Scrap Leather': 90,
-      'Scrap Metal': 90,
-      'Scrap Wood': 90,
-      'Energy Cell': 180,
-
-      'Low-Grade Cloth': 10,
-      'Mid-Grade Cloth': 100,
-      'High-Grade Cloth': 6000,
-
-      'Low-Grade Leather': 10,
-      'Mid-Grade Leather': 10,
-      'High-Grade Leather': 50,
-
-      'Low-Grade Metals': 10,
-      'Mid-Grade Metals': 50,
-      'High-Grade Metals': 150,
-
-      'Low-Grade Wood': 10,
-      'Mid-Grade Wood': 50,
-      'High-Grade Wood': 1000,
-
-      'Crystallized Phazon': 200000,
-      'Shade Fragment': 2000,
-      'Repurposed Actuator': 18000,
-      'Defense Matrix Modulator': 4000,
-
-      'Binding of Slaughter': 50000,
-      'Binding of Balance': 100,
-      'Binding of Isaac': 500,
-      'Binding of Destruction': 28000,
-      'Binding of Focus': 100,
-      'Binding of Friendship': 100,
-
-      'Binding of Protection': 45000,
-      'Binding of Warding': 1000,
-      'Binding of the Fleet': 5000,
-      'Binding of the Barrier': 2500,
-      'Binding of the Nimble': 500,
-      'Binding of Negation': 100,
-
-      'Binding of the Elementalist': 500,
-      'Binding of the Heaven-sent': 10,
-      'Binding of the Demon-fiend': 10,
-      'Binding of the Curse-weaver': 10,
-      'Binding of the Earth-walker': 10,
-
-      'Binding of Surtr': 10,
-      'Binding of Niflheim': 10,
-      'Binding of Mjolnir': 10,
-      'Binding of Freyr': 10,
-      'Binding of Heimdall': 10,
-      'Binding of Fenrir': 10,
-
-      'Binding of Dampening': 500,
-      'Binding of Stoneskin': 100,
-      'Binding of Deflection': 100,
-
-      'Binding of the Fire-eater': 10,
-      'Binding of the Frost-born': 10,
-      'Binding of the Thunder-child': 10,
-      'Binding of the Wind-waker': 10,
-      'Binding of the Thrice-blessed': 10,
-      'Binding of the Spirit-ward': 10,
-
-      'Binding of the Ox': 5000,
-      'Binding of the Raccoon': 2500,
-      'Binding of the Cheetah': 35000,
-      'Binding of the Turtle': 1000,
-      'Binding of the Fox': 20000,
-      'Binding of the Owl': 20000,
-    },
-
-    'Trophies': {
-      'ManBearPig Tail': 1300,
-      'Holy Hand Grenade of Antioch': 1300,
-      "Mithra's Flower": 1300,
-      'Dalek Voicebox': 1300,
-      'Lock of Blue Hair': 1300,
-      'Bunny-Girl Costume': 2600,
-      'Hinamatsuri Doll': 2600,
-      'Broken Glasses': 2600,
-      'Black T-Shirt': 5200,
-      'Sapling': 5200,
-      'Unicorn Horn': 5000,
-      'Noodly Appendage': 5000,
-    },
-
-    'Crystals': { // 12 types of Crystals
-      'Crystal of Vigor': 0,
-      'Crystal of Finesse': 0,
-      'Crystal of Swiftness': 0,
-      'Crystal of Fortitude': 0,
-      'Crystal of Cunning': 0,
-      'Crystal of Knowledge': 0,
-      'Crystal of Flames': 0,
-      'Crystal of Frost': 0,
-      'Crystal of Lightning': 0,
-      'Crystal of Tempest': 0,
-      'Crystal of Devotion': 0,
-      'Crystal of Corruption': 0,
-    },
-
-    // add any list if needed
-
-  },
+  equipEnchantCheckArmors: false,
 
 };
 
 /* END OF SETTINGS */
 
 /* eslint-disable arrow-spacing, block-spacing, comma-spacing, key-spacing, keyword-spacing, object-curly-spacing, space-before-blocks, space-before-function-paren, space-infix-ops, semi-spacing */
-function $id(id, d) { return (d || document).getElementById(id); }
-function $qs(q, d) { return (d || document).querySelector(q); }
-function $qsa(q, d) { return Array.from((d || document).querySelectorAll(q)); }
-function $doc(h) { const d = document.implementation.createHTMLDocument(''); d.documentElement.innerHTML = h; return d; }
-function $element(t, p, a, f) { let e; if (t) { e = document.createElement(t); } else if (t === '') { e = document.createTextNode(a); a = null; } else { return document.createDocumentFragment(); } if (a !== null && a !== undefined) { function ao(e, a) { Object.entries(a).forEach(([an, av]) => { if (typeof av === 'object') { let a; if (an in e) { a = e[an]; } else { e[an] = {}; a = e[an]; } Object.entries(av).forEach(([an, av]) => { a[an] = av; }); } else { if (an === 'style') { e.style.cssText = av; } else if (an in e) { e[an] = av; } else { e.setAttribute(an, av); } } }); } function as(e, a) { const an = { '#': 'id', '.': 'className', '!': 'style', '/': 'innerHTML' }[a[0]]; if (an) { e[an] = a.slice(1); } else if (a !== '') { e.textContent = a; } } if (typeof a === 'string' || typeof a === 'number') { e.textContent = a; } else if (Array.isArray(a)) { a.forEach((a) => { if (typeof a === 'string' || typeof a === 'number') { as(e, a); } else if (typeof a === 'object') { ao(e, a); } }); } else if (typeof a === 'object') { ao(e, a); } } if (f) { if (typeof f === 'function') { e.addEventListener('click', f); } else if (typeof f === 'object') { Object.entries(f).forEach(([ft, fl]) => { e.addEventListener(ft, fl); }); } } if (p) { if (p.nodeType === 1 || p.nodeType === 11) { p.appendChild(e); } else if (Array.isArray(p)) { if (['beforebegin', 'afterbegin', 'beforeend', 'afterend'].includes(p[1])) { p[0].insertAdjacentElement(p[1], e); } else if (!isNaN(p[1])) { p[0].insertBefore(e, p[0].childNodes[p[1]]); } else { p[0].insertBefore(e, p[1]); } } } return e; }
-function $input(o, p, a, f) { if (typeof o === 'string') { o = [o]; } const [t, v, n, s] = o; if (!a) { a = {}; } a.type = t; if (v === undefined || v === null) { const i = $element('input', p, a, f); return i; } else if (t === 'button' || t === 'submit') { a.value = v; const i = $element('input', p, a, f); return i; } else { const l = $element('label', p); const i = $element('input', l, a, f); if (s && (t === 'checkbox' || t === 'radio')) { $element('span', l); l.classList.add('hvut-label'); } if (v) { if (n === 'before') { l.prepend(v, ' '); } else { l.append(' ', v); } } return i; } }
-function time_format(t, o) { t = Math.floor(t / 1000); const h = Math.floor(t / 3600).toString().padStart(2, '0'); const m = Math.floor(t % 3600 / 60).toString().padStart(2, '0'); const s = (t % 60).toString().padStart(2, '0'); return !o ? `${h}:${m}:${s}` : o === 1 ? `${h}:${m}` : o === 2 ? `${m}:${s}` : ''; }
-function object_sort(o, x = []) { const index = {}; const _x = x.length + 1; x.forEach((e, i) => { index[e] = i + 1; }); Object.keys(o).sort((a, b) => { const _a = index[a] || _x; const _b = index[b] || _x; return _a - _b || (a < b ? -1 : 1); }).forEach((e) => { const v = o[e]; delete o[e]; o[e] = v; }); }
-function scrollIntoView(e, p = e.parentNode) { p.scrollTop += e.getBoundingClientRect().top - p.getBoundingClientRect().top; }
-function confirm_event(n, e, m, c, f) { if (!n) { return; } const a = n.getAttribute('on' + e); n.removeAttribute('on' + e); n.addEventListener(e, (e) => { if (!c || c()) { if (confirm(m)) { if (f) { f(); } } else { e.preventDefault(); e.stopImmediatePropagation(); } } }, true); n.setAttribute('on' + e, a); }
-function toggle_button(e, s, h, t, c, d) { function f() { if (t.classList.contains(c)) { t.classList.remove(c); e.value = h; } else { t.classList.add(c); e.value = s; } } e.value = h; e.addEventListener('click', f); if (d) { f(); } }
-function play_beep(s = { volume: 0.2, frequency: 500, time: 0.5, delay: 1 }) { if (!s.volume) { return; } const c = new window.AudioContext(); const o = c.createOscillator(); const g = c.createGain(); o.type = 'sine'; o.frequency.value = s.frequency; g.gain.value = s.volume; o.connect(g); g.connect(c.destination); o.start(s.delay); o.stop(s.delay + s.time); }
-function popup(t, s) { function r(e) { e.preventDefault(); e.stopImmediatePropagation(); if (e.which === 1 || e.which === 13 || e.which === 27 || e.which === 32) { w.remove(); document.removeEventListener('keydown', r); } } const w = $element('div', document.body, ['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;cursor:pointer;display:flex;justify-content:center;align-items:center;'], r); const d = $element('div', w, ['/' + t, '!min-width:400px;min-height:100px;max-width:100%;max-height:100%;padding:10px;background-color:#fff;border:1px solid;display:flex;flex-direction:column;justify-content:center;font-size:10pt;color:#333;' + (s || '')]); document.addEventListener('keydown', r); return d; }
-function popup_text(m, s, b = []) { let v; let l; if (typeof m === 'string') { v = m; l = m.split('\n').length; } else { v = m.join('\n'); l = m.length; } const w = $element('div', document.body, ['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']); const d = $element('div', w, ['!border:1px solid;padding:5px;background-color:#fff;']); const t = $element('textarea', d, { value: v, spellcheck: false, style: 'display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;height:' + (l * 1.5 + 1) + 'em;' + (s || '') }); b.forEach((o) => { $element('input', d, { type: 'button', value: o.value }, () => { o.click(w, t); }); }); $element('input', d, { type: 'button', value: '关闭' }, () => { w.remove(); }); return { w, t }; }
-function get_message(d, s) { if (typeof d === 'string') { if (/(<div id="messagebox_inner">.*?<\/div>)/.test(d)) { const t = document.createElement('template'); t.innerHTML = RegExp.$1; d = t.content; } else { return null; } } const m = $qsa('#messagebox_inner>p', d).map((p) => p.textContent); if (s) { return m; } else { return m.join('\n'); } }
-
-function getValue(k, d, p = _ns + '_') { const v = localStorage.getItem(p + k); return v === null ? d : JSON.parse(v); }
-function setValue(k, v, p = _ns + '_', r) { localStorage.setItem(p + k, JSON.stringify(v, r)); }
-function deleteValue(k, p = _ns + '_') { localStorage.removeItem(p + k); }
+function $id(id,d) {return (d||document).getElementById(id);}
+function $qs(q,d) {return (d||document).querySelector(q);}
+function $qsa(q,d) {return Array.from((d||document).querySelectorAll(q));}
+function $doc(h) {const d=document.implementation.createHTMLDocument('');d.documentElement.innerHTML=h;return d;}
+function $element(t,p,a,f) {let e;if(t){e=document.createElement(t);}else if(t===''){e=document.createTextNode(a);a=null;}else{return document.createDocumentFragment();}if(a!==null&&a!==undefined){function ao(e,a){Object.entries(a).forEach(([an,av])=>{if(typeof av==='object'){let a;if(an in e){a=e[an];}else{e[an]={};a=e[an];}Object.entries(av).forEach(([an,av])=>{a[an]=av;});}else{if(an==='style'){e.style.cssText=av;}else if(an in e){e[an]=av;}else{e.setAttribute(an,av);}}});}function as(e,a){const an={'#':'id','.':'className','!':'style','/':'innerHTML'}[a[0]];if(an){e[an]=a.slice(1);}else if(a!==''){e.textContent=a;}}if(typeof a==='string'||typeof a==='number'){e.textContent=a;}else if(Array.isArray(a)){a.forEach((a)=>{if(typeof a==='string'||typeof a==='number'){as(e,a);}else if(typeof a==='object'){ao(e,a);}});}else if(typeof a==='object'){ao(e,a);}}if(f){if(typeof f==='function'){e.addEventListener('click',f);}else if(typeof f==='object'){Object.entries(f).forEach(([ft,fl])=>{e.addEventListener(ft,fl);});}}if(p){if(p.nodeType===1||p.nodeType===11){p.appendChild(e);}else if(Array.isArray(p)){if(['beforebegin','afterbegin','beforeend','afterend'].includes(p[1])){p[0].insertAdjacentElement(p[1],e);}else if(!isNaN(p[1])){p[0].insertBefore(e,p[0].childNodes[p[1]]);}else{p[0].insertBefore(e,p[1]);}}}return e;}
+function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,n,s]=o;if(!a){a={};}if(t==='select'){const i=$element('select',p,a,f);if(v){v.forEach((v)=>{v=split2(v,':');if(!v[1]){v[1]=v[0];}$element('option',i,{value:v[0],text:v[1]});});}return i;}a.type=t;if(v===undefined||v===null){const i=$element('input',p,a,f);return i;}else if(t==='button'||t==='submit'){a.value=v;const i=$element('input',p,a,f);return i;}else{const l=$element('label',p);const i=$element('input',l,a,f);if(s&&(t==='checkbox'||t==='radio')){$element('span',l);l.classList.add('hvut-label');}if(v){if(n==='before'){l.prepend(v,' ');}else{l.append(' ',v);}}return i;}}
+function time_format(t,o) {t=Math.floor(t/1000);const h=Math.floor(t/3600).toString().padStart(2,'0');const m=Math.floor(t%3600/60).toString().padStart(2,'0');const s=(t%60).toString().padStart(2,'0');return !o?`${h}:${m}:${s}`:o===1?`${h}:${m}`:o===2?`${m}:${s}`:'';}
+function object_sort(o,x=[]) {const index={};const _x=x.length+1;x.forEach((e,i)=>{index[e]=i+1;});Object.keys(o).sort((a,b)=>{const _a=index[a]||_x;const _b=index[b]||_x;return _a-_b||(a<b?-1:1);}).forEach((e)=>{const v=o[e];delete o[e];o[e]=v;});}
+function split2(s,d,t=true) {let a;const p=s.indexOf(d);if(p===-1){a=[s];}else{const k=s.slice(0,p);const v=s.slice(p+1);a=[k,v];}if(t){a=a.map((e)=>e.trim());}return a;}
+function scrollIntoView(e,p=e.parentNode) {p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
+function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
+function toggle_button(e,s,h,t,c,d) {function f(){if(t.classList.contains(c)){t.classList.remove(c);e.value=h;}else{t.classList.add(c);e.value=s;}}e.value=h;e.addEventListener('click',f);if(d){f();}}
+function play_beep(volume=0.2,frequency=500,duration=0.5) {const delay=1;if(!volume){return;}const c=new window.AudioContext();const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=frequency;g.gain.value=volume;o.connect(g);g.connect(c.destination);o.start(delay);o.stop(delay+duration);}
+function popup(t) {function r(e){e.preventDefault();e.stopImmediatePropagation();if(e.button===0||e.key==='Enter'||e.key===' '||e.key==='Escape'){w.remove();document.removeEventListener('keydown',r);}}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;cursor:pointer;display:flex;justify-content:center;align-items:center;'],r);const d=$element('div',w,['/'+t,'!min-width:400px;min-height:100px;max-width:100%;max-height:100%;padding:10px;background-color:#fff;border:1px solid;display:flex;flex-direction:column;justify-content:center;font-size:10pt;color:#333;']);document.addEventListener('keydown',r);return d;}
+function popup_text(m,wd,ht,b=[]) {let v;if(typeof m==='string'){v=m;}else{v=m.join('\n');}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']);const d=$element('div',w,['!border:1px solid;padding:5px;background-color:#fff;']);const t=$element('textarea',d,{value:v,spellcheck:false,style:`display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;width:${wd}px;height:${ht}px;white-space:pre;`});function c(){w.remove();}b.forEach((o)=>{$element('input',d,{type:'button',value:o.text},()=>{if(o.click==='default'){t.value=o.value;}else if(o.click==='revert'){t.value=v;}else if(typeof o.click==='function'){o.click(p);}});});$element('input',d,{type:'button',value:'Close'},c);const p={wrapper:w,textarea:t,close:c};return p;}
+function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#messagebox_inner>p',d).map((p)=>p.textContent);if(s){return m;}else{return m.join('\n');}}
 /* eslint-enable */
 
-var _isInIframe = window.self !== window.top;
-var _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
-var _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
-var _ns = 'hvut';
-if (_isekai) {
-  _ns = 'hvuti';
-  _isekai = /(\d+ Season \d+)/.exec($id('world_text')?.textContent) ? RegExp.$1 : '1';
-  settings.training = false;
-  settings.trainingTimer = false;
-  settings.monsterLab = false;
-  settings.moogleMailCouponClipper = false;
-  settings.moogleMailDarkDescent = false;
-  settings.lottery = false;
-}
+const _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
+const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+
+// CONFIGURATION
+const $config = {
+
+  version: 1,
+  ls_savelist: ['ch_style'],
+  data: [
+    { tag: 'h1', text: 'Random Encounter' },
+    { key: 'reNotification', type: 'boolean', label: 'Use Random Encounter Notification.' },
+    { key: 'reGallery', type: 'boolean', label: 'Enable Random Encounter Notification while browsing the gallery.' },
+    { key: 'reGalleryAlt', type: 'boolean', label: 'When opening Random Encounter from the gallery, it goes to alt.hentaiverse.org.' },
+    { key: 'reBeep', type: 'array', input: 'text', value_type: 'number', value_sep: ',', text: 'Play a beep sound when Random Encounter is ready.\nThe order of values is [volume], [frequency], [duration].\nSet it to 0 to disable.', style: 'width: 150px;', oncreate: (o) => { $input(['button', 'BEEP TEST'], [o.node.input, 'afterend'], null, () => { const validation = $config.validate(o); if (!validation.error) { play_beep(...validation.value); } }); } },
+
+    { tag: 'h1', text: 'Top Navigation Bar' },
+    { key: 'topMenuIntegration', type: 'boolean', label: 'Integrate top menus into one button.' },
+    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: 'Set quick links in the top.\nIf [topMenuIntegration] above is disabled, set the number of items in the list to 8 or less.' },
+    { key: 'confirmStaminaRestorative', type: 'boolean', label: 'Confirm whether to use a stamina restorative item.', disabled: 'isekai' },
+    { key: 'disableStaminaRestorative', type: 'number', label: 'Disable the stamina restorative button when stamina is above the specified value.', disabled: 'isekai' },
+    { key: 'warnLowStamina', type: 'number', label: 'Warn when stamina is below the specified value.' },
+
+    { tag: 'h1', text: 'Bottom Bar' },
+    { key: 'showCredits', type: 'number', input: 'select', options: ['0:disable', '2:always'], label: 'Show credits balance.' },
+    { key: 'showEquipSlots', type: 'number', input: 'select', options: ['0:disable', '1:on battle pages only', '2:always'], label: 'Show free space in the Equipment Inventory.' },
+    { key: 'trainingNotification', type: 'boolean', label: 'Shows the training in progress and automatically start the next training up to the set level.' },
+    { key: 'lotteryNotification', type: 'boolean', label: 'Show the weapon and the armor which are currently in the lottery.' },
+    { key: 'lotteryFilters', type: 'array', input: 'textarea', text: 'Notify if the new equipment in the lottery qualifies.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'Equipment' },
+    { key: 'equipInventoryIntegration', type: 'boolean', label: 'Integrate all types of equipment into a list in the Equipment Inventory.' },
+    { key: 'equipSort', type: 'boolean', label: 'Sort and categorize the equipment list.' },
+    { key: 'equipColor', type: 'boolean', label: 'Set the color of equipment by quality.' },
+    { key: 'equipHoverFunctions', type: 'boolean', label: 'Support keyboard and mouse actions when the mouse cursor is over the equipment.' },
+    { key: 'equipTouchFunctions', type: 'boolean', label: 'Support touch actions on mobile' },
+    { key: 'equipCode', type: 'string', input: 'textarea', text: 'Set the format of the code for the forum.', style: 'height: 80px; white-space: normal;' },
+    { key: 'equipNameCode', type: 'array', input: 'textarea', text: 'Set the rules for codes that decorate the names of equipment.' },
+
+    { tag: 'h1', text: 'Equipment Shop' },
+    { key: 'equipmentShopIntegration', type: 'boolean', label: 'Integrate all types of equipment on the default shop page.' },
+    { key: 'equipmentShopShowLevel', type: 'boolean', label: 'Show equipment\'s level.' },
+    { key: 'equipmentShopShowPAB', type: 'boolean', label: 'Show equipment\'s pab.' },
+    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:disable', '1:confirm less-profitable actions', '2:always'], label: 'Confirm when selling or salvaging equipment.' },
+    { key: 'equipmentShopProtectFilters', type: 'array', input: 'textarea', text: 'Show valuable equipment together at the top of the list, and prevent them from being selected by the "Select All" button.', desc: 'equipFilters', validator: 'equipFilters' },
+    { key: 'equipmentShopAutoLock', type: 'boolean', label: 'Automatically lock protected equipment.' },
+    { key: 'equipmentShopBazaarFilters', type: 'array', input: 'textarea', text: 'Keep valuable equipment in BAZAAR, then hide all other trash.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'Monster Lab' },
+    { key: 'monsterLab', type: 'boolean', label: 'Advanced MonsterLab features', disabled: 'isekai' },
+    { key: 'monsterLabDefaultSort', type: 'string', input: 'select', options: ['index', 'name', 'class', 'pl:power level', 'wins', 'kills', 'gains:new gifts', 'gifts:total gifts', 'morale', 'hunger'], label: 'Set the default value for sorting the list.', disabled: 'isekai' },
+
+    { tag: 'h1', text: 'The Shrine' },
+    { key: 'shrineHideItems', type: 'array', input: 'textarea', text: 'Hide items to prevent them from being accidentally offered to the Shrine.' },
+    { key: 'shrineFilters', type: 'array', input: 'textarea', text: 'Show the names of rewarded equipment of higher quality only.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'MoogleMail' },
+    { key: 'moogleMail', type: 'boolean', label: 'Advanced MoogleMail features' },
+    { key: 'moogleMailCouponClipper', type: 'boolean', label: 'For players who have "Coupon Clipper" hath perk.\nIf the subject of MoogleMail contains "Coupon Clipper" or "Item Shop", take credits, buy requested items, then send them back.', disabled: 'isekai' },
+    { key: 'moogleMailDarkDescent', type: 'boolean', label: 'For players who have "Dark Descent" hath perk.\nIf the subject of MoogleMail contains "Dark Descent" or "reforge", take equipment, reforge, then send it back.', disabled: 'isekai' },
+
+    { tag: 'h1', text: 'Battle' },
+    { key: 'equipEnchantPosition', type: 'string', input: 'select', options: ['left', 'right'], label: 'Set the position of the pane.' },
+    { key: 'equipEnchantWeapon', type: 'number', label: 'Set the number of enchantments for weapon: 15 minutes per item' },
+    { key: 'equipEnchantArmor', type: 'number', label: 'Set the number of enchantments for armors: 1 hour per item' },
+    { key: 'equipEnchantRepairThreshold', type: 'number', label: 'Warn if the durability of each equipment is low.' },
+    { key: 'equipEnchantItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: 'Show the amount of items in the inventory, and warn if each number is less than the specified value.\nYou can purchase that quantity from the Item Shop by clicking on the item name in the list.' },
+    { key: 'equipEnchantCheckArmors', type: 'boolean', label: 'Show the enchantment of armors. It takes a little more time for armors to load their status.' },
+  ],
+  text: {
+    equipHoverFunctions: `
+      [C] Open equipment link in a pop-up
+      [V] Open equipment link in a new tab
+      [L] Show link code
+      [K] Show link code in bbcode format
+      [DOUBLE CLICK] Open equipment link
+    `,
+    equipTouchFunctions: `
+      [DOUBLE TAP] Open equipment link
+      [LONG PRESS] Open equipment link
+    `,
+    equipEnchantRepairThreshold: `
+      If the value is between 0 and 1, it means the condition % of the equipment (e.g., 0.6 => 60%).
+      If the value is larger than 1, it means a margin to 50% condition (e.g., 55 => 205 / 300).
+      The recommended value for GrindFest is 55.
+    `,
+  },
+  desc: {
+    topMenuLinks: `List
+      Character
+      Equipment
+      Abilities
+      Training
+      Item Inventory
+      Equip Inventory
+      Settings
+
+      Equipment Shop
+      Item Shop
+      The Shrine
+      The Market
+      Monster Lab
+      MoogleMail
+      Weapon Lottery
+      Armor Lottery
+
+      The Arena
+      The Tower
+      Ring of Blood
+      GrindFest
+      Item World
+
+      Repair
+      Upgrade
+      Enchant
+      Salvage
+      Reforge
+      Soulfuse
+    `,
+    equipCode: `Syntax
+      {$name}       equipment name
+      {$namecode}   equipment name in colors/bold
+      {$url}        equipment url
+      {$eid}        equipment id
+      {$_eid}       $eid with a transparent underline for layout
+      {$level}      equipment level
+      {$pab}        equipment pab
+      {$tier}       potency tier (IW level)
+      {$price}      the value of the 'price' input field
+      {$note}       the value of the 'note' input field
+                  - if it contains '$featured;', the equip code will be added to 'Featured' section
+                  - if it contains '$new;', the equip code will be added to 'Newly Added' section
+      {$condition ? text_if_true}
+                  - if $condition is a valid value, it prints 'text_if_true', otherwise nothing
+                  e.g., {$price? @ $price}
+                  - if the equipment has a 'price' value in the Equipment Inventory, it prints like ' @ 10m'.
+      {$condition ? text_if_true : text_if_false}
+                  - if $condition is a valid value, it prints 'text_if_true', otherwise 'text_if_false'.
+                  e.g., {$level ? Lv.$level : Souldbound}
+                  - if the equipment has a level, it prints like 'Lv.500', otherwise 'Soulbound'.
+    `,
+    equipNameCode: `Syntax
+      BASE MATCH : option=value, option=value, ...
+      BASE MATCH : option=value, option=value, ... ; SUB MATCH : option=value, option=value, ... ; SUB MATCH : option=value, option=value, ...
+      - BASE MATCH uses EQUIP FILTER rule.
+      - each SUB MATCH is separate.
+      - e.g., Willow Staff of Destruction : name=bold ; Demonic : prefix=red ; Tempestuous || Shocking : prefix=orange
+      [Option Keywords]
+      options : name (full name), quality, prefix, type, slot, suffix
+      values : bold, rainbow, or any color such as 'red', '#f00'
+      - e.g., Peerless : quality=rainbow, name=bold
+    `,
+    equipFilters: `Syntax
+      ()   : GROUPING
+      &&   : AND
+      ||   : OR
+      !    : NOT
+      $QUALITY+   : Whether the quality of the equipment is equal to or higher than the given QUALITY
+      $pab=xyz    : Whether the equipment has pab x, y and z
+      $prefix     : Whether the equipment has a prefix
+      $iw         : Whether the equipment has any potency levels
+      $level      : Number, the level of the equipment
+      e.g., Magnificent && Power && !Warding
+      e.g., $Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250
+    `,
+  },
+  validator: {
+    topMenuLinks: function (value) {
+      const errors = value.filter((v) => !_top.menu.hasOwnProperty(v));
+      const error = errors.join('\n');
+      const result = { value, error };
+      return result;
+    },
+    equipNameCode: function (value) {
+      const result = $equip.namecode_parse(value);
+      return result;
+    },
+    equipFilters: function (value) {
+      const result = $equip.filter_validate(value);
+      return result;
+    },
+  },
+  init: function () {
+    $config.isekai = location.pathname.includes('/isekai/') && ($id('world_text')?.textContent.match(/(\d+ Season \d+)/)[1] || '1');
+    $config.ns = $config.isekai ? 'hvuti' : 'hvut';
+    $config.prefix = $config.ns + '_';
+    $config.default = settings;
+    $config.settings = $config.get('settings', {});
+    if ($config.settings.version !== $config.version) {
+      $config.migration();
+    }
+  },
+  migration: function () {
+    if (!$config.settings.version) {
+      $config.reset();
+      const in_equipdata = $config.ls_get('in_equipdata');
+      const in_json = $config.ls_get('in_json');
+      if (in_equipdata || in_json) {
+        const equipdata = { version: 1 };
+        Object.assign(equipdata, in_equipdata, in_json);
+        $config.set('equipdata', equipdata);
+      }
+      const in_equipcode = $config.ls_get('in_equipcode');
+      if (in_equipcode) {
+        $config.settings.equipCode = in_equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
+      }
+      const in_namecode = $config.ls_get('in_namecode');
+      if (in_namecode) {
+        $config.settings.equipNameCode = in_namecode;
+      }
+
+      const prices = $config.ls_get('prices');
+      if (prices) {
+        Object.entries(prices).forEach(([key, value]) => {
+          if (typeof value === 'object') {
+            Object.assign(prices, value);
+            delete prices[key];
+          }
+        });
+        setTimeout(() => { // $price is not defined yet
+          $price.json = null;
+          $price.init();
+          $price.reset();
+          $price.set(prices);
+        }, 1000);
+      }
+
+      const es_protect = $config.ls_get('es_protect');
+      if (es_protect) {
+        $config.settings.equipmentShopProtectFilters = es_protect;
+      }
+      const es_bazaar = $config.ls_get('es_bazaar');
+      if (es_bazaar) {
+        $config.settings.equipmentShopBazaarFilters = es_bazaar;
+      }
+
+      const ml_log = $config.ls_get('ml_log');
+      if (ml_log && !ml_log[0]) {
+        ml_log[0] = { version: 1 };
+        ml_log.forEach((log, i) => {
+          if (!log || i === 0) {
+            return;
+          }
+          log.pa = log.pa.map((e) => [e.value, e.to]);
+          log.er = log.er.map((e) => [e.value, e.to]);
+          log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
+          log.gifts = log.gift;
+          log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
+          delete log.gift;
+          delete log.selected;
+        });
+        $config.set('ml_log', ml_log);
+        $config.ls_del('ml_log');
+      }
+
+      const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
+      ls_list.forEach((key) => {
+        const value = $config.ls_get(key);
+        if (value) {
+          $config.set(key, value);
+        }
+      });
+
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key.startsWith($config.prefix)) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+
+    $config.save();
+  },
+  reset: function () {
+    $config.settings = JSON.parse(JSON.stringify($config.default));
+  },
+  get: function (key, dvalue, prefix = $config.prefix) {
+    const value = GM_getValue(prefix + key, dvalue);
+    return value;
+  },
+  set: function (key, value, prefix = $config.prefix) {
+    GM_setValue(prefix + key, value);
+    if ($config.ls_savelist.includes(key)) {
+      $config.ls_set(key, value, prefix);
+    }
+  },
+  del: function (key, prefix = $config.prefix) {
+    GM_deleteValue(prefix + key);
+  },
+  ls_get: function (key, dvalue, prefix = $config.prefix) {
+    const value = localStorage.getItem(prefix + key);
+    return value === null ? dvalue : JSON.parse(value);
+  },
+  ls_set: function (key, value, prefix = $config.prefix) {
+    localStorage.setItem(prefix + key, JSON.stringify(value));
+  },
+  ls_del: function (key, prefix = $config.prefix) {
+    localStorage.removeItem(prefix + key);
+  },
+  create: function () {
+    GM_addStyle(/*css*/`
+      .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color:#EDEBDF; z-index: 9; }
+      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid; }
+      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 12pt; font-weight: bold; background-color: #fff9; }
+      .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
+      .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
+      .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
+      .hvut-cfg-div div:hover { background-color: #fff9; }
+      .hvut-cfg-div p { margin: 0; }
+      .hvut-cfg-disabled { color: #999; }
+      .hvut-cfg-error { box-shadow: 0 0 0 2px #c00 inset; }
+      .hvut-cfg-error p:last-child { padding: 10px; background-color: #fff9; color: #c00; }
+      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid; text-align: center; background-color: inherit; }
+      .hvut-cfg-div input { vertical-align: middle; }
+      .hvut-cfg-div input[type='text'] { width: 95%; }
+      .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
+      .hvut-cfg-div textarea { width: 95%; height: 200px; white-space: nowrap; }
+    `);
+
+    $config.node = {};
+    $config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });
+    //$config.node.ul = $element('ul', $config.node.div);
+    $element('header', $config.node.div, 'HV Utils Settings');
+
+    $config.data.forEach((o) => {
+      if (o.tag) {
+        $element(o.tag, $config.node.div, o.text);
+        //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
+        return;
+      }
+      o.node = {};
+      o.node.div = $element('div', $config.node.div);
+      $element('h2', o.node.div, o.key);
+
+      if (o.input === 'textarea') {
+        //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
+      } else if (o.input === 'select') {
+        o.node.input = $input(['select', o.options], o.node.div);
+        if (o.label) {
+          $element('span', o.node.div, o.label);
+        }
+      } else if (o.type === 'boolean') {
+        o.node.input = $input(['checkbox', o.label], o.node.div);
+      } else if (o.type === 'number') {
+        o.node.input = $input(['number'], o.node.div);
+        if (o.label) {
+          $element('span', o.node.div, o.label);
+        }
+      } else {
+        o.node.input = $input(['text'], o.node.div);
+      }
+
+      let text = $config.text[o.text || o.key] || o.text;
+      if (text) {
+        text = text.trim().replace(/^ +/gm, '').replace(/\n/g, '<br>');
+        o.node.text = $element('p', o.node.div, ['/' + text]);
+      }
+      let desc = $config.desc[o.desc || o.key];
+      if (desc) {
+        desc = desc.trim().replace(/^ +/gm, '').split('\n');
+        const button = desc[0];
+        desc = desc.slice(1).join('<br>');
+        $input(['button', button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
+        //$element('br', o.node.div);
+        o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
+      }
+
+      if (o.input === 'textarea') { // append here
+        o.node.input = $element('textarea', o.node.div, { spellcheck: false });
+      }
+      o.node.input.dataset.key = o.key;
+      if (o.style) {
+        o.node.input.style.cssText = o.style;
+      }
+      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+        o.node.div.classList.add('hvut-cfg-disabled');
+        o.node.input.disabled = true;
+      }
+      if (o.oncreate) {
+        o.oncreate(o);
+      }
+    });
+
+    const bottom = $element('footer', $config.node.div);
+    $input(['button', 'Save'], bottom, null, () => { $config.save(true); });
+    $input(['button', 'Close'], bottom, null, () => { $config.close(); });
+    $input(['button', 'Revert'], bottom, null, () => { $config.load($config.settings); });
+    $input(['button', 'Default'], bottom, null, () => { $config.load($config.default); });
+  },
+  open: function (key) {
+    if (!$config.node) {
+      $config.create();
+    }
+    $id('csp').appendChild($config.node.div);
+    $config.load();
+    if (key) {
+      const o = $config.data.find((o) => o.key === key);
+      scrollIntoView(o.node.div);
+    }
+  },
+  close: function () {
+    $config.node.div.remove();
+  },
+  set_panel: function (obj = $config.settings) {
+    $config.data.forEach((o) => {
+      if (!o.key) {
+        return;
+      }
+      const input = o.node.input;
+      if (input.disabled) {
+        return;
+      }
+      const value = obj[o.key];
+      if (value === undefined) {
+        return;
+      }
+      if (o.type === 'boolean') {
+        input.checked = value;
+      } else if (o.type === 'number') {
+        input.value = value;
+      } else if (o.type === 'string') {
+        input.value = value;
+      } else if (o.type === 'array') {
+        input.value = $config.array2text(value, o.value_sep);
+      } else if (o.type === 'object') {
+        input.value = $config.obj2text(value, o.value_sep);
+      }
+    });
+  },
+  get_panel: function () {
+    const obj = {};
+    const errors = [];
+    $config.data.forEach((o) => {
+      if (!o.key) {
+        return;
+      }
+      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+        return;
+      }
+      const validation = $config.validate(o);
+      if (validation.error) {
+        errors.push(o);
+        return;
+      }
+      obj[o.key] = validation.value;
+    });
+    if (errors.length) {
+      scrollIntoView(errors[0].node.div);
+      return false;
+    }
+    return obj;
+  },
+  validate_panel: function (e) {
+    const key = e.target.dataset.key;
+    const o = $config.data.find((o) => o.key === key);
+    const validation = $config.validate(o);
+    return validation;
+  },
+  validate: function (o) {
+    let value;
+    let error;
+    if (o.type === 'boolean') {
+      value = o.node.input.checked;
+    } else if (o.type === 'number') {
+      value = Number(o.node.input.value);
+    } else if (o.type === 'string') {
+      value = o.node.input.value;
+    } else if (o.type === 'array') {
+      ({ value, error } = $config.text2array(o.node.input.value, o.value_sep, o.value_type));
+    } else if (o.type === 'object') {
+      ({ value, error } = $config.text2obj(o.node.input.value, o.value_sep, o.value_type));
+    }
+    const validator = $config.validator[o.validator || o.key];
+    if (validator) {
+      const _error = error;
+      ({ value, error } = validator(value));
+      if (!error) {
+        error = _error;
+      }
+    }
+    if (error) {
+      if (!o.node.error) {
+        o.node.error = $element('p', o.node.div);
+      }
+      const html = error.replace(/\n/g, '<br>');
+      o.node.error.innerHTML = '<h3>Validation Error</h3>' + html;
+      o.node.div.appendChild(o.node.error);
+      o.node.div.classList.add('hvut-cfg-error');
+    } else {
+      o.node.error?.remove();
+      o.node.div.classList.remove('hvut-cfg-error');
+    }
+    const result = { value, error };
+    return result;
+  },
+  load: function (obj = $config.settings) {
+    $config.set_panel(obj);
+    $config.get_panel();
+  },
+  save: function (panel) {
+    if (panel) {
+      const obj = $config.get_panel();
+      if (!obj) { // error
+        return;
+      }
+      $config.settings = obj;
+    }
+    $config.settings.version = $config.version;
+    $config.set('settings', $config.settings);
+    if (panel) {
+      location.href = location.href;
+    }
+  },
+  text2obj: function (text, sep = ['\n', ':'], type) {
+    const obj = {};
+    const errors = [];
+    text.split(sep[0]).filter((t) => t.trim()).forEach((t) => {
+      const split = split2(t, sep[1]);
+      const key = split[0];
+      let value = split[1];
+      if (!key || !value) {
+        errors.push(t);
+        return true;
+      }
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      obj[key] = value;
+    });
+    const error = errors.join('\n');
+    const result = { value: obj, error };
+    return result;
+  },
+  obj2text: function (obj, sep = ['\n', ':']) {
+    const text = Object.entries(obj).map(([key, value]) => `${key} ${sep[1]} ${value}`).join(sep[0]);
+    return text;
+  },
+  text2array: function (text, sep = '\n', type) {
+    const errors = [];
+    const array = text.split(sep).filter((t) => t.trim()).map((t) => {
+      let value = t.trim();
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      return value;
+    });
+    const error = errors.join('\n');
+    const result = { value: array, error };
+    return result;
+  },
+  array2text: function (array, sep = '\n') {
+    if (!sep.includes('\n')) {
+      sep += ' ';
+    }
+    const text = array.join(sep);
+    return text;
+  },
+
+};
+
+$config.init();
+//$config.settings = settings;
 
 // AJAX
-var $ajax = {
+const $ajax = {
 
   interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
   max: 4,
@@ -672,7 +775,7 @@ var $ajax = {
 
   fetch: function (url, data, method, context = {}, headers = {}) {
     return new Promise((resolve, reject) => {
-      $ajax.add(url, data, method, resolve, reject, context, headers);
+      $ajax.add(method, url, data, resolve, reject, context, headers);
     });
   },
   repeat: function (count, func, ...args) {
@@ -682,16 +785,25 @@ var $ajax = {
     }
     return list;
   },
-  add: function (url, data, method, onload, onerror, context = {}, headers = {}) {
-    method = !data ? 'GET' : method ?? 'POST';
+  add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
+    console.log('ajax call', url);
+    if (!data) {
+      method = 'GET';
+    } else if (!method) {
+      method = 'POST';
+    }
     if (method === 'POST') {
-      headers['Content-Type'] ??= 'application/x-www-form-urlencoded';
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      }
       if (data && typeof data === 'object') {
-        data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+        data = Object.entries(data).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
       }
     } else if (method === 'JSON') {
       method = 'POST';
-      headers['Content-Type'] ??= 'application/json';
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
       if (data && typeof data === 'object') {
         data = JSON.stringify(data);
       }
@@ -719,21 +831,10 @@ var $ajax = {
     }
   },
   timer: function () {
-    var _ns = _isekai ? 'hvuti' : 'hvut';
-    function getValue(k, d, p = _ns + '_') { const v = localStorage.getItem(p + k); return v === null ? d : JSON.parse(v); }
-    function setValue(k, v, p = _ns + '_', r) { localStorage.setItem(p + k, JSON.stringify(v, r)); }
-    function ontimer() {
-      const now = new Date().getTime();
-      const last = getValue('last_post');
-      if (last && last - now < $ajax.interval) {
-        $ajax.next();
-        return;
-      }
-      setValue('last_post', now);
+    $ajax.tid = setTimeout(() => {
       $ajax.tid = null;
       $ajax.next();
-    };
-    $ajax.tid = setTimeout(ontimer, $ajax.interval);
+    }, $ajax.interval);
   },
   send: function () {
     GM_xmlhttpRequest($ajax.queue[$ajax.index]);
@@ -748,8 +849,7 @@ var $ajax = {
       r.context.onerror?.();
     } else if (text === 'state lock limiter in effect') {
       if ($ajax.error !== text) {
-        // popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
-        console.error(`${text}\nYour connection speed is so fast that you have reached the maximum connection limit. Try again later.`)
+        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>`);
       }
       $ajax.error = text;
       r.context.onerror?.();
@@ -764,73 +864,21 @@ var $ajax = {
     r.context.onerror?.();
     $ajax.next();
   },
+
 };
 
-window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error, e); });
+window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
 // RANDOM ENCOUNTER
-var $re = {
+const $re = {
 
   init: function () {
     if ($re.inited) {
       return;
     }
     $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || _isekai) ? 0 : $id('navbar') ? 1 : $id('battle_top') ? 2 : false;
+    $re.type = (!location.hostname.includes('hentaiverse.org') || $config.isekai) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
     $re.get();
-  },
-  get: function () {
-    $re.json = getValue('re', { date: 0, count: 0 }, 'hvut_');
-    const gm_json = JSON.parse(GM_getValue('re', null)) || { date: -1 };
-    if ($re.json.date === gm_json.date) {
-      if ($re.json[$re.json.key] !== gm_json[$re.json.key]) {
-        $re.json[$re.json.key] = true;
-        $re.set();
-      }
-    } else {
-      if ($re.json.date < gm_json.date) {
-        $re.json = gm_json;
-      }
-      $re.set();
-    }
-  },
-  set: function () {
-    setValue('re', $re.json, 'hvut_');
-    GM_setValue('re', JSON.stringify($re.json));
-  },
-  reset: function () {
-    $re.json = {
-      data: Date.now(),
-      count: 0,
-    };
-    $re.set();
-    $re.start();
-  },
-  check: function () {
-    $re.init();
-    if (/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)(?:&date=(\d+))?/.test(location.search)) {
-      const key = RegExp.$1;
-      const date = parseInt(RegExp.$2);
-      const now = Date.now();
-      if ($re.json.key === key) {
-        if (!$re.json[$re.json.key]) {
-          $re.json[$re.json.key] = true;
-          $re.set();
-        }
-      } else if (date) {
-        if ($re.json.date < date) {
-          $re.json.date = date;
-          $re.json.key = key;
-          $re.json[$re.json.key] = true;
-          $re.set();
-        }
-      } else if ($re.json.date + 1800000 < now) {
-        $re.json.date = now;
-        $re.json.key = key;
-        $re.json[$re.json.key] = true;
-        $re.set();
-      }
-    }
   },
   clock: function (button) {
     $re.init();
@@ -842,8 +890,87 @@ var $re = {
       $re.reset();
       $re.load();
     }
-    $re.check();
     $re.start();
+  },
+  hv: function () {
+    $re.init();
+    $re.check();
+    const button = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
+    $re.clock(button);
+  },
+  ba: function () {
+    $re.init();
+    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
+      $re.check();
+    }
+    const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
+    $re.clock(button);
+
+    // support monsterbation that clears all timer id when a round starts
+    const target = document.body;
+    const options = { childList: true };
+    const callback = function () {
+      if (!button.parentNode.parentNode && $id('csp')) {
+        $id('csp').appendChild(button);
+      }
+      $re.start();
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(target, options);
+  },
+  eh: function () {
+    $re.init();
+    const link = $qs('#eventpane a');
+    const onclick = link?.getAttribute('onclick');
+    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      $re.set(key);
+      if ($config.settings.reGalleryAlt) {
+        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
+      }
+    }
+    if ($config.settings.reGallery && $id('nb')) {
+      $id('nb').style.maxWidth = '1080px';
+      const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
+      $re.clock(button);
+    }
+  },
+  get: function () {
+    $re.json = $config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
+  },
+  set: function (key) {
+    if (key) {
+      $re.json.key = key;
+      $re.json.date = Date.now();
+      $re.json.count++;
+      $re.json.clear = false;
+    }
+    $config.set('re', $re.json, 'hvut_');
+  },
+  reset: function () {
+    $re.json.date = Date.now();
+    $re.json.count = 0;
+    $re.json.clear = true;
+    $re.set();
+    $re.start();
+  },
+  check: function () {
+    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
+    if (key) {
+      const now = Date.now();
+      if ($re.json.key === key) {
+        if (!$re.json.clear) {
+          $re.json.clear = true;
+          $re.set();
+        }
+      } else if ($re.json.date + 1800000 < now) {
+        $re.json.date = now;
+        $re.json.key = key;
+        $re.json.count++;
+        $re.json.clear = true;
+        $re.set();
+      }
+    }
   },
   refresh: function () {
     const remain = $re.json.date + 1800000 - Date.now();
@@ -851,29 +978,29 @@ var $re = {
       $re.button.textContent = time_format(remain, 2) + ` [${$re.json.count}]`;
       $re.beep = true;
     } else {
-      $re.button.textContent = (!$re.json[$re.json.key] ? '已错失' : '遭遇战') + `[${$re.json.count}]`;
+      $re.button.textContent = (!$re.json.clear ? 'Expired' : 'Ready') + ` [${$re.json.count}]`;
       if ($re.beep) {
         $re.beep = false;
-        play_beep(settings.reBeep);
+        play_beep(...$config.settings.reBeep);
       }
       $re.stop();
     }
   },
   run: async function (engage) {
-    if ($re.type === 2) {
+    if ($re.type === 'ba') {
       $re.load();
-    } else if ($re.type === 1) {
-      if (!$re.json[$re.json.key] || engage) {
+    } else if ($re.type === 'hv') {
+      if (!$re.json.clear || engage) {
         $re.engage();
       } else {
         $re.load(true);
       }
-    } else if ($re.type === 0) {
+    } else if ($re.type === 'eh') {
       $re.stop();
-      $re.button.textContent = '检查中...';
+      $re.button.textContent = 'Checking...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
-        if (!$re.json[$re.json.key] || engage) {
+        if (!$re.json.clear || engage) {
           $re.engage();
         } else {
           $re.load(true);
@@ -886,23 +1013,22 @@ var $re = {
   load: async function (engage) {
     $re.stop();
     $re.get();
-    $re.button.textContent = '加载中...';
+    $re.button.textContent = 'Loading...';
     const html = await $ajax.fetch('https://e-hentai.org/news.php');
     const doc = $doc(html);
-    const eventpane = $id('eventpane', doc);
-    if (eventpane && /\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/.test(eventpane.innerHTML)) {
-      $re.json.date = Date.now();
-      $re.json.key = RegExp.$1;
-      $re.json[$re.json.key] = false;
+    const eventpane = $id('eventpane', doc)?.innerHTML;
+    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      $re.set(key);
       if (engage) {
         $re.engage();
         return;
       }
-    } else if (eventpane && /It is the dawn of a new day/.test(eventpane.innerHTML)) {
-      popup(eventpane.innerHTML);
+    } else if (eventpane?.includes('It is the dawn of a new day')) {
+      popup(eventpane);
       $re.reset();
     } else {
-      popup('尚未发现随机遭遇战');
+      popup('Failed to generate a new Random Encounter key');
     }
     $re.start();
   },
@@ -910,24 +1036,20 @@ var $re = {
     if (!$re.json.key) {
       return;
     }
-    if ($re.type === 2) { // in battle
+    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}`;
+    if ($re.type === 'ba') {
       return;
-    }
-    // ?s=Battle&ss=ba&encounter=MzYzOTYyMC0xNzI5NjcwNjMxLTQ2NDI3OWM3NjhkNjI3NzkxN2EzOWNiNGJlMWU4M2NhNjJhYTM4ODQ&date=${$re.json.date}
-    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}&date=${$re.json.date}`;
-    if ($re.type === 1) { // in Persistent & not in battle
+    } else if ($re.type === 'hv') {
       location.href = href;
-    } else if ($re.type === 0) { // not in Persistent
-      window.open((settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
-      $re.json[$re.json.key] = true;
+    } else if ($re.type === 'eh') {
+      window.open(($config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
+      $re.json.clear = true;
       $re.start();
     }
-    $re.json.count++;
-    $re.set();
   },
   start: function () {
     $re.stop();
-    if (!$re.json[$re.json.key]) {
+    if (!$re.json.clear) {
       $re.button.style.color = '#e00';
     } else {
       $re.button.style.color = '';
@@ -941,66 +1063,59 @@ var $re = {
       $re.tid = 0;
     }
   },
+
 };
 
 /* NO-NAVBAR */
 if (!$id('navbar')) {
   // BATTLE
   if ($id('battle_top')) {
-    if (settings.randomEncounter) {
-      if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-        $re.check();
-      }
-      const button = $element('div', $id('csp'), ['RE', '!' + (settings.reBattleCSS || 'position: absolute; top: 0px; left: 0px; cursor: pointer;')]);
-      $re.clock(button);
-      if (settings.ajaxRound) {
-        (new MutationObserver(() => { if (!button.parentNode.parentNode && $id('csp')) { $id('csp').appendChild(button); } $re.start(); })).observe(document.body, { childList: true });
-      }
+    if ($config.settings.reNotification) {
+      $re.ba();
     }
 
-    setValue('url', location.href);
-    if (settings.reloadBattleURL === 1) {
-      window.history.pushState(null, null, '?s=Battle');
-    } else if (settings.reloadBattleURL === 2) {
-      location.href = '?s=Battle';
-    }
-
-    // RIDDLE MASTER
+  // RIDDLE MASTER
   } else if ($id('riddleform')) {
-    setValue('url', location.href);
-    if (settings.reloadBattleURL === 1) {
-      window.history.pushState(null, null, '?s=Battle');
-    } else if (settings.reloadBattleURL === 2) {
-      location.href = '?s=Battle';
-    }
 
-    // GALLERY
+  // GALLERY
   } else if (location.hostname === 'e-hentai.org') {
-    if (settings.randomEncounter) {
-      $re.init();
-      const link = $qs('#eventpane a');
-      let onclick = link?.getAttribute('onclick');
-      if (onclick && /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.test(onclick)) {
-        $re.json.date = Date.now();
-        $re.json.key = RegExp.$1;
-        $re.json[$re.json.key] = false;
-        $re.set();
-        if (settings.reGalleryAlt) {
-          onclick = onclick.replace('https://hentaiverse.org', 'http://alt.hentaiverse.org');
-        }
-        onclick = onclick.replace("','_hentaiverse'", `&date=${$re.json.date}','_hentaiverse'`);
-        link.setAttribute('onclick', onclick);
-      }
-      if (settings.reGallery && $id('nb')) {
-        $id('nb').style.maxWidth = '1080px';
-        const a = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
-        $re.clock(a);
-      }
+    if ($config.settings.reNotification) {
+      $re.eh();
     }
   }
 
   return;
 }
+
+// CHECK FONT SETTINGS
+const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
+if (!level_exec) {
+  if (_query.ss === 'se') {
+    alert('To use HVUT, You have to set a [Custom Font] first.');
+    scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
+    const form = $qs('#settings_outer form');
+    form.fontlocal.checked = true;
+    form.fontlocal.required = true;
+    form.fontface.required = true;
+    form.fontsize.required = true;
+    form.fontface.placeholder = 'Tahoma, Arial';
+    form.fontsize.placeholder = '10';
+    form.fontoff.placeholder = '0';
+  } else {
+    location.href = '?s=Character&ss=se';
+  }
+  return;
+}
+
+// PLAYER DATA
+const _player = {
+  difficulty: level_exec[1],
+  level: parseInt(level_exec[2]),
+  stamina: parseInt(/Stamina: (\d+)/.exec($id('stamina_readout').textContent)[1]),
+  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
+  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
+  warn: [],
+};
 
 /* START */
 
@@ -1009,7 +1124,7 @@ var _ch = {},
     _eq = {},
     _ab = {},
     _tr = {},
-    _it = {},
+    //_it = {},
     _in = {},
     _se = {},
 
@@ -1035,23 +1150,18 @@ var _ch = {},
     //_fu = {},
 
     _top = {},
-    _bottom = {},
-
-    _hath = {},
-    _subpage = {},
-    _href = {};
-
+    _bottom = {};
 /* eslint-enable */
 
 // EQUIP PARSER
-var $equip = {
+const $equip = {
 
   names: (() => {
-    let equipnames = getValue('equipnames', {});
-    if (_isekai && (!equipnames.isekai || equipnames.isekai !== _isekai)) {
-      equipnames = { isekai: _isekai };
-      setValue('equipnames', equipnames);
-      //deleteValue('in_equipdata');
+    let equipnames = $config.get('equipnames', {});
+    if ($config.isekai && ($config.isekai !== equipnames.isekai)) {
+      equipnames = { isekai: $config.isekai };
+      $config.set('equipnames', equipnames);
+      $config.del('equipdata');
     }
     return equipnames;
   })(),
@@ -1059,17 +1169,6 @@ var $equip = {
   dynjs_eqstore: _window.dynjs_eqstore || {},
   dynjs_loaded: {},
   eqvalue: _window.eqvalue || {},
-  enchant_data: {
-    'Voidseeker Shard': { effect: "虚空探索者的祝福", weapon: 'vseek' },
-    'Aether Shard': { effect: '弥漫的以太', weapon: 'ether' },
-    'Featherweight Shard': { effect: '轻如鸿毛', weapon: 'feath', armor: 'feath' },
-    'Infusion of Flames': { effect: '火焰附魔', weapon: 'sfire', armor: 'pfire', day: 2 },
-    'Infusion of Frost': { effect: '冰霜附魔', weapon: 'scold', armor: 'pcold', day: 3 },
-    'Infusion of Lightning': { effect: '雷电附魔', weapon: 'selec', armor: 'pelec', day: 6 },
-    'Infusion of Storms': { effect: '风暴附魔', weapon: 'swind', armor: 'pwind', day: 4 },
-    'Infusion of Divinity': { effect: '神圣附魔', weapon: 'sholy', armor: 'pholy', day: 0 },
-    'Infusion of Darkness': { effect: '黑暗附魔', weapon: 'sdark', armor: 'pdark', day: 1 },
-  },
 
   alias: {
     '1handed': 'One-handed Weapon', '2handed': 'Two-handed Weapon', 'staff': 'Staff', 'shield': 'Shield', 'acloth': 'Cloth Armor', 'alight': 'Light Armor', 'aheavy': 'Heavy Armor',
@@ -1288,6 +1387,9 @@ var $equip = {
     'Arcanist': 421, 'Shade': 394, 'Leather': 393,
     'Power': 382, ' Plate': 377,
   },
+  quality: {
+    'flimsy': 1, 'crude': 2, 'fair': 3, 'average': 4, 'fine': 5, 'superior': 6, 'exquisite': 7, 'magnificent': 8, 'legendary': 9, 'peerless': 10,
+  },
 
   parse: {
 
@@ -1312,7 +1414,7 @@ var $equip = {
       return eq;
     },
     div: function (div) {
-      const eid = /equips\.set\((\d+),/.test(div.getAttribute('onmouseover')) && RegExp.$1;
+      const eid = /equips\.set\((\d+),/.exec(div.getAttribute('onmouseover'))?.[1];
       if (!eid) {
         return { error: 'invalid div' };
       }
@@ -1338,7 +1440,7 @@ var $equip = {
           tier: parseInt(exec[6]),
           pxp1: parseInt(exec[7]),
           pxp2: parseInt(exec[8]),
-          pab: (dynjs.d.match($equip.reg.pab) || []).map((p) => p[0]).join(''),
+          pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
           key: dynjs.k,
         },
@@ -1560,7 +1662,7 @@ var $equip = {
     if (eq.info.tier === 0) {
       pxp = eq.info.pxp2;
     } else if (eq.info.tier === 10) {
-      const ppxp = (Object.entries($equip.ppxp).find(([n]) => eq.info.name.includes(n)) || [, 400])[1];
+      const ppxp = Object.entries($equip.ppxp).find(([n]) => eq.info.name.includes(n))?.[1] || 400;
       if (eq.info.quality === 'Peerless') {
         pxp = ppxp;
       } else if (eq.info.quality === 'Legendary') {
@@ -1599,7 +1701,6 @@ var $equip = {
     }
     const equiplist = Array.from($qsa('div[onmouseover*="equips.set"]', node)).map((div) => {
       const eq = $equip.parse.div(div);
-      if (!eq.node) { return; }
       eq.node.wrapper = div.parentNode;
       if (eq.info.customname) {
         div.classList.add('hvut-eq-customname');
@@ -1608,7 +1709,7 @@ var $equip = {
       div.classList.add('hvut-eq-' + eq.info.quality);
       return eq;
     });
-    if (settings.equipSort && sort) {
+    if ($config.settings.equipSort && sort) {
       $equip.sort(equiplist, parent);
     }
     return equiplist;
@@ -1626,13 +1727,15 @@ var $equip = {
       } else if (a.info.type !== b.info.type) {
         return ($equip.index.type[a.info.type] || 99) - ($equip.index.type[b.info.type] || 99);
       }
+
       let r = 0;
       const k = a.info.category === 'One-handed Weapon' || a.info.category === 'Two-handed Weapon' ? ['suffix', 'quality', 'prefix']
-      : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
-      : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
-      : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
-      : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
-      : ['slot', 'suffix', 'quality', 'prefix'];
+        : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
+        : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
+        : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
+        : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
+        : ['slot', 'suffix', 'quality', 'prefix'];
+
       k.some((e) => {
         if (e in $equip.index) {
           r = ($equip.index[e][a.info[e]] || 99) - ($equip.index[e][b.info[e]] || 99);
@@ -1641,6 +1744,7 @@ var $equip = {
         }
         return r;
       });
+
       return r || (b.info.eid - a.info.eid);
     });
 
@@ -1698,7 +1802,12 @@ var $equip = {
 
   namecode: function (eq) {
     if (!$equip.namecode.rules) {
-      $equip.namecode_parse();
+      const validation = $equip.namecode_parse();
+      if (validation.error) {
+        alert(`Error: invalid code\n\n${validation.error}`);
+        return;
+      }
+      $equip.namecode.rules = validation.rules;
     }
     function rainbow(t) {
       const c = ['#f00', '#f90', '#fc0', '#0c0', '#09f', '#00c', '#c0f'];
@@ -1733,7 +1842,7 @@ var $equip = {
     };
     $equip.namecode.rules.forEach((rule) => {
       rule.some((r, i) => {
-        if (!$equip.test(eq.info.name, r.name)) {
+        if (!$equip.filter_equip(r.match, eq.info.name, eq)) {
           if (i === 0) {
             return true; // skip the entire rule if the first fails
           } else {
@@ -1757,16 +1866,14 @@ var $equip = {
     }
     color('name');
     bold('name');
+    eq.data.namecode = mod.name.code;
     return mod.name.code;
   },
-  namecode_parse: function (array = getValue('in_namecode', settings.equipNameCode)) {
-    if (typeof array === 'string') {
-      array = array.split('\n');
-    }
+  namecode_parse: function (array = $config.settings.equipNameCode) {
     const rules = [];
-    const error = [];
-    array.forEach((s, i) => {
-      if (!s.trim() || s.startsWith('//')) {
+    const errors = [];
+    array.forEach((s) => {
+      if (!s.trim()) {
         return;
       }
       const rule = [];
@@ -1774,63 +1881,112 @@ var $equip = {
         if (!s.trim()) {
           return;
         }
-        const match = s.match(/^(.+?):\s*((?:(?:name|quality|prefix|type|slot|suffix)\s*=.+?)(?:,\s*(?:(?:name|quality|prefix|type|slot|suffix)\s*=.+?))*)$/);
+        const [match, text] = split2(s, ':');
         if (!match) {
-          error.push(`#${i + 1}: ${s}`);
+          errors.push(s);
           return;
         }
-        const name = match[1].trim();
-        const options = [...match[2].matchAll(/(name|quality|prefix|type|slot|suffix)\s*=(.+?)(?:,|$)/g)].map((o) => ({ key: o[1], value: o[2].trim() }));
-        try {
-          eval(name.replace(/[-A-Za-z ]+/g, (s) => { s = s.trim(); return !s ? '' : 'true'; }));
-        } catch (e) {
-          error.push(`#${i + 1}: ${s}`);
+        const { error } = $equip.filter_validate(match);
+        if (error) {
+          errors.push(s);
           return;
         }
-        if (!options.length) {
-          error.push(`#${i + 1}: ${s}`);
-          return;
-        }
-        const r = { name, options };
+        const options = [];
+        text.split(',').forEach((o) => {
+          o = o.trim();
+          const exec = /^(name|quality|prefix|type|slot|suffix)\s*=\s*([\w#]+)$/.exec(o);
+          if (!exec) {
+            errors.push(s);
+            return;
+          }
+          options.push({ key: exec[1], value: exec[2] });
+        });
+        const r = { match, options };
         rule.push(r);
       });
       rules.push(rule);
     });
-    if (error.length) {
-      alert('无效代码\n' + error.join('\n'));
-      return;
-    }
-    $equip.namecode.rules = rules;
-    const namecode = rules.map((r) => r.map((r) => r.name + ' : ' + r.options.map(({ key, value }) => `${key}=${value}`).join(', ')).join(' ; '));
-    return namecode;
+    const namecode = rules.map((r) => r.map((r) => r.match + ' : ' + r.options.map(({ key, value }) => `${key}=${value}`).join(', ')).join(' ; '));
+    const error = errors.join('\n');
+    const result = { value: namecode, error, rules };
+    return result;
   },
 
-  test: function (name, test) {
-    if (!test) {
+  filter: function (filters, name, equip) {
+    if (!filters) {
       return false;
     }
     const n = name.toLowerCase();
-    const t = test.toLowerCase();
-    if (t.startsWith('//')) return;
-    try {
-      return eval(t.replace(/[-a-z ]+/g, (s) => { s = s.trim(); return !s ? '' : n.includes(s); }));
-    } catch (e) {
-      // alert('无效过滤器: ' + test);
-      return false;
-    }
+    return filters.some((f) => $equip.filter_equip(f, n, equip));
   },
-  filter: function (name, filter) {
+  filter_equip: function (filter, name, equip) {
     if (!filter) {
       return false;
     }
     const n = name.toLowerCase();
-    return filter.some((f) => $equip.test(n, f));
+    const t = filter.toLowerCase();
+    if (t.startsWith('//')) return;
+    const r = t.replace(/[a-z0-9-$=<>+ ]+/g, (f) => {
+      f = f.trim();
+      if (!f) {
+        return '';
+      } else if (!/[^a-z- ]/.test(f)) {
+        return n.includes(f);
+      } else if (f.includes('$')) {
+        return $equip.filter_details(f, equip);
+      } else {
+        throw new Error('Invalid Filter');
+      }
+    });
+    return eval(r);
+  },
+  filter_details: function (filter, equip) {
+    if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
+      const fquality = RegExp.$1;
+      const quality = equip?.info?.quality.toLowerCase() ?? 'crude';
+      if (!$equip.quality.hasOwnProperty(fquality)) {
+        throw new Error('Invalid Filter');
+      }
+      return $equip.quality[quality] >= $equip.quality[fquality];
+    }
+    if (filter.includes('$pab') && /\$pab=([a-z]+)/.test(filter)) {
+      const fpab = RegExp.$1;
+      const pab = equip?.info?.pab?.toLowerCase() ?? '';
+      return fpab.split('').every((p) => pab.includes(p));
+    }
+    if (filter.includes('$level')) {
+      const level = equip?.info?.level ?? 0;
+      return filter.replace(/\$level/, level);
+    }
+    if (filter.includes('$prefix')) {
+      return !!equip?.info?.prefix;
+    }
+    if (filter.includes('$iw')) {
+      return !!equip?.info?.tier;
+    }
+    throw new Error('Invalid Filter');
+  },
+  filter_validate: function (filters) {
+    if (!Array.isArray(filters)) {
+      filters = [filters];
+    }
+    const errors = filters.filter((filter) => {
+      try {
+        $equip.filter_equip(filter, '');
+        return false;
+      } catch (e) {
+        return true;
+      }
+    });
+    const error = errors.join('\n');
+    const result = { value: filters, error };
+    return result;
   },
 
 };
 
 // ITEM INVENTORY
-var $item = {
+const $item = {
 
   list: null,
   reg: {
@@ -1839,1100 +1995,347 @@ var $item = {
     shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
     mooglemail: /set_mooglemail_item\((\d+),this\)/,
   },
-  type: function (text) {
-    return $item.reg.itemr.test(text) ? RegExp.$1.replace(/\W/g, '') : $item.reg.itemc.test(text) ? 'Consumable' : '';
+  get_type: function (text) {
+    if ($item.reg.itemr.test(text)) {
+      return RegExp.$1.replace(/\W/g, '');
+    } else if ($item.reg.itemc.test(text)) {
+      return 'Consumable';
+    } else {
+      return '';
+    }
   },
-  count: function (name) {
-    return $item.list[name.trim()] || 0;
+  get_data: function (text) {
+    let exec;
+    if ((exec = $item.reg.shrine.exec(text))) {
+      const iid = exec[1];
+      const stock = parseInt(exec[2]);
+      const bulk = parseInt(exec[3]);
+      const name = exec[4];
+      return { iid, stock, bulk, name };
+    } else if ((exec = $item.reg.mooglemail.exec(text))) {
+      const iid = exec[1];
+      return { iid };
+    } else {
+      return {};
+    }
   },
   load: async function () {
     const html = await $ajax.fetch('?s=Character&ss=it');
     const doc = $doc(html);
     $item.list = {};
-    Array.from($qs('.itemlist', doc).rows).forEach((tr) => {
-      $item.list[tr.cells[0].textContent] = parseInt(tr.cells[1].textContent);
+    $qsa('.itemlist tr', doc).forEach((tr) => {
+      const name = tr.cells[0].textContent;
+      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
+      const stock = parseInt(tr.cells[1].textContent);
+      $item.list[name] = { id, stock };
     });
-    return $item.list;
   },
   once: async function () {
     if ($item.list) {
-      return $item.list;
+      return;
     } else {
-      return $item.load();
+      await $item.load();
     }
   },
-  names: {
-    11191: 'Health Draught', // '体力长效药'
-    11195: 'Health Potion', // '体力药水'
-    11199: 'Health Elixir', // '体力秘药'
-    11291: 'Mana Draught', // '法力长效药'
-    11295: 'Mana Potion', // '法力药水'
-    11299: 'Mana Elixir', // '法力秘药'
-    11391: 'Spirit Draught', // '灵力长效药'
-    11395: 'Spirit Potion', // '灵力药水'
-    11399: 'Spirit Elixir', // '灵力秘药'
-    11501: 'Last Elixir', // '终极秘药'
-    19111: 'Flower Vase', // '花瓶'
-    19131: 'Bubble-Gum', // '泡泡糖'
-    60051: 'Scrap Cloth', //'布制废料'
-    60052: 'Scrap Leather', //'皮革废料'
-    60053: 'Scrap Metal', //'金属废料'
-    60054: 'Scrap Wood', //'木材废料'
-    60071: 'Energy Cell', //'能量元'
-    11401: 'Energy Drink', // 能量饮料
-    11402: 'Caffeinated Candy', // 咖啡因糖果
-    12101: 'Infusion of Flames', // 火焰魔药
-    12201: 'Infusion of Frost', // 冰冷魔药
-    12301: 'Infusion of Lightning', // 闪电魔药
-    12401: 'Infusion of Storms', // 风暴魔药
-    12501: 'Infusion of Divinity', // 神圣魔药
-    12601: 'Infusion of Darkness', // 黑暗魔药
-    13101: 'Scroll of Swiftness', // 加速卷轴
-    13111: 'Scroll of Protection', // 守护卷轴
-    13199: 'Scroll of the Avatar', // 化身卷轴
-    13201: 'Scroll of Absorption', // 吸收卷轴
-    13211: 'Scroll of Shadows', // 幻影卷轴
-    13221: 'Scroll of Life', // 生命卷轴
-    13299: 'Scroll of the Gods', // 众神卷轴
-    null: 'Monster Chow', // '怪物饲料'
-    null: 'Golden Lottery Ticket', // '黄金彩票券'
-    null: 'Soul Stone', // '灵魂石'
-    null: 'Binding of Slaughter', // '粘合剂 基础物理伤害'
-    null: 'Binding of Balance', // '粘合剂 物理命中率'
-    null: 'Binding of Isaac', // '粘合剂 物理暴击率'
-    null: 'Binding of Destruction', // '粘合剂 基础魔法伤害'
-    null: 'Binding of Focus', // '粘合剂 魔法命中率'
-    null: 'Binding of Friendship', // '粘合剂 魔法暴击率'
-    null: 'Binding of Protection', // '粘合剂 物理减伤'
-    null: 'Binding of Warding', // '粘合剂 魔法减伤'
-    null: 'Binding of the Fleet', // '粘合剂 回避率'
-    null: 'Binding of the Barrier', // '粘合剂 格挡率'
-    null: 'Binding of the Nimble', // '粘合剂 招架率'
-    null: 'Binding of Negation', // '粘合剂 抵抗率'
-    null: 'Binding of the Ox', // '粘合剂 力量'
-    null: 'Binding of the Raccoon', // '粘合剂 灵巧'
-    null: 'Binding of the Cheetah', // '粘合剂 敏捷'
-    null: 'Binding of the Turtle', // '粘合剂 体质'
-    null: 'Binding of the Fox', // '粘合剂 智力'
-    null: 'Binding of the Owl', // '粘合剂 智慧'
-    null: 'Binding of the Elementalist', // '粘合剂 元素魔法熟练度'
-    null: 'Binding of the Heaven-sent', // '粘合剂 神圣魔法熟练度'
-    null: 'Binding of the Demon-fiend', // '粘合剂 黑暗魔法熟练度'
-    null: 'Binding of the Curse-weaver', // '粘合剂 减益魔法熟练度'
-    null: 'Binding of the Earth-walker', // '粘合剂 增益魔法熟练度'
-    null: 'Binding of Surtr', // '粘合剂 火属性咒语伤害'
-    null: 'Binding of Niflheim', // '粘合剂 冰属性咒语伤害'
-    null: 'Binding of Mjolnir', // '粘合剂 雷属性咒语伤害'
-    null: 'Binding of Freyr', // '粘合剂 风属性咒语伤害'
-    null: 'Binding of Heimdall', // '粘合剂 圣属性咒语伤害'
-    null: 'Binding of Fenrir', // '粘合剂 暗属性咒语伤害'
-    null: 'Binding of Dampening', // '粘合剂 敲击减伤'
-    null: 'Binding of Stoneskin', // '粘合剂 斩击减伤'
-    null: 'Binding of Deflection', // '粘合剂 刺击减伤'
-    null: 'Binding of the Fire-eater', // '粘合剂 火属性减伤'
-    null: 'Binding of the Frost-born', // '粘合剂 冰属性减伤'
-    null: 'Binding of the Thunder-child', // '粘合剂 雷属性减伤'
-    null: 'Binding of the Wind-waker', // '粘合剂 风属性减伤'
-    null: 'Binding of the Thrice-blessed', // '粘合剂 圣属性减伤'
-    null: 'Binding of the Spirit-ward', // '粘合剂 暗属性减伤'
+  load_shop: async function () {
+    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const doc = $doc(html);
+    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
+    $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
+    $item.shop = {};
 
-    null: 'Infusion of Darkness', //'黑暗魔药'
-    null: 'Infusion of Divinity', //'神圣魔药'
-    null: 'Infusion of Storms', //'风暴魔药'
-    null: 'Infusion of Lightning', //'闪电魔药'
-    null: 'Infusion of Frost', //'冰冷魔药'
-    null: 'Infusion of Flames', //'火焰魔药'
-    null: 'Infusion of Gaia', //'盖亚魔药'
-    null: 'Scroll of Swiftness', //'加速卷轴'
-    null: 'Scroll of the Avatar', //'化身卷轴'
-    null: 'Scroll of Shadows', //'幻影卷轴'
-    null: 'Scroll of Absorption', //'吸收卷轴'
-    null: 'Scroll of Life', //'生命卷轴'
-    null: 'Scroll of Protection', //'守护卷轴'
-    null: 'Scroll of the Gods', //'众神卷轴'
-    null: 'Crystal of Vigor', //'力量水晶'
-    null: 'Crystal of Finesse', //'灵巧水晶'
-    null: 'Crystal of Swiftness', //'敏捷水晶'
-    null: 'Crystal of Fortitude', //'体质水晶'
-    null: 'Crystal of Cunning', //'智力水晶'
-    null: 'Crystal of Knowledge', //'智慧水晶'
-    null: 'Crystal of Flames', //'火焰水晶'
-    null: 'Crystal of Frost', //'冰冻水晶'
-    null: 'Crystal of Lightning', //'闪电水晶'
-    null: 'Crystal of Tempest', //'疾风水晶'
-    null: 'Crystal of Devotion', //'神圣水晶'
-    null: 'Crystal of Corruption', //'暗黑水晶'
-    null: 'Crystal of Quintessence', //'灵魂水晶'
+    const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const stock = parseInt(exec[2]);
+      const sell_price = parseInt(exec[3]);
+      $item.shop[name] = { id, stock, sell_price };
+    });
 
-    null: 'Monster Edibles', //'怪物食品'
-    null: 'Monster Cuisine', //'怪物料理'
-    null: 'Happy Pills', //'快乐药丸'
-
-    null: 'Wispy Catalyst', //'纤小 催化剂'
-    null: 'Diluted Catalyst', //'稀释 催化剂'
-    null: 'Regular Catalyst', //'平凡 催化剂'
-    null: 'Robust Catalyst', //'充沛 催化剂'
-    null: 'Vibrant Catalyst', //'活力 催化剂'
-    null: 'Coruscating Catalyst', //'闪耀 催化剂'
-    null: 'Low-Grade Cloth', // '低级布料'
-    null: 'Mid-Grade Cloth', // '中级布料'
-    null: 'High-Grade Cloth', // '高级布料'
-    null: 'Low-Grade Leather', // '低级皮革'
-    null: 'Mid-Grade Leather', // '中级皮革'
-    null: 'High-Grade Leather', // '高级皮革'
-    null: 'Low-Grade Metals', // '低级金属'
-    null: 'Mid-Grade Metals', // '中级金属'
-    null: 'High-Grade Metals', // '高级金属'
-    null: 'Low-Grade Wood', // '低级木头'
-    null: 'Mid-Grade Wood', // '中级木头'
-    null: 'High-Grade Wood', // '高级木头'
-
-    null: 'Defense Matrix Modulator', //'力场碎片(盾)'
-    null: 'Repurposed Actuator', //'动力碎片(重)'
-    null: 'Shade Fragment', //'暗影碎片(轻)'
-    null: 'Crystallized Phazon', //'相位碎片(布)'
-    null: 'Legendary Weapon Core', //'传奇武器核心'
-    null: 'Peerless Weapon Core', //'无双武器核心'
-    null: 'Legendary Staff Core', //'传奇法杖核心'
-    null: 'Peerless Staff Core', //'无双法杖核心'
-    null: 'Legendary Armor Core', //'传奇护甲核心'
-    null: 'Peerless Armor Core', //'无双护甲核心'
-    null: 'Voidseeker Shard', //'虚空碎片'
-    null: 'Featherweight Shard', //'羽毛碎片'
-    null: 'Aether Shard', //'以太碎片'
-    null: 'Amnesia Shard', //'重铸碎片'
-    null: 'Soul Fragment', //'灵魂碎片'
-    null: 'Blood Token', //'鲜血令牌'
-    null: 'Token of Blood', //'鲜血令牌'
-    null: 'Chaos Token', //'混沌令牌'
-
-    null: 'Precursor Artifact', //'古遗物'
-    null: 'ManBearPig Tail', //'人熊猪的尾巴(等级2)'
-    null: 'Mithra\'s Flower', //'猫人族的花(等级2)'
-    null: 'Holy Hand Grenade of Antioch', //'安提阿的神圣手榴弹(等级2)'
-    null: 'Dalek Voicebox', //'戴立克音箱(等级2)'
-    null: 'Lock of Blue Hair', //'一绺蓝发(等级2)'
-    null: 'Bunny-Girl Costume', //'兔女郎装(等级3)'
-    null: 'Hinamatsuri Doll', //'雏人形(等级3)'
-    null: 'Broken Glasses', //'破碎的眼镜(等级3)'
-    null: 'Sapling', //'树苗(等级4)'
-    null: 'Black T-Shirt', //'黑色Ｔ恤(等级4)'
-    null: 'Unicorn Horn', //'独角兽的角(等级5)'
-    null: 'Noodly Appendage', //'面条般的附肢(等级6)'
-
-    null: 'Bronze Coupon', //'铜礼券(等级3)'
-    null: 'Silver Coupon', //'银礼券(等级5)'
-    null: 'Gold Coupon', //'黄金礼券(等级7)'
-    null: 'Platinum Coupon', //'白金礼券(等级8)'
-    null: 'Peerless Voucher', //'无双凭证'
-
-
-    //节日及特殊奖杯
-    null: 'Mysterious Box', //'神秘宝盒(等级9)', // 在‘训练：技能推广’调整价格后赠予某些玩家。
-    null: 'Solstice Gift', //'冬至赠礼(等级7)', //  2009 冬至
-    null: 'Stocking Stuffers', //'圣诞袜小礼物(等级7)', // 2009年以来每年圣诞节礼物。
-    null: 'Tenbora\'s Box', //'天菠拉的盒子(等级9)', // 年度榜单或者年度活动奖品
-    null: 'Shimmering Present', //'微光闪动的礼品(等级8)', //  2010 圣诞节
-    null: 'Potato Battery', //'马铃薯电池(等级7)', // 《传送门 2》发售日
-    null: 'RealPervert Badge', //'真-变态胸章(等级7)', // 2011 愚人节
-    null: 'Rainbow Egg', //'彩虹蛋(等级8)', //  2011 复活节
-    null: 'Colored Egg', //'彩绘蛋(等级7)', //  2011 复活节
-    null: 'Raptor Jesus', //'猛禽耶稣(等级7)', //  哈罗德·康平的被提预言
-    null: 'Gift Pony', //'礼品小马(等级8)', // 2011 圣诞节
-    null: 'Faux Rainbow Mane Cap', //'人造彩虹鬃毛帽(等级8)', //  2012 复活节
-    null: 'Pegasopolis Emblem', //'天马族徽(等级7)', // 2012 复活节
-    null: 'Fire Keeper Soul', //'防火女的灵魂(等级8)', // 2012 圣诞节
-    null: 'Crystalline Galanthus', //'结晶雪花莲(等级8)', // 2013 复活节
-    null: 'Sense of Self-Satisfaction', //'自我满足感(等级7)', // 2013 复活节
-    null: 'Six-Lock Box', //'六道锁盒子(等级8)', // 2013 圣诞节
-    null: 'Golden One-Bit Coin', //'金色一比特硬币(等级8)', // 2014 复活节
-    null: 'USB ASIC Miner', //'随身型特定应用积体电路挖矿机(等级7)', // 2014 复活节
-    null: 'Reindeer Antlers', //'驯鹿鹿角(等级8)', // 2014 圣诞节
-    null: 'Ancient Porn Stash', //'古老的色情隐藏档案(等级8)', // 2015 复活节
-    null: 'VPS Hosting Coupon', //'虚拟专用服务器代管优惠券(等级7)', // 2015 复活节
-    null: 'Heart Locket', //'心型盒坠(等级8)', // 2015 圣诞节
-    null: 'Holographic Rainbow Projector', //'全像式彩虹投影机(等级8)', // 2016 复活节
-    null: 'Pot of Gold', //'黄金罐(等级7)', // 2016 复活节
-    null: 'Dinosaur Egg', //'恐龙蛋(等级8)', // 2016 圣诞节
-    null: 'Precursor Smoothie Blender', //'旧世界冰沙机(等级8)', // 2017 复活节
-    null: 'Rainbow Smoothie', //'彩虹冰沙(等级7)', // 2017 复活节
-    null: 'Mysterious Tooth', //'神秘的牙齿(等级8)', // 2017 圣诞节
-    null: 'Grammar Nazi Armband', //'语法纳粹臂章(等级7)', // 2018 复活节
-    null: 'Abstract Wire Sculpture', //'抽象线雕(等级8)', // 2018 复活节
-    null: 'Delicate Flower', //'娇嫩的花朵(等级8)', // 2018 圣诞节
-    null: 'Assorted Coins', //'什锦硬币(等级7)', // 2019 复活节
-    null: 'Coin Collector\'s Guide', //'硬币收藏家指南(等级8)', // 2019 复活节
-    null: 'Iron Heart', //'钢铁之心(等级8)', // 2019 圣诞节
-    null: 'Shrine Fortune', //'神社灵签(等级7)', // 2020起复活节
-    null: 'Plague Mask', //'瘟疫面具(等级8)', // 2020 复活节
-    null: 'Festival Coupon', //'节日礼券(等级7)', //2020起收获节（中秋？）
-    null: 'Annoying Gun', //'烦人的枪(等级8)', //2020 圣诞节
-    null: 'Vaccine Certificate', //'疫苗证明(等级8)', //2021 复活节
-    null: 'Barrel', //'酒桶(等级8)', //2021 圣诞节
-    null: 'CoreCare Starter Kit', //'核心服务工具套件(等级8)', //2022 复活节
-    null: 'Star Compass', //'星罗盘(等级8)', //2022 圣诞节
-    null: 'Museum Ticket', //'博物馆门票(等级8)', // 2023 复活节
-    null: 'Idol Fan Starter Pack', //'偶像粉丝入门包(等级8)', //2023 圣诞节
-    null: 'AI-Based Captcha Solver', //'人工智能验证码破解器(等级8)', //2024 复活节
-
-    //旧旧古董
-    null: 'Priceless Ming Vase', //'无价的明朝瓷器'
-    null: 'Grue', //'格鲁'
-    null: 'Seven-Leafed Clover', //'七叶幸运草'
-    null: 'Rabbit\'s Foot', //'幸运兔脚'
-    null: 'Wirt\'s Leg', //'维特之脚'
-    null: 'Wirts Leg', //'维特之脚'
-    null: 'Shark-Mounted Laser', //'装在鲨鱼头上的激光枪'
-    null: 'BFG9000', //'BFG9000'
-    null: 'Railgun', //'磁道炮'
-    null: 'Flame Thrower', //'火焰喷射器'
-    null: 'Small Nuke', //'小型核武'
-    null: 'Chainsaw Oil', //'电锯油'
-    null: 'Chainsaw Fuel', //'电锯燃油'
-    null: 'Chainsaw Chain', //'电锯链'
-    null: 'Chainsaw Safety Manual', //'电锯安全手册'
-    null: 'Chainsaw Repair Guide', //'电锯维修指南'
-    null: 'Chainsaw Guide Bar', //'电锯导板'
-    null: 'ASHPD Portal Gun', //'光圈科技传送门手持发射器'
-    null: 'Smart Bomb', //'炸弹机器人'
-    null: 'Tesla Coil', //'电光塔'
-    null: 'Vorpal Blade Hilt', //'斩龙剑的剑柄'
-    null: 'Crystal Jiggy', //'水晶拼图'
-
-    //圣诞文物
-    null: 'Fiber-Optic Xmas Tree', //'光纤圣诞树'
-    null: 'Decorative Pony Sled', //'小马雪橇装饰品'
-    null: 'Hearth Warming Lantern', //'暖心节灯笼'
-    null: 'Mayan Desk Calendar', //'马雅桌历'
-    null: 'Fiber-Optic Tree of Harmony', //'光纤谐律之树'
-    null: 'Crystal Snowman', //'水晶雪人'
-    null: 'Annoying Dog', //'烦人的狗'
-    null: 'Iridium Sprinkler', //'铱制洒水器'
-    null: 'Robo Rabbit Head', //'机器兔子头'
-
-    //复活节文物
-    //2011
-    null: 'Easter Egg', //'复活节彩蛋'
-    //S、N、O、W、F、L、A、K、E。
-    //2012
-    null: 'Red Ponyfeather', //'红色天马羽毛'
-    null: 'Orange Ponyfeather', //'橙色天马羽毛'
-    null: 'Yellow Ponyfeather', //'黄色天马羽毛'
-    null: 'Green Ponyfeather', //'绿色天马羽毛'
-    null: 'Blue Ponyfeather', //'蓝色天马羽毛'
-    null: 'Indigo Ponyfeather', //'靛色天马羽毛'
-    null: 'Violet Ponyfeather', //'紫色天马羽毛'
-    //2013
-    null: 'Twinkling Snowflake', //'闪闪发光(Twinkling)的雪花'
-    null: 'Glittering Snowflake', //'闪闪发光(Glittering)的雪花'
-    null: 'Shimmering Snowflake', //'闪闪发光(Shimmering)的雪花'
-    null: 'Gleaming Snowflake', //'闪闪发光(Gleaming)的雪花'
-    null: 'Sparkling Snowflake', //'闪闪发光(Sparkling)的雪花'
-    null: 'Glinting Snowflake', //'闪闪发光(Glinting)的雪花'
-    null: 'Scintillating Snowflake', //'闪闪发光(Scintillating)的雪花'
-    //2014
-    null: 'Altcoin', //'山寨币'
-    null: 'LiteCoin', //'莱特币'
-    null: 'DogeCoin', //'多吉币'
-    null: 'PeerCoin', //'点点币'
-    null: 'FlappyCoin', //'象素鸟币'
-    null: 'VertCoin', //'绿币'
-    null: 'AuroraCoin', //'极光币'
-    null: 'DarkCoin', //'暗黑币'
-    //2015
-    null: 'Ancient Server Part', //'古老的服务器零组件'
-    null: 'Server Motherboard', //'服务器主板'
-    null: 'Server CPU Module', //'服务器中央处理器模组'
-    null: 'Server RAM Module', //'服务器主内存模组'
-    null: 'Server Chassis', //'服务器机壳'
-    null: 'Server Network Card', //'服务器网络卡'
-    null: 'Server Hard Drive', //'服务器硬盘'
-    null: 'Server Power Supply', //'服务器电源供应器'
-    //2016
-    null: 'Chicken Figurines', //'小鸡公仔'
-    null: 'Red Chicken Figurine', //'红色小鸡公仔'
-    null: 'Orange Chicken Figurine', //'橙色小鸡公仔'
-    null: 'Yellow Chicken Figurine', //'黄色小鸡公仔'
-    null: 'Green Chicken Figurine', //'绿色小鸡公仔'
-    null: 'Blue Chicken Figurine', //'蓝色小鸡公仔'
-    null: 'Indigo Chicken Figurine', //'靛色小鸡公仔'
-    null: 'Violet Chicken Figurine', //'紫色小鸡公仔'
-    //2017
-    null: 'Ancient Fruit Smoothies', //'古老的水果冰沙'
-    null: 'Ancient Lemon', //'古代柠檬'
-    null: 'Ancient Plum', //'古代李子'
-    null: 'Ancient Kiwi', //'古代奇异果'
-    null: 'Ancient Mulberry', //'古代桑葚'
-    null: 'Ancient Blueberry', //'古代蓝莓'
-    null: 'Ancient Strawberry', //'古代草莓'
-    null: 'Ancient Orange', //'古代橙子'
-    //2018
-    null: 'Aggravating Spelling Error', //'严重的拼写错误'
-    null: 'Exasperating Spelling Error', //'恼人的拼写错误'
-    null: 'Galling Spelling Error', //'恼怒的拼写错误'
-    null: 'Infuriating Spelling Error', //'激怒的拼写错误'
-    null: 'Irking Spelling Error', //'忿怒的拼写错误'
-    null: 'Vexing Spelling Error', //'烦恼的拼写错误'
-    null: 'Riling Spelling Error', //'愤怒的拼写错误'
-    //2019
-    null: 'Manga Category Button', //'漫画类别按钮'
-    null: 'Doujinshi Category Button', //'同人志类别按钮'
-    null: 'Artist CG Category Button', //'画师CG类别按钮'
-    null: 'Western Category Button', //'西方类别按钮'
-    null: 'Image Set Category Button', //'图集类别按钮'
-    null: 'Game CG Category Button', //'游戏CG类别按钮'
-    null: 'Non-H Category Button', //'非H类别按钮'
-    null: 'Cosplay Category Button', //'Cosplay类别按钮'
-    null: 'Asian Porn Category Button', //'亚洲色情类别按钮'
-    null: 'Misc Category Button', //'杂项类别按钮'
-    //2020
-    null: 'Hoarded Hand Sanitizer', //'库存的洗手液'
-    null: 'Hoarded Disinfecting Wipes', //'库存的消毒湿巾'
-    null: 'Hoarded Face Masks', //'库存的口罩'
-    null: 'Hoarded Toilet Paper', //'库存的厕纸'
-    null: 'Hoarded Dried Pasta', //'库存的干面'
-    null: 'Hoarded Canned Goods', //'库存的罐头'
-    null: 'Hoarded Powdered Milk', //'库存的奶粉'
-    //2021
-    null: 'Red Vaccine Vial', //'红色疫苗瓶'
-    null: 'Orange Vaccine Vial', //'橙色疫苗瓶'
-    null: 'Yellow Vaccine Vial', //'黄色疫苗瓶'
-    null: 'Green Vaccine Vial', //'绿色疫苗瓶'
-    null: 'Blue Vaccine Vial', //'蓝色疫苗瓶'
-    null: 'Indigo Vaccine Vial', //'靛色疫苗瓶'
-    null: 'Violet Vaccine Vial', //'紫色疫苗瓶'
-    //2022
-    null: 'Core Carrying Bag', //'核心携带包'
-    null: 'Core Display Stand', //'核心展示架'
-    null: 'Core Ornament Set', //'核心饰品套装'
-    null: 'Core Maintenance Set', //'核心维护套装'
-    null: 'Core Wall-Mount Display', //'核心壁挂显示器'
-    null: 'Core LED Illumination', //'核心LED照明'
-    //2023
-    null: 'Search Engine Crankshaft', // '搜索引擎曲轴'
-    null: 'Search Engine Carburetor', // '搜索引擎化油器'
-    null: 'Search Engine Piston', // '搜索引擎活塞'
-    null: 'Search Engine Manifold', // '搜索引擎歧管'
-    null: 'Search Engine Distributor', // '搜索引擎分电器'
-    null: 'Search Engine Water Pump', // '搜索引擎水泵'
-    null: 'Search Engine Oil Filter', // '搜索引擎机油滤清器'
-    null: 'Search Engine Spark Plug', // '搜索引擎火花塞'
-    null: 'Search Engine Valve', // '搜索引擎气门'
-    //2024
-    null: 'Abstract Art of Fire Hydrants', // '消防栓抽象艺术品'
-    null: 'Abstract Art of Staircases', // '楼梯抽象艺术品'
-    null: 'Abstract Art of Bridges', // '桥梁抽象艺术品'
-    null: 'Abstract Art of Crosswalks', // '斑马线抽象艺术品'
-    null: 'Abstract Art of Traffic Lights', // '红绿灯抽象艺术品'
-    null: 'Abstract Art of Bicycles', // '自行车抽象艺术品'
-    null: 'Abstract Art of Tractors', // '拖拉机抽象艺术品'
-    null: 'Abstract Art of Busses', // '公交车抽象艺术品'
-    null: 'Abstract Art of Motorcycles', // '摩托车抽象艺术品',
-  },
-};
-
-// ITEM NEEDS
-var $supply = {
-  initialized: false,
-  equips: [],
-  reloader: $element('div', null, ['#hvut_supply_reloader']),
-  click: function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, eid, item, count } = target.dataset;
-    if (action === 'view') {
-      $supply.view(eid);
-      Array.from(target.parentNode.parentNode.children).forEach(node => node.classList.remove('hvut-bt-active'));
-      target.parentNode.classList.add('hvut-bt-active');
-    } else if (action === 'enchant') {
-      $supply.enchant($supply.current, item, count);
-    } else if (action === 'repair') {
-      $supply.repair($supply.current);
-    } else if (action === 'repairall') {
-      $supply.repair('all');
-    }
-  },
-  set_display_mode: function (mode) {
-    switch (mode) {
-      case 'hidden':
-        $supply.hovered = false;
-        break;
-      case 'hovered':
-        $supply.hovered = true;;
-        break;
-      case 'cancel':
-        $supply.fixed = false;
-        break;
-      case 'fixed':
-        $supply.fixed = true;
-        break;
-    }
-    $supply.set_battle_visible($supply.hovered || $supply.fixed);
-  },
-  set_battle_visible: function (visible) {
-    if (!$supply.battle) return;
-    $qsa('ul', $supply.battle.div).forEach(ul => {
-      ul.style.cssText = `
-              background: white;
-              visibility: ${visible ? 'visible' : 'hidden'};
-              pointer-events: ${visible ? 'all' : 'none'};
-            `});
-    $supply.battle.sticky.style.cssText += `height: ${visible ? 'calc(25.25px + 100%)' : '0'}`;
-    $supply.battle.container.style.cssText = `
-              height: ${visible ? '453px' : 0};
-            `
-  },
-  on_sticky_hover: function (evt) {
-    switch (evt.type) {
-      case 'mouseleave':
-        $supply.set_display_mode('hidden');
-        break;
-      case 'mouseenter':
-        $supply.set_display_mode('hovered');
-        break;
-    }
-  },
-  set_sticky: function () {
-    $supply.displayBattle = true;
-    $supply.display_inventory('bt');
-    $supply.set_battle_visible(false);
-    $supply.battle.sticky.style.cssText = `visibility: visible`;
-    $supply.battle.sticky.addEventListener('mouseenter', $supply.on_sticky_hover);
-    $supply.battle.sticky.addEventListener('mouseleave', $supply.on_sticky_hover);
-  },
-
-  view: function (eid) {
-
-    $supply.battle.repair.innerHTML = '';
-    $supply.battle.enchant.innerHTML = '';
-
-    const eq = $supply.get(eid);
-    if (!eq) {
-      return;
-    }
-    $supply.get($supply.current)?.node.li.classList.remove('hvut-bt-active');
-    $supply.current = eq.info.eid;
-
-    eq.node.li.classList.add('hvut-bt-active');
-
-    if (eq.data.repair) {
-      // 添加修理材料的英文到中文映射
-      const nameCN = {
-        'Scrap Metal': '金属废料',
-        'Scrap Leather': '皮革废料',
-        'Scrap Wood': '木材废料',
-        'Scrap Cloth': '废布料',
-        'Energy Cell': '能量元',
-      };
-      Object.entries(eq.data.repair).forEach(([n, c]) => { $element('li', $supply.battle.repair, `${nameCN[n] || n} x ${c}`); });
-    } else {
-      $element('li', $supply.battle.repair, '-');
-    }
-    if (!$item.list) {
-      return;
-    }
-    const cat = eq.info.cat;
-    const day = (new Date()).getUTCDay();
-
-    Object.entries($equip.enchant_data).forEach(([n, item]) => {
-      if (item[cat]) {
-        const li = $element('li', $supply.battle.enchant);
-        const c = (cat === 'weapon' && n.includes('Infusion of ') ? settings.equipEnchantWeapon : settings.equipEnchantArmor) || 1;
-        const s = $item.count(n);
-        if (cat === 'weapon' && item.day === day) {
-          li.classList.add('hvut-bt-day');
-        }
-        if (!s) {
-          li.classList.add('hvut-bt-nostock');
-        }
-        $element('span', li, [`[+${c}]`, '.hvut-cphu', { dataset: { action: 'enchant', item: n, count: c } }]);
-        $element('span', li, [`${item.effect}`, '.hvut-cphu', { dataset: { action: 'enchant', item: n, count: 1 } }]);
-        $element('span', li, [`(${s})`]);
+    const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const shop_stock = parseInt(exec[2]);
+      const shop_price = parseInt(exec[3]);
+      if (!$item.shop[name]) {
+        $item.shop[name] = {};
       }
+      Object.assign($item.shop[name], { id, shop_stock, shop_price });
     });
   },
-
-  get: function (eid) {
-    return $supply.equips.find((eq) => eq.info.eid == eid);
-  },
-  parse: function (eid, doc) {
-    const div = $id('equip_extended', doc);
-    const exec = /Condition: (\d+) \/ (\d+) \((\d+)%\)/.exec($qs('.eq', div).children[1].textContent);
-    const eq = $supply.get(eid);
-    eq.info.condition = exec[1];
-    eq.info.durability = exec[2];
-    eq.info.cdt = eq.info.condition / eq.info.durability;
-    $supply.display_condition(eq.info.eid);
-
-    if ($supply.battle) {
-      eq.node.enc.innerHTML = '';
-      const enchant = $qsa('#ee > span', div);
-      enchant.forEach((e) => { $element('span', eq.node.enc, e.textContent); });
-      if (!enchant.length) {
-        eq.node.enc.textContent = '无附魔';
+  count: function (name) {
+    if (name) {
+      return $item.list[name]?.stock || 0;
+    } else {
+      const obj = {};
+      for (const name in $item.list) {
+        obj[name] = $item.list[name].stock || 0;
       }
+      return obj;
     }
   },
-  check_eqp_urgent: function (eq) {
-    let thld = settings.equipEnchantRepairThreshold;;
-    if (thld < 1) {
-      return eq.info.cdt <= thld;
-    } else { // margin to 50%
-      return eq.info.condition <= thld + eq.info.durability * 0.5;
-    }
+  cost: function (items) {
+    let cost = 0;
+    items.forEach((item) => {
+      cost += item.count * ($item.shop[item.name]?.shop_price || 0);
+    });
+    return cost;
   },
-  display_condition: function (eid) {
-    const eq = $supply.get(eid);
-    let thld = $supply.check_eqp_urgent(eq);
-    if ($supply.battle) {
-      eq.node.cdt.textContent = `${eq.info.condition} / ${eq.info.durability} (${(eq.info.cdt * 100).toFixed(1)}%)`;
-      eq.node.cdt.className = eq.info.cdt <= 0.5 ? 'hvut-bt-cdt2' : eq.info.cdt <= 0.6 || thld ? 'hvut-bt-cdt1' : '';
-    }
-  },
-  enchant: async function (eid, name, count) {
-    if (!$item.list) {
+  buy: async function (items) { //items = [{ name, count }];
+    if (!items.length) {
+      alert('The purchase request list is empty.');
       return;
     }
-    const eq = $supply.get(eid);
-    const item = $equip.enchant_data[name];
-    const stock = $item.count(name);
-    if (count > stock) {
-      count = stock;
-    }
-    if (count < 1) {
+    await $item.load_shop();
+    const cost = $item.cost(items);
+    if (cost > $item.networth) {
+      alert('You do not have enough credits.');
       return;
     }
-    if ($supply.battle) {
-      eq.node.enc.textContent = '加载中...';
+    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
+    if (nostock) {
+      alert('Insufficient number of items in the Item Shop.');
+      return;
     }
+    items.forEach((item) => {
+      item.id = $item.shop[item.name].id;
+    });
 
-    async function enchant(eq) {
-      const html = await $ajax.fetch('?s=Forge&ss=en', `select_item=${eq.info.eid}&enchantment=${item[eq.info.cat]}`);
+    async function buy(id, count) {
+      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
       const doc = $doc(html);
       const error = get_message(doc);
       if (error) {
-        popup(error);
+        return false;
       }
-      $supply.parse(eq.info.eid, doc);
+      return true;
     }
 
-    const requests = $ajax.repeat(count, enchant, eq);
-    await Promise.all(requests);
-    $supply.load_inventory();
-  },
-  load_inventory: async function () {
-    await $item.load();
-    setValue('items', $item.list);
-  },
-  load_eq: async function (eid) {
-    const eq = $supply.get(eid);
-    if ($supply.battle) {
-      eq.node.enc.textContent = '获取附魔状态中...';
-    }
-    const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
-    const doc = $doc(html);
-    $supply.parse(eq.info.eid, doc);
-  },
-  repair: async function (eid) {
-    const eq = $supply.get(eid);
-    if (eq?.info?.cdt === 1) {
+    const requests = items.map((item) => buy(item.id, item.count));
+    const results = await Promise.all(requests);
+    if (!results.every((r) => r)) {
+      alert('An error has occurred.');
       return;
     }
-    if ($supply.battle) {
-      $supply.battle.repairall.innerHTML = '';
-      $supply.battle.repair.innerHTML = '';
-    }
-    const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eid === 'all' ? 'repair_all=1' : null);
-    const doc = $doc(html);
-    await $supply.load_dynjs(doc);
-    const error = get_message(doc);
-    if (error) {
-      popup(error);
-      $supply.load_inventory();
-      return;
-    }
-    const repair_equip = {};
-    $qsa('.equiplist div[onclick*="set_forge_cost"]', doc).forEach((div) => {
-      const [, eid, repair] = /set_forge_cost\((\d+),'Requires: (.+?)'/.exec(div.getAttribute('onclick'));
-      repair_equip[eid] = {};
-      repair.split(', ').forEach((e) => {
-        const exec = /(\d+)x (.+)/.exec(e);
-        // 遍历修理材料，进行映射
-        repair.split(', ').forEach((e) => {
-          const exec = /(\d+)x (.+)/.exec(e);
-          const materialName = exec[2];
-          const materialCount = parseInt(exec[1]);
-          repair_equip[eid][materialName] = materialCount;
-        });
-      });
-    });
-
-    const repairall = /Requires: (.+)/.test($id('repairall', doc).nextElementSibling.textContent) && RegExp.$1;
-    if (repairall === 'Everything is fully repaired.') {
-      $supply.repair.repairall = 0;
-    } else {
-      $supply.repair.repairall = {};
-      repairall.split(', ').forEach((e) => {
-        const exec = /(\d+)x (.+)/.exec(e);
-        $supply.repair.repairall[exec[2]] = parseInt(exec[1]);
-      });
-    }
-
-    $supply.equips.forEach((e) => {
-      const repair = repair_equip[e.info.eid];
-      if (repair) {
-        e.data.repair = repair;
-      } else {
-        e.data.repair = false;
-      }
-      if (eq === e || eid === 'all' && settings.equipEnchantCheckArmors) {
-        $supply.load_eq(e.info.eid);
-      }
-    });
-    if (eq || eid === 'all') {
-      $supply.load_inventory();
-    } else if ($supply.displayBattle) {
-      $supply.display_battle();
-    } else {
-      $supply.display_inventory('is');
-      $supply.display_inventory('mk');
-    }
-    $persona.check_warning(doc);
+    return true;
   },
-  load_dynjs: async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(src + '?t=' + Date.now());
-    $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
-    // $supply.load_repair_needs();
-
-    $supply.equips.some((eq) => {
-      const dynjs = $equip.dynjs_loaded[eq.info.eid];
-      if (!dynjs) {
-        $persona.change_p();
-        return true;
-      }
-      const exec = $equip.reg.html.exec(dynjs.d);
-      eq.info.condition = parseInt(exec[4]);
-      eq.info.durability = parseInt(exec[5]);
-      eq.info.cdt = eq.info.condition / eq.info.durability;
-      $supply.display_condition(eq.info.eid);
-    });
-  },
-  load_equipments: async function () {
-    $supply.equips.length = 0;
-    const equipset = getValue('equipset');
-    if (!equipset) {
-      $persona.change_p();
-      return;
-    }
-
-    if ($supply.battle) {
-      $supply.battle.equip.innerHTML = '';
-    }
-
-    equipset.forEach((info) => {
-      const eq = { info, data: {}, node: {} };
-      eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
-      if ($supply.battle) {
-        if (!info.eid) {
-          $element('li', $supply.battle.equip, [`/<a>${info.slot}</a><span>空</span><span></span>`]);
-          return false;
-        }
-
-        eq.node.li = $element('li', $supply.battle.equip);
-        eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
-        eq.node.enc = $element('span', eq.node.li);
-        eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
-      }
-      $supply.equips.push(eq);
-      if (eq.info.cat === 'weapon' || settings.equipEnchantCheckArmors) {
-        $supply.load_eq(eq.info.eid);
-      }
-    });
-    $supply.current = $supply.equips[0]?.info.eid;
-    await $supply.repair();
-  },
-  load_repair_needs: function () {
-    $supply.repair.urgent = false;
-    $supply.equips?.forEach(eq => {
-      if (!eq.data.repair) return;
-      const urgent = $supply.check_eqp_urgent(eq);
-      if (urgent) $supply.repair.urgent = urgent;
-
-      if (!$supply.repair.needs) $supply.repair.needs = {};
-      if (!$supply.repair.needs_full) $supply.repair.needs_full = {};
-
-      for (let name in eq.data.repair) {
-        $supply.repair.needs[name] = $supply.repair.needs[name] ?? 0;
-        $supply.repair.needs_full[name] = $supply.repair.needs_full[name] ?? 0;
-        $supply.repair.needs[name] += urgent ? eq.data.repair[name] : 0;
-        $supply.repair.needs_full[name] += eq.data.repair[name];
-      };
-    });
-  },
-  init_reloader: function () {
-    if ($supply.reloader.display_inventory) return;
-    $supply.reloader.display_inventory = $supply.display_inventory;
-  },
-  display_inventory: async function (type = undefined) {
-    if (!settings.supplyCheck) return;
-    const now = Date.now();
-    switch (type) {
-      case 'mk':
-        await $supply.init();
-        $supply.load_repair_needs();
-        $supply.display_mk_item();
-        $supply.display_mk();
-        $supply.init_reloader();
-        break;
-      case 'is':
-        await $supply.init();
-        $supply.load_repair_needs();
-        $supply.display_is();
-        $supply.init_reloader();
-        break;
-      case 'bt': // prehandle while init battle
-        $supply.displayBattle = $supply.displayBattle || (!_isInIframe/* && _query.s === 'Battle'*/);
-        if (!$supply.battle_loaded || !$supply.battle?.outer) $supply.init_battle_outer();
-        if (!$supply.displayBattle) break;
-        if (!$supply.battle_loaded) $supply.init_battle_node();
-        $supply.battle_loaded = true;
-
-        $supply.battle_last_update = now;
-
-        $supply.init_reloader();
-        await $supply.init();
-        $supply.load_repair_needs();
-        $supply.display_battle();
-
-        $supply.battle_last_update = now;
-        break;
-        //             case 'update':
-        //                 return;
-        //                 $supply.display_inventory('mk');
-        //                 $supply.display_inventory('is');
-
-        //                 if (now - $supply.battle_last_update < 60 * 1000) {
-        //                     if ($supply.waiting_update) return;
-        //                     setTimeout(()=>$supply.display_inventory('update'), 60 * 1000);
-        //                     $supply.waiting_update = true;
-        //                     return;
-        //                 }
-        //                 console.log('update battle supply');
-        //                 $supply.waiting_update = false;
-        //                 $supply.initialized = false;
-        //                 $supply.display_inventory('bt');
-        //                 break;
-    }
-  },
-  display_item: function (reg, href, holder) {
-    if (!holder || holder.querySelector('#itemNeeds')) return;
-    const [_, id] = reg.exec(href) ?? [null, null];
-    if (!id) return;
-    const name = $item.names[id];
-    if (!name) return;
-    let thld = settings.supplyThreshold[name] ?? ($supply.repair.needs ? $supply.repair.needs[name] : undefined);
-    let highlight = 'hvut-supply-warn';
-    if (!thld) {
-      thld = ($supply.repair.needs_full ? $supply.repair.needs_full[name] : undefined)
-      highlight = 'hvut-supply-low-warn';
-    }
-    if (!thld) return;
-    const c = $item.count(name);
-    holder.innerHTML = `<span class='itemNeeds ${c < thld ? highlight : 'hvut-supply-white'}'>[${c}/${thld}]</span>`;
-  },
-  display_mk_item: function () {
-    $supply.display_item(/.*itemid=(.+?)'/, `${window.location.href}'`, $qs('#sell_order_stock_field>span'));
-  },
-  display_mk_listItem: function (it) {
-    $supply.display_item(/.*itemid=(.+?)'/, it.getAttribute('onclick'), it.children[1]);
-  },
-  display_is_listItem: function (it) {
-    const col = it.parentNode.parentNode.parentNode.id === 'shop_pane' ? 3 : 2;
-    while (it.children.length < col) {
-      it.innerHTML += `<td></td>`;
-    }
-    $supply.display_item(/.*id="item_(.+?)"/, it.innerHTML, it.children[col - 1]);
-  },
-  display_list: function (query, method) {
-    Array.from($qsa(query)).forEach(method);
-  },
-  display_mk: function () {
-    $supply.display_list('#market_itemlist>table>tbody>tr', $supply.display_mk_listItem);
-  },
-  display_is: function () {
-    $supply.display_list('.hvut-it-Consumable, .hvut-it-Material', $supply.display_is_listItem);
-  },
-  init: async function () {
-    if ($supply.initialized) return;
-    await $supply.load_equipments();
-    await $supply.load_inventory();
-    $supply.initialized = true;
-  },
-  init_battle_outer: function () {
-    GM_addStyle(/*css*/`
-          .hvut-bt-outer { width: 1220px !important; }
-          .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
-          .hvut-bt-on .hvut-bt-outer { width: 620px !important; position: absolute;}
-          .hvut-bt-on.hvut-bt-left .hvut-bt-outer { margin-left: 600px !important; }
-          .hvut-bt-on.hvut-bt-right .hvut-bt-outer { margin-right: 600px !important; }
-          .hvut-bt-on .hvut-bt-div { visibility: visible; }
-          .hvut-bt-right .hvut-bt-div { right: 8px; }
-          #popup_box.hvut-bt-right-popup { left: 624px !important; }
-          #popup_box.hvut-bt-left-popup { left: 244px !important; }
-    `);
-    $id('mainpane').classList.add('hvut-bt-on');
-    $id('mainpane').style.paddingRight = '8px';
-
-    if (settings.equipEnchantPosition === 'right') {
-      $id('mainpane').classList.add('hvut-bt-right');
-      $id('popup_box').classList.add('hvut-bt-right-popup');
-    } else {
-      $id('mainpane').classList.add('hvut-bt-left');
-      $id('popup_box').classList.add('hvut-bt-left-popup');
-    }
-    $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer')?.classList.add('hvut-bt-outer');
-  },
-  init_battle_node: function () {
-    $supply.battle = { node: {} };
-    $supply.battle.outer = $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer');
-
-    GM_addStyle(/*css*/`
-    .hvut-bt { visibility: hidden; position: sticky; top: 30px; width: 598px; height: 453px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; pointer-events: all; visibility: visible;}
-    .hvut-bt-div { visibility: hidden; position: relative; top: 20px; width: 598px; height: 453px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
-    .hvut-bt-div > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-    .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; left:-1px; top: -1px; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
-
-    .hvut-bt-sticky { top: -25.25px; left: 1px; width: calc(100% - 2px); height: 0; margin: 0; padding: 21px 0 0; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-    .hvut-bt-sticky::before { border: 1px solid; content: attr(data-header); position: absolute; top: 0; width: calc(100% - 1px); border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
-    .hvut-bt-sticky-loading::before { color: #f0f;}
-    .hvut-bt-sticky-warn::before { color: #e00;}
-    .hvut-bt-equip { position: absolute; top: 0; left: 0; width: 400px; height: 286px; }
-    .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
-    .hvut-bt-equip li:last-child { border-bottom: none; }
-    .hvut-bt-equip li:hover { background-color: #fff; z-index: 1; }
-    .hvut-bt-active { background-color: #fff; }
-    .hvut-bt-equip li > a { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: none; }
-    .hvut-bt-equip li > span:nth-child(2) { display: block; font-size: 9pt; overflow: hidden; text-overflow: ellipsis; }
-    .hvut-bt-equip li > span:nth-child(2) > span { display: inline-block; margin: 0 3px; color: #e00; }
-    .hvut-bt-equip li > span:nth-child(2):empty { visibility: hidden; }
-    .hvut-bt-equip li:hover > span:nth-child(2) { white-space: normal; border-bottom: 1px solid; background: inherit; pointer-events: none; }
-    .hvut-bt-equip li:last-child:hover > span:nth-child(2) { position: absolute; bottom: 0; width: 340px; border-top: 1px solid; border-bottom: none; }
-    .hvut-bt-equip li > span:nth-child(3) { position: absolute; top: 0; right: 0; width: 59px; height: 100%; border-left: 1px solid #333; font-size: 9pt; white-space: normal; cursor: pointer; }
-    .hvut-bt-equip li > span:nth-child(3):hover { background-color: #fff; }
-    .hvut-bt-cdt1 { color: #e00; }
-    .hvut-bt-cdt2 { color: #fff; background-color: #e00 !important; }
-
-    .hvut-bt-inventory { left: 0; width: 400px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
-    .hvut-bt-inventory > li { width: 32%; overflow: hidden; }
-    .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
-    .hvut-bt-inventory::before {content: attr(data-header); position: absolute; left:-0.5px; top: 0.5px; width: 400px; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
-
-    .hvut-bt-enchant { position: absolute; top: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
-    .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
-    .hvut-bt-enchant span { margin: 0 2px; }
-    .hvut-bt-enchant span:nth-child(1) { color: #03c; }
-    .hvut-bt-enchant span:nth-child(2) { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; color: #03c; }
-    .hvut-bt-day { background-color: #fff; }
-    .hvut-bt-day span:nth-child(2) { font-weight: bold; }
-    .hvut-bt-nostock span { color: #999 !important; cursor: default; }
-
-    .hvut-bt-bottom { width: calc(100% + 1px); visibility: hidden; position: relative; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap;  min-height: 103.5px; top: 314px; display: flex; justify-content: space-between; }
-    .hvut-bt-bottom > ul {  margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-    .hvut-bt-bottom > .hvut-bt-repairall::before { content: attr(data-header); position: absolute; left: 407px; top: 0.5px; width: 190px border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
-
-    .hvut-bt-repairall::before {content: attr(data-header); position: absolute; left:-0.5px; top: 0.5px; width: 190px; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold;z-index:2; }
-    .hvut-bt-repair { position: absolute; top: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
-    .hvut-bt-repair:hover { background-color: #fff; }
-    .hvut-bt-repairall { width: 190px; cursor: pointer; left: 407px;}
-    .hvut-bt-repairall:hover { background-color: #fff; }
-    `);
-    $supply.battle.container = $element('div', $id('hvut-stickyContainer') ?? $id('mainpane'), ['.hvut-bt'], (e) => { $supply.click(e); });
-    $supply.battle.sticky = $element('ul', $supply.battle.container, ['.hvut-bt-sticky hvut-bt-sticky-loading', /*'!visibility: hidden',*/ { dataset: { header: '装备及库存' } }]);
-    $supply.battle.div = $element('div', $supply.battle.sticky, ['.hvut-bt-div', `!top: -9px`], (e) => { $supply.click(e); });
-    $supply.battle.equip = $element('ul', $supply.battle.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }]);
-    $supply.battle.enchant = $element('ul', $supply.battle.div, ['.hvut-bt-enchant', { dataset: { header: '装备附魔' } }]);
-    $supply.battle.repair = $element('ul', $supply.battle.div, ['.hvut-bt-repair', { dataset: { header: '修理装备', action: 'repair' } }]);
-    $supply.battle.bottom = $element('div', $supply.battle.div, ['.hvut-bt-bottom', '!left: 0; ']);
-    $supply.battle.inventory = $element('ul', $supply.battle.bottom, ['.hvut-bt-inventory', { dataset: { header: '补给品库存' } }]);
-    $supply.battle.repairall = $element('ul', $supply.battle.bottom, ['.hvut-bt-repairall', { dataset: { header: '修理全部', action: 'repairall' } }]);
-    $supply.set_battle_visible(true);
-    // $supply.battle.container.style.cssText += `top: 20px`
-  },
-  display_battle: function () {
-    if (!$item.list) return;
-    const cnMapping = {
-      // 修理材料
-      'Scrap Metal': '金属废料',
-      'Scrap Leather': '皮革废料',
-      'Scrap Wood': '木材废料',
-      'Scrap Cloth': '废布料',
-      'Energy Cell': '能量元',
-      // 补给品
-      'Health Potion': '生命药水',
-      'Health Draught': '生命长效药',
-      'Health Elixir': '生命秘药',
-      'Mana Potion': '法力药水',
-      'Mana Draught': '法力长效药',
-      'Mana Elixir': '法力秘药',
-      'Spirit Potion': '灵力药水',
-      'Spirit Draught': '灵力长效药',
-      'Spirit Elixir': '灵力秘药',
-      'Last Elixir': '终极秘药',
-      'Flower Vase': '花瓶',
-      'Bubble-Gum': '泡泡糖',
-      'Energy Drink': '能量饮料',
-      'Caffeinated Candy': '咖啡因糖果',
-      'Infusion of Darkness': '黑暗魔药',
-      'Infusion of Divinity': '神圣魔药',
-      'Infusion of Storms': '风暴魔药',
-      'Infusion of Lightning': '闪电魔药',
-      'Infusion of Frost': '冰冷魔药',
-      'Infusion of Flames': '火焰魔药',
-      'Infusion of Gaia': '盖亚魔药',
-      'Scroll of Swiftness': '加速卷轴',
-      'Scroll of the Avatar': '化身卷轴',
-      'Scroll of Shadows': '幻影卷轴',
-      'Scroll of Absorption': '吸收卷轴',
-      'Scroll of Life': '生命卷轴',
-      'Scroll of Protection': '守护卷轴',
-      'Scroll of the Gods': '众神卷轴',
-    };
-
-    function display(list, urgent, parent, innerMethod) {
-      Object.entries(list).forEach(([n, c]) => {
-        if (!c) return;
-        const s = $item.count(n);
-        $element('li', parent, [innerMethod(n, s, c), s < c ? urgent ? '.hvut-supply-warn' : '.hvut-supply-low-warn' : '']);
-      });
-    }
-    $supply.battle.repairall.innerHTML = '';
-    $supply.battle.inventory.innerHTML = '';
-
-    if ($supply.repair.repairall) {
-      display($supply.repair.repairall, $supply.repair.urgent, $supply.battle.repairall, (n, s, c) => { return `${n} x ${c} (${s})`; });
-    } else if ($supply.repair.repairall === 0) {
-      $element('li', $supply.battle.repairall, '所有装备无需修理.');
-    }
-    display(settings.supplyThreshold, true, $supply.battle.inventory, (n, s, c) => { return `${n} (${s})`; });
-    $qs('.hvut-bt-sticky-loading')?.classList.remove('hvut-bt-sticky-loading');
-    if ($qs('.hvut-supply-warn')) {
-      $qs('.hvut-bt-sticky')?.classList.add('hvut-bt-sticky-warn');
-    }
-    $supply.view($supply.current);
-  },
-}
+};
 
 // ITEM PRICE
-var $price = {
+const $price = {
 
   json: null,
-  desc: {
-    'WTS': '用于编辑各类物品所收取的COD单价，物品名称需使用英文',
-    'WTB': '用于编辑各类物品所付出的COD单价，物品名称需使用英文',
-    'Materials': '材料价格用于计算在怪物实验室中的利润，升级装备的总成本以及在装备商店中计算装备拆解的价值，物品名称需使用英文',
-    'Trophies': '用于设定各类奖杯的价格，物品名称需使用英文',
-    'Crystals': '用于设定各类水晶的价格，物品名称需使用英文',
+  market: null,
+  filters: { co: null, ma: null, tr: null, ar: null, fi: null, mo: null },
+  groups: {
+    'Consumables': [
+      'Health Draught', 'Health Potion', 'Health Elixir', 'Mana Draught', 'Mana Potion', 'Mana Elixir', 'Spirit Draught', 'Spirit Potion', 'Spirit Elixir', 'Last Elixir', 'Energy Drink', 'Caffeinated Candy',
+      'Infusion of Flames', 'Infusion of Frost', 'Infusion of Lightning', 'Infusion of Storms', 'Infusion of Divinity', 'Infusion of Darkness', 'Scroll of Swiftness', 'Scroll of Protection', 'Scroll of the Avatar', 'Scroll of Absorption', 'Scroll of Shadows', 'Scroll of Life', 'Scroll of the Gods',
+      'Flower Vase', 'Bubble-Gum',
+    ],
+    'Materials': [
+      'Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood',
+      'Scrap Cloth', 'Scrap Leather', 'Scrap Metal', 'Scrap Wood', 'Energy Cell',
+      'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator',
+      'Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst',
+      'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl',
+      'Peerless Weapon Core', 'Legendary Weapon Core', 'Peerless Staff Core', 'Legendary Staff Core', 'Peerless Armor Core', 'Legendary Armor Core',
+      'Voidseeker Shard', 'Aether Shard', 'Featherweight Shard', 'Amnesia Shard',
+    ],
+    'Trophies': ['ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage'],
+    'Crystals': ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'],
+    'Figures': ['Twilight Sparkle Figurine', 'Rainbow Dash Figurine', 'Applejack Figurine', 'Fluttershy Figurine', 'Pinkie Pie Figurine', 'Rarity Figurine', 'Trixie Figurine', 'Princess Celestia Figurine', 'Princess Luna Figurine', 'Apple Bloom Figurine', 'Scootaloo Figurine', 'Sweetie Belle Figurine', 'Big Macintosh Figurine', 'Spitfire Figurine', 'Derpy Hooves Figurine', 'Lyra Heartstrings Figurine', 'Octavia Figurine', 'Zecora Figurine', 'Cheerilee Figurine', 'Vinyl Scratch Figurine', 'Daring Do Figurine', 'Doctor Whooves Figurine', 'Berry Punch Figurine', 'Bon-Bon Figurine', 'Fluffle Puff Figurine', 'Angel Bunny Figurine', 'Gummy Figurine'],
+  },
+  default: {
+    'Wispy Catalyst': 100,
+    'Diluted Catalyst': 500,
+    'Regular Catalyst': 1000,
+    'Robust Catalyst': 2500,
+    'Vibrant Catalyst': 5000,
+    'Coruscating Catalyst': 10000,
   },
 
   init: function () {
     if ($price.json) {
       return;
     }
-    $price.keys = Object.keys(settings.itemPrice);
-    $price.json = Object.assign(JSON.parse(JSON.stringify(settings.itemPrice)), getValue('prices'));
-  },
-  get: function (tag) {
-    $price.init();
-    if ($price.keys.includes(tag)) {
-      return $price.json[tag];
-    } else {
-      return {};
+    if ($config.isekai) {
+      $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
+      $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
+      delete $price.groups['Crystals'];
+      delete $price.groups['Figures'];
+      delete $price.filters['ar'];
+      delete $price.filters['fi'];
+      delete $price.filters['mo'];
+    }
+    $price.json = $config.get('prices');
+    if (!$price.json) {
+      $price.reset();
     }
   },
-  set: function (tag, json, replace = true) {
-    $price.init();
-    if (!$price.keys.includes(tag)) {
-      popup(`'${tag}' is invalid`);
-      return;
-    }
-    if (replace) {
-      $price.json[tag] = json;
-    } else {
-      Object.assign($price.json[tag], json);
-    }
-    setValue('prices', $price.json);
-  },
-  edit: function (tag, callback) {
-    $price.init();
-    if (!tag) {
-      return;
-    }
-    const prev = $price.get(tag);
-    popup_text($price.json2str(tag), 'width: 300px; height: 500px;', [
-      {
-        value: '保存', click: (w, t) => {
-          const json = $price.str2json(t.value);
-          const error = json['\nERROR'];
-          if (error) {
-            alert('!!! 错误\n' + error);
-            return;
-          }
-          $price.set(tag, json);
-          w.remove();
-          if (JSON.stringify(prev) !== JSON.stringify(json)) {
-            callback?.();
-          }
-        }
-      },
-      {
-        value: '恢复默认', click: (w, t) => {
-          const desc = $price.desc[tag] || '';
-          t.value = `// [${tag}] ${desc}\n\n`
-            + Object.entries(settings.itemPrice[tag]).map(([n, p]) => `${n} @ ${p}`).join('\n');
-        }
-      },
-    ]);
-  },
-  selector: function (size) {
-    $price.init();
-    const selector = $element('select', null, null, { change: () => { selector.blur(); $price.edit(selector.value); } });
-    if (size) {
-      selector.size = $price.keys.length + 1;
-      selector.classList.add('hvut-scrollbar-none');
-    }
-    $element('option', selector, { text: '编辑价格...', value: '' });
-    $price.keys.forEach((k) => { $element('option', selector, { text: k, value: k }); });
-    return selector;
-  },
-  str2json: function (str) {
+  reset: function () {
     const json = {};
-    str.split('\n').some((s, i) => {
-      s = s.trim();
-      if (!s || s.startsWith('//')) {
+    Object.values($price.groups).forEach((g) => {
+      g.forEach((n) => {
+        json[n] = 0;
+      });
+    });
+    Object.assign(json, $price.default);
+    $price.json = json;
+    $config.set('prices', $price.json);
+    //$price.set(json, true);
+  },
+  get_items: function (i) {
+    let items;
+    if (!i) {
+      items = Object.keys($price.json);
+    } else if (typeof i === 'string') {
+      if (i in $price.groups) {
+        items = $price.groups[i];
+      } else if (i in $price.filters) {
+        items = $price.filters[i];
+      } else {
+        items = [];
+        console.log('Invalid items');
+      }
+    } else if (Array.isArray(i)) {
+      items = i;
+    } else {
+      items = [];
+      console.log('Invalid items');
+    }
+    return items;
+  },
+  get: function (i) {
+    $price.init();
+    const prices = {};
+    const items = $price.get_items(i);
+    items.forEach((n) => { prices[n] = $price.json[n] || 0; });
+    return prices;
+  },
+  set: function (json, replace) {
+    $price.init();
+    if (replace) {
+      $price.json = json;
+    } else {
+      Object.assign($price.json, json);
+    }
+    $config.set('prices', $price.json);
+  },
+  edit: function (i, filter, callback) {
+    $price.init();
+    const items = $price.get_items(i);
+    const prices = $price.get(items);
+    const all = !filter;
+
+    popup_text($config.obj2text(prices, ['\n', '@']), 300, 500, [
+      { text: 'Save', click: save },
+      { text: 'Bid', click: (p) => { market(p, 'bid'); } },
+      { text: 'Ask', click: (p) => { market(p, 'ask'); } },
+      { text: 'Edit All Items', click: edit_all },
+    ]);
+
+    function save(p) {
+      const { value: new_prices, error } = $config.text2obj(p.textarea.value, ['\n', '@'], 'number');
+      if (error) { // error: invalid input
+        alert(`Error: price must be a number\n\n${error}`);
         return;
       }
-      if (/^(.+?)\s*@\s*(\d+)$/.test(s)) {
-        json[RegExp.$1] = parseInt(RegExp.$2);
+      if (all && p.textarea.value.trim() === '') {
+        $price.reset();
       } else {
-        json['\nERROR'] = `#${i + 1}: ${s}`;
-        return true;
+        const replace = all;
+        $price.set(new_prices, replace);
+      }
+      p.close();
+      if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
+        callback?.();
+      }
+    }
+    async function market(p, key) {
+      p.textarea.disabled = true;
+      const new_prices = await $price.update_market(filter, key);
+      p.textarea.value = $config.obj2text(new_prices, ['\n', '@']);
+      p.textarea.disabled = false;
+      save(p);
+    }
+    function edit_all(p) {
+      if (all) {
+        return;
+      }
+      p.close();
+      $price.edit('', '', callback);
+    }
+  },
+  parse_market: function (filter, doc = document) {
+    if (!$price.market) {
+      $price.market = {};
+    }
+    $price.filters[filter] = [];
+    Array.from($qs('#market_itemlist table', doc).rows).forEach((tr, i) => {
+      if (i === 0) {
+        return;
+      }
+      const name = tr.cells[0].textContent;
+      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
+      const stock = parseInt(tr.cells[1].textContent);
+      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
+      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
+      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
+      if (!$price.market[name]) {
+        $price.market[name] = {};
+      }
+      Object.assign($price.market[name], { itemid, stock, bid, ask, market_stock });
+      $price.filters[filter].push(name);
+    });
+  },
+  update_market: async function (filter, key, save) {
+    const all = !filter;
+    if (all && !$price.market_all) {
+      const filters = Object.keys($price.filters);
+      const requests = filters.map((filter) => update(filter));
+      await Promise.all(requests);
+      $price.market_all = true;
+    } else if (!all && !$price.market) {
+      await update(filter);
+    }
+    const items = $price.get_items(filter);
+    const prices = $price.get(items);
+    const market_prices = $price.get_market(items, key);
+    const new_prices = { ...prices, ...market_prices };
+    if (save) {
+      $price.set(new_prices);
+    }
+    return new_prices;
+
+    async function update(filter) {
+      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
+      const doc = $doc(html);
+      $price.parse_market(filter, doc);
+    }
+  },
+  get_market: function (items, key) {
+    const prices = {};
+    items.forEach((name) => {
+      if (name in $price.market) {
+        prices[name] = $price.market[name][key];
       }
     });
-    return json;
+    return prices;
   },
-  json2str: function (tag) {
-    const desc = $price.desc[tag] || '';
-    return `// [${tag}] ${desc}\n\n`
-      + Object.entries($price.get(tag)).map(([n, p]) => `${n} @ ${p}`).join('\n');
+  set_market: function (items, key) {
+    const prices = $price.get_market(items, key);
+    $price.set(prices);
   },
 
 };
 
 // MoogleMail
-var $mail = {
+const $mail = {
 
   queue: [],
   current: 0,
@@ -3077,6 +2480,7 @@ var $mail = {
     }
     const chunks = [];
     const size = 10;
+
     for (let i = 0, l = mail.attach.length; i < l; i += size) {
       const attach = mail.attach.slice(i, i + size);
       const { to_name, cod_persistent } = mail;
@@ -3146,7 +2550,8 @@ var $mail = {
     return chunks;
   },
   check: function (html) {
-    const error = get_message(html);
+    const doc = $doc(html);
+    const error = get_message(doc);
     if (error) {
       $mail.error = error;
       $mail.log('!!! Error: ' + error);
@@ -3157,80 +2562,425 @@ var $mail = {
     return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
   },
   log: function (text, clear) {
-    if (!$mail.log.node) {
-      $mail.log.node = popup_text('', 'width: 300px; height: 300px; white-space: pre;');
+    if (!$mail.log.popup) {
+      $mail.log.popup = popup_text('', 300, 300);
     }
-    const { w, t } = $mail.log.node;
-    if (!w.parentNode) {
-      document.body.appendChild(w);
+    const p = $mail.log.popup;
+    if (!p.wrapper.parentNode) {
+      document.body.appendChild(p.wrapper);
     }
     if (clear) {
-      t.value = '';
+      p.textarea.value = '';
     }
-    t.value += text + '\n';
-    t.scrollTop = t.scrollHeight;
+    p.textarea.value += text + '\n';
+    p.textarea.scrollTop = p.textarea.scrollHeight;
   },
 
 };
 
-// 获取包含体力信息的元素
-var staminaElement = document.getElementById('stamina_readout');
-var staminaElements = document.getElementById('stamina_readout');
-// 获取所有包含体力信息的子元素
-var staminaChildren = staminaElement.querySelectorAll('div[title]');
-var staminaText = staminaElements.querySelector('img').getAttribute('title');
-// 定义英文和中文的对应关系
-var translationMap = {
-  'Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.': '你已经筋疲力尽，你将无法从怪物处获取任何经验、潜经验、掉落、以及熟练度，直到你的精力恢复到2以上',
-  'You have increased stamina drain due to low riddle accuracy': '由于你的小马图回答正确率太低，你的精力消耗速率被提高了',
-  'Great. You receive a 100% EXP Bonus but stamina drains 50% faster.': `你现在精力充沛，额外获得100%经验加成，但精力消耗量增加50%（每场战斗消耗${_isekai ? 0.06 : 0.03}的精力）`,
-  'Normal. You are not receiving any bonuses or penalties.': `正常，你既不会受到额外的奖励也不会受到惩罚（每场战斗消耗${_isekai ? 0.04 : 0.02}的精力）`,
-  // 其他英文和中文对应关系
+// Battle Panel: Equipment Enchant and Repair
+const $battle = {
+
+  enchant_data: {
+    'Voidseeker Shard': { effect: "Voidseeker's Blessing", weapon: 'vseek' },
+    'Aether Shard': { effect: 'Suffused Aether', weapon: 'ether' },
+    'Featherweight Shard': { effect: 'Featherweight Charm', weapon: 'feath', armor: 'feath' },
+    'Infusion of Flames': { effect: 'Infused Flames', weapon: 'sfire', armor: 'pfire', day: 2 },
+    'Infusion of Frost': { effect: 'Infused Frost', weapon: 'scold', armor: 'pcold', day: 3 },
+    'Infusion of Lightning': { effect: 'Infused Lightning', weapon: 'selec', armor: 'pelec', day: 6 },
+    'Infusion of Storms': { effect: 'Infused Storm', weapon: 'swind', armor: 'pwind', day: 4 },
+    'Infusion of Divinity': { effect: 'Infused Divinity', weapon: 'sholy', armor: 'pholy', day: 0 },
+    'Infusion of Darkness': { effect: 'Infused Darkness', weapon: 'sdark', armor: 'pdark', day: 1 },
+  },
+  node: {},
+  equips: [],
+
+  click: function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, eid, item, count } = target.dataset;
+    if (action === 'view') {
+      $battle.view(eid);
+    } else if (action === 'enchant') {
+      $battle.enchant($battle.current, item, count);
+    } else if (action === 'repair') {
+      $battle.repair($battle.current);
+    } else if (action === 'repairall') {
+      $battle.repair('all');
+    } else if (action === 'buy') {
+      $battle.buy(item, count);
+    }
+  },
+  get: function (eid) {
+    return $battle.equips.find((eq) => eq.info.eid == eid);
+  },
+  view: function (eid) {
+    $battle.node.repair.innerHTML = '';
+    $battle.node.enchant.innerHTML = '';
+
+    const eq = $battle.get(eid);
+    if (!eq) {
+      return;
+    }
+    $battle.get($battle.current)?.node.li.classList.remove('hvut-bt-active');
+    $battle.current = eq.info.eid;
+    eq.node.li.classList.add('hvut-bt-active');
+
+    if (eq.data.repair) {
+      eq.data.repair.forEach(({ name, count }) => {
+        const stock = $item.count(name);
+        const textContent = `${name} x ${count} (${stock})`;
+        const className = stock < count ? 'hvut-bt-warn' : '';
+        $element('li', $battle.node.repair, { textContent, className });
+      });
+    } else if (eq.data.repair === null) {
+      $element('li', $battle.node.repair, '-');
+    }
+
+    if (!$item.list) {
+      return;
+    }
+    const cat = eq.info.cat;
+    const day = (new Date()).getUTCDay();
+    Object.entries($battle.enchant_data).forEach(([name, item]) => {
+      if (item[cat]) {
+        const li = $element('li', $battle.node.enchant);
+        const count = (cat === 'weapon' && name.includes('Infusion of ') ? $config.settings.equipEnchantWeapon : $config.settings.equipEnchantArmor) || 1;
+        const stock = $item.count(name);
+        if (cat === 'weapon' && item.day === day) {
+          li.classList.add('hvut-bt-day');
+        }
+        if (!stock) {
+          li.classList.add('hvut-bt-nostock');
+        }
+        $element('span', li, [`[+${count}]`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count } }]);
+        $element('span', li, [`${item.effect}`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count: 1 } }]);
+        $element('span', li, [`(${stock})`]);
+      }
+    });
+  },
+  load: async function (eid) {
+    const eq = $battle.get(eid);
+    eq.node.enc.textContent = 'Loading...';
+    const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
+    const doc = $doc(html);
+    $battle.parse(eq.info.eid, doc);
+  },
+  parse: function (eid, doc) {
+    const div = $id('equip_extended', doc);
+    const exec = /Condition: (\d+) \/ (\d+) \((\d+)%\)/.exec($qs('.eq', div).children[1].textContent);
+    const eq = $battle.get(eid);
+    eq.info.condition = parseInt(exec[1]);
+    eq.info.durability = parseInt(exec[2]);
+    eq.info.cdt = eq.info.condition / eq.info.durability;
+    $battle.display_condition(eq.info.eid);
+
+    eq.node.enc.innerHTML = '';
+    const enchant = $qsa('#ee > span', div);
+    enchant.forEach((e) => { $element('span', eq.node.enc, e.textContent); });
+    if (!enchant.length) {
+      eq.node.enc.textContent = 'No Enchantments';
+    }
+  },
+  enchant: async function (eid, name, count) {
+    if (!$item.list) {
+      return;
+    }
+    const eq = $battle.get(eid);
+    const item = $battle.enchant_data[name];
+    const stock = $item.count(name);
+    if (count > stock) {
+      count = stock;
+    }
+    if (count < 1) {
+      return;
+    }
+    eq.node.enc.textContent = 'Loading...';
+
+    async function enchant(eq) {
+      const html = await $ajax.fetch('?s=Forge&ss=en', `select_item=${eq.info.eid}&enchantment=${item[eq.info.cat]}`);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        popup(error);
+      }
+      $battle.parse(eq.info.eid, doc);
+    }
+
+    const requests = $ajax.repeat(count, enchant, eq);
+    await Promise.all(requests);
+    $battle.load_inventory();
+  },
+  repair: async function (eid) {
+    const eq = $battle.get(eid);
+    const eqall = eid === 'all';
+    if (eq?.info?.cdt === 1 || $battle.repair.repairall === null) {
+      return;
+    }
+
+    let requires;
+    if (eqall) {
+      requires = $battle.repair.repairall;
+    } else if (eq) {
+      requires = eq.data.repair;
+    }
+    if (requires) {
+      const items = [];
+      requires.forEach(({ name, count }) => {
+        count -= $item.count(name);
+        if (count > 0) {
+          items.push({ name, count });
+        }
+      });
+      if (items.length) {
+        if (!confirm('Not enough materials for repairs.\nWould you like to purchase materials from the Item Shop to repair your equipment?')) {
+          return;
+        }
+        $battle.node.repairall.innerHTML = '';
+        $battle.node.repair.innerHTML = '';
+        $element('li', $battle.node.repairall, '...');
+        $element('li', $battle.node.repair, '...');
+        await $item.buy(items);
+      }
+    }
+
+    $battle.node.repairall.innerHTML = '';
+    $battle.node.repair.innerHTML = '';
+
+    const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eqall ? 'repair_all=1' : null);
+    const doc = $doc(html);
+    $battle.load_dynjs(doc);
+
+    const error = get_message(doc);
+    if (error) {
+      popup(error);
+      $battle.load_inventory();
+      return;
+    }
+
+    const repairall = /Requires: (.+)/.exec($id('repairall', doc).nextElementSibling.textContent)[1];
+    if (repairall === 'Everything is fully repaired.') {
+      $battle.repair.repairall = null;
+    } else {
+      $battle.repair.repairall = repairall.split(', ').map((e) => {
+        const exec = /(\d+)x (.+)/.exec(e);
+        const count = parseInt(exec[1]);
+        const name = exec[2];
+        return { name, count };
+      });
+    }
+
+    const equips = {};
+    $qsa('.equiplist div[onclick*="set_forge_cost"]', doc).forEach((div) => {
+      const exec = /set_forge_cost\((\d+),'Requires: (.+?)'/.exec(div.getAttribute('onclick'));
+      const eid = exec[1];
+      const requires = exec[2];
+      equips[eid] = requires.split(', ').map((e) => {
+        const exec = /(\d+)x (.+)/.exec(e);
+        const count = parseInt(exec[1]);
+        const name = exec[2];
+        return { name, count };
+      });
+    });
+
+    $battle.equips.forEach((e) => {
+      const requires = equips[e.info.eid];
+      if (requires) {
+        e.data.repair = requires;
+      } else {
+        e.data.repair = null;
+      }
+      if (eq === e || eqall && $config.settings.equipEnchantCheckArmors) {
+        $battle.load(e.info.eid);
+      }
+    });
+
+    if (eq || eqall) {
+      $battle.load_inventory();
+    } else {
+      $battle.display_inventory();
+    }
+    $persona.check_warning(doc);
+  },
+  buy: async function (name, count) {
+    if (!confirm(`Would you like to buy ${count} x ${name}?`)) {
+      return;
+    }
+    const items = [{ name, count }];
+    await $item.buy(items);
+    $battle.load_inventory();
+  },
+  load_dynjs: async function (doc) {
+    const src = $qs('script[src*="/dynjs/"]', doc).src;
+    const html = await $ajax.fetch(src + '?t=' + Date.now());
+    $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
+
+    $battle.equips.some((eq) => {
+      const dynjs = $equip.dynjs_loaded[eq.info.eid];
+      if (!dynjs) {
+        $persona.change_p();
+        return true;
+      }
+      const exec = $equip.reg.html.exec(dynjs.d);
+      eq.info.condition = parseInt(exec[4]);
+      eq.info.durability = parseInt(exec[5]);
+      eq.info.cdt = eq.info.condition / eq.info.durability;
+      $battle.display_condition(eq.info.eid);
+    });
+  },
+  display_condition: function (eid) {
+    const eq = $battle.get(eid);
+    let thld = $config.settings.equipEnchantRepairThreshold;
+    if (thld < 1) {
+      thld = eq.info.cdt <= thld;
+    } else { // margin to 50%
+      thld = eq.info.condition <= thld + eq.info.durability * 0.5;
+    }
+    eq.node.cdt.textContent = `${eq.info.condition} / ${eq.info.durability} (${(eq.info.cdt * 100).toFixed(1)}%)`;
+    eq.node.cdt.className = eq.info.cdt <= 0.5 ? 'hvut-bt-cdt2' : eq.info.cdt <= 0.6 || thld ? 'hvut-bt-cdt1' : '';
+  },
+  load_inventory: async function () {
+    $battle.node.inventory.innerHTML = '';
+    $battle.node.repairall.innerHTML = '';
+    await $item.load();
+    $battle.display_inventory();
+    $config.set('items', $item.count());
+  },
+  display_inventory: function () {
+    $battle.node.inventory.innerHTML = '';
+    $battle.node.repairall.innerHTML = '';
+    if (!$item.list) {
+      return;
+    }
+    Object.entries($config.settings.equipEnchantItemInventory).forEach(([name, count]) => {
+      const stock = $item.count(name);
+      const textContent = `${name} (${stock})`;
+      const className = stock < count ? 'hvut-bt-warn' : '';
+      const dataset = { action: 'buy', item: name, count };
+      $element('li', $battle.node.inventory, { textContent, className, dataset });
+    });
+    if ($battle.repair.repairall) {
+      $battle.repair.repairall.forEach(({ name, count }) => {
+        const stock = $item.count(name);
+        const textContent = `${name} x ${count} (${stock})`;
+        const className = stock < count ? 'hvut-bt-warn' : '';
+        $element('li', $battle.node.repairall, { textContent, className });
+      });
+    } else if ($battle.repair.repairall === null) {
+      $element('li', $battle.node.repairall, 'Everything is fully repaired.');
+    }
+    $battle.view($battle.current);
+  },
+  create: function () {
+    $battle.load_inventory();
+    $battle.equips.length = 0;
+    $battle.node.equip.innerHTML = '';
+    const equipset = $config.get('equipset');
+    if (!equipset) {
+      $persona.change_p();
+      return;
+    }
+    equipset.forEach((info) => {
+      if (!info.eid) {
+        $element('li', $battle.node.equip, [`/<a>${info.slot}</a><span>Empty</span><span></span>`]);
+        return false;
+      }
+
+      const eq = { info, data: {}, node: {} };
+      eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
+      eq.node.li = $element('li', $battle.node.equip);
+      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
+      eq.node.enc = $element('span', eq.node.li);
+      eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
+
+      $battle.equips.push(eq);
+      if (eq.info.cat === 'weapon' || $config.settings.equipEnchantCheckArmors) {
+        $battle.load(eq.info.eid);
+      }
+    });
+
+    $battle.current = $battle.equips[0]?.info.eid;
+    $battle.repair();
+  },
+  init: function () {
+    GM_addStyle(/*css*/`
+      .hvut-bt-outer { width: 1220px !important; }
+      .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
+      .hvut-bt-on .hvut-bt-outer { width: 620px !important; }
+      .hvut-bt-on.hvut-bt-left .hvut-bt-outer { margin-left: 600px !important; }
+      .hvut-bt-on.hvut-bt-right .hvut-bt-outer { margin-right: 600px !important; }
+      .hvut-bt-on .hvut-bt-div { visibility: visible; }
+      .hvut-bt-left .hvut-bt-div { left: 8px; }
+      .hvut-bt-right .hvut-bt-div { right: 8px; }
+      #popup_box.hvut-bt-right-popup { left: 624px !important; }
+      #popup_box.hvut-bt-left-popup { left: 244px !important; }
+
+      .hvut-bt-div { visibility: hidden; position: absolute; bottom: 8px; width: 599px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
+      .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
+      .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
+
+      .hvut-bt-equip { position: absolute; bottom: 0; left: 0; width: 400px; height: 286px; }
+      .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
+      .hvut-bt-equip li:last-child { border-bottom: none; }
+      .hvut-bt-equip li:hover { background-color: #fff; z-index: 1; }
+      .hvut-bt-active { background-color: #fff; }
+      .hvut-bt-equip li > a { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: none; }
+      .hvut-bt-equip li > span:nth-child(2) { display: block; font-size: 9pt; overflow: hidden; text-overflow: ellipsis; }
+      .hvut-bt-equip li > span:nth-child(2) > span { display: inline-block; margin: 0 3px; color: #e00; }
+      .hvut-bt-equip li > span:nth-child(2):empty { visibility: hidden; }
+      .hvut-bt-equip li:hover > span:nth-child(2) { white-space: normal; border-bottom: 1px solid; background: inherit; pointer-events: none; }
+      .hvut-bt-equip li:last-child:hover > span:nth-child(2) { position: absolute; bottom: 0; width: 340px; border-top: 1px solid; border-bottom: none; }
+      .hvut-bt-equip li > span:nth-child(3) { position: absolute; top: 0; right: 0; width: 59px; height: 100%; border-left: 1px solid #333; font-size: 9pt; white-space: normal; cursor: pointer; }
+      .hvut-bt-equip li > span:nth-child(3):hover { background-color: #fff; }
+      .hvut-bt-cdt1 { color: #e00; }
+      .hvut-bt-cdt2 { color: #fff; background-color: #e00 !important; }
+
+      .hvut-bt-inventory { position: absolute; bottom: 314px; left: 0; width: 400px; min-height: 80px; max-height: 160px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
+      .hvut-bt-inventory > li { width: 32%; overflow: hidden; cursor: pointer; }
+      .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
+      .hvut-bt-warn { color: #e00; }
+
+      .hvut-bt-enchant { position: absolute; bottom: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
+      .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
+      .hvut-bt-enchant span { margin: 0 2px; }
+      .hvut-bt-enchant span:nth-child(1) { color: #03c; }
+      .hvut-bt-enchant span:nth-child(2) { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; color: #03c; }
+      .hvut-bt-day { background-color: #fff; }
+      .hvut-bt-day span:nth-child(2) { font-weight: bold; }
+      .hvut-bt-nostock span { color: #999 !important; cursor: default; }
+
+      .hvut-bt-repair { position: absolute; bottom: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
+      .hvut-bt-repair:hover { background-color: #fff; }
+      .hvut-bt-repairall { position: absolute; bottom: 314px; left: 407px; width: 190px; min-height: 80px; cursor: pointer; }
+      .hvut-bt-repairall:hover { background-color: #fff; }
+    `);
+
+    $battle.node.div = $element('div', $id('mainpane'), ['.hvut-bt-div'], (e) => { $battle.click(e); });
+    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: 'EQUIPMENT' } }]);
+    $battle.node.enchant = $element('ul', $battle.node.div, ['.hvut-bt-enchant', { dataset: { header: 'ENCHANT' } }]);
+    $battle.node.repair = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: 'REPAIR', action: 'repair' } }]);
+    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repairall', { dataset: { header: 'REPAIR ALL', action: 'repairall' } }]);
+    $battle.node.inventory = $element('ul', $battle.node.div, ['.hvut-bt-inventory', { dataset: { header: 'ITEM INVENTORY' } }]);
+
+    $id('mainpane').classList.add('hvut-bt-on');
+    $id('mainpane').style.paddingRight = '8px';
+
+    if ($config.settings.equipEnchantPosition === 'right') {
+      $id('mainpane').classList.add('hvut-bt-right');
+      $id('popup_box').classList.add('hvut-bt-right-popup');
+    } else {
+      $id('mainpane').classList.add('hvut-bt-left');
+      $id('popup_box').classList.add('hvut-bt-left-popup');
+    }
+
+    $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer')?.classList.add('hvut-bt-outer');
+
+    $battle.create();
+  },
+
 };
-// 遍历所有子元素，替换 title 属性中的英文文本为中文
-for (var key in translationMap) {
-  if (staminaText.includes(key)) {
-    staminaText = staminaText.replace(key, translationMap[key]);
-    break; // 找到匹配项后立即退出循环
-  }
-}
-
-// 将替换后的文本内容设置回元素的 title 属性
-staminaElement.querySelector('img').setAttribute('title', staminaText);
-staminaChildren.forEach(function (child) {
-  var title = child.getAttribute('title');
-  if (title && translationMap[title]) {
-    child.setAttribute('title', translationMap[title]);
-  }
-});
-
-// PLAYER DATA
-var _player = {
-  stamina: /Stamina: (\d+)/.test($id('stamina_readout').textContent) && parseInt(RegExp.$1),
-  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
-  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
-  dfct: /^(.+) Lv\.(\d+)/.test($id('level_readout').textContent.trim()) && RegExp.$1,
-  level: parseInt(RegExp.$2),
-  warn: [],
-
-};
-
-if (isNaN(_player.level)) { // check font settings
-  alert('使用脚本前，请设置自定义字体.');
-  if (_query.ss === 'se') {
-    scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
-    _se.form = $qs('#settings_outer form');
-    _se.form.fontlocal.required = true;
-    _se.form.fontface.required = true;
-    _se.form.fontsize.required = true;
-    _se.form.fontface.placeholder = 'Tahoma, Arial';
-    _se.form.fontsize.placeholder = '10';
-    _se.form.fontoff.placeholder = '0';
-  } else {
-    location.href = '?s=Character&ss=se';
-  }
-  return;
-}
 
 // BASIC CSS
 GM_addStyle(/*css*/`
@@ -3261,11 +3011,15 @@ GM_addStyle(/*css*/`
   .csps > img { display: none; }
   .cspp { overflow-y: auto; }
   .fc2, .fc4 { display: inline; }
+
   .hvut-none { display: none !important; }
   .hvut-none-cont .hvut-none-item { display: none; }
   .hvut-cphu, .hvut-cphu-sub > * { cursor: pointer; }
   .hvut-cphu:hover, .hvut-cphu-sub > *:hover { text-decoration: underline; }
   .hvut-spaceholder { flex-grow: 1; }
+  .hvut-side { position: absolute; width: 100px; display: flex; flex-direction: column; }
+  .hvut-side > input { margin: 3px 0; white-space: normal; }
+  .hvut-side-margin { margin-bottom: 10px !important; }
 
   .equiplist { font-weight: normal; }
   .eqp { margin: 5px; width: auto; }
@@ -3293,26 +3047,17 @@ GM_addStyle(/*css*/`
   .hvut-it-MonsterFood { color: #489EFF; }
   .hvut-it-Material { color: #f00; }
   .hvut-it-Collectable { color: #0000FF; }
-
-  .hvut-supply-warn { color: #e00; }
-  .hvut-supply-low-warn { color: #00e; }
-  .hvut-supply-white { color: #fff; }
 `);
 
-if (settings.equipColor) {
+if ($config.settings.equipColor) {
   GM_addStyle(/*css*/`
     .eqp > div:last-child:not([onclick]) { color: #966; }
     .eqp > div:last-child[style*='color'] { box-shadow: 0 0 0 2px inset; }
-    .hvut-eq-Flimsy { background-color: #848482; }
-    .hvut-eq-Crude { background-color: #acacac; }
-    .hvut-eq-Fair { background-color: #c1c1c1; }
-    .hvut-eq-Average { background-color: #dfdfdf; }
-    .hvut-eq-Fine { background-color: #b9ffb9; }
-    .hvut-eq-Superior { background-color: #fbf9f9; }
-    .hvut-eq-Exquisite { background-color: #d7e698; }
-    .hvut-eq-Magnificent { background-color: #a6daf6; }
-    .hvut-eq-Legendary { background-color: #ffbbff; }
-    .hvut-eq-Peerless { background-color: #ffd760; }
+    .hvut-eq-Peerless { background-color: #fbb; }
+    .hvut-eq-Legendary { background-color: #fd8; }
+    .hvut-eq-Magnificent { background-color: #bdf; }
+    .hvut-eq-Exquisite { background-color: #ce9; }
+    .hvut-eq-Superior { background-color: #ccc; }
   `);
 }
 
@@ -3320,8 +3065,7 @@ if ($id('stats_pane')) {
   GM_addStyle(/*css*/`
     #stats_header, #eqch_stats .csps { display: none; }
     #stats_pane { height: 650px !important; white-space: nowrap; }
-    .stats_page .spc { width: auto; padding: 10px 0 0 10px; }
-    .stats_page .spc > .fal > div { font-weight: bold; }
+    .stats_page .spc { width: auto; padding: 10px 0 0 10px; font-weight: bold; }
     .stats_page .far { color: #c00; }
     .stats_page .st2 > div:nth-child(2n) { width: 100px; }
     .hvut-ch-expand #eqch_left { width: 660px; }
@@ -3340,36 +3084,38 @@ if ($id('stats_pane')) {
   `);
 
   $qs('#stats_pane > div:last-of-type').prepend(...$qsa('#stats_pane > div:first-of-type > div:nth-last-of-type(-n+2)'));
-  toggle_button($input('button', $id('stats_pane'), { style: 'position: absolute; top: 12px; right: 20px; width: 70px;' }), '折叠', '展开', $id('eqch_outer'), 'hvut-ch-expand', settings.characterExpandStatsByDefault);
+  toggle_button($input('button', $id('stats_pane'), { style: 'position: absolute; top: 12px; right: 20px; width: 100px;' }), 'Collapse', 'Expand', $id('eqch_outer'), 'hvut-ch-expand', true);
 }
 
 // DISABLE FONT ENGINE
 _window.common.get_dynamic_digit_string = function (n) { return `<div class="fc4 far fcb"><div>${n.toLocaleString()}</div></div>`; };
 
-// EQUIPMENT KEY FUNCTIONS
-if (settings.equipmentKeyFunctions) {
+if ($config.settings.equipHoverFunctions) {
+  // EQUIPMENT KEY FUNCTIONS
   document.addEventListener('keydown', (e) => {
     if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') {
       return;
     }
     const div = $qs('div[data-eid]:hover');
     if (div) {
-      if (e.which === 67) { // C
-        if (e.getModifierState('CapsLock')) {
-          div.dispatchEvent(new MouseEvent('mouseover'));
-          document.dispatchEvent(new KeyboardEvent('keypress', { which: 99, keyCode: 99 }));
-        }
-      } else if (e.which === 76) { // L
-        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${div.dataset.eid}/${div.dataset.key}]` + div.textContent.replace(/(^\[\d+\] )|( \[[SDEAIW]+\]$)/g, '') + '[/url]');
-      } else if (e.which === 86) { // V
-        window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+      const eq = $equip.parse.div(div);
+      if (e.key === 'C') {
+        div.dispatchEvent(new MouseEvent('mouseover'));
+        document.dispatchEvent(new KeyboardEvent('keypress', { which: 99, keyCode: 99 }));
+      }
+      const key = e.key.toUpperCase();
+      if (key === 'V') {
+        window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
+      } else if (key === 'L') {
+        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+      } else if (key === 'K') {
+        $equip.namecode(eq);
+        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.data.namecode}[/url]`);
       }
     }
   });
-}
 
-// EQUIPMENT MOUSE FUNCTIONS
-if (settings.equipmentMouseFunctions) {
+  // EQUIPMENT MOUSE FUNCTIONS
   document.addEventListener('dblclick', () => {
     const div = $qs('div[data-eid]:hover');
     if (div) {
@@ -3378,13 +3124,51 @@ if (settings.equipmentMouseFunctions) {
   });
 }
 
+if ($config.settings.equipTouchFunctions) {
+  // EQUIPMENT TOUCH FUNCTIONS
+  function handleAction(target) {
+    const div = target?.closest('div[data-eid]');
+    if (!div) {
+      return;
+    }
+    window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+  }
+
+  let lastTap = 0;
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      const target = document.elementFromPoint(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+      handleAction(target);
+    }
+    lastTap = now;
+  });
+
+  let touchTimer = null;
+  document.addEventListener('touchstart', (event) => {
+    const touch = event.touches[0];
+    touchTimer = setTimeout(() => {
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      handleAction(target);
+    }, 500);
+  });
+
+  document.addEventListener('touchend', () => {
+    clearTimeout(touchTimer);
+  });
+
+  document.addEventListener('touchmove', () => {
+    clearTimeout(touchTimer);
+  });
+}
+
 // TOP MENU
 GM_addStyle(/*css*/`
   #navbar { display: none; }
 
-  #hvut-top { display: ${_isInIframe ? 'none' : 'flex'}; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid; font-size: 10pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
+  #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid; font-size: 10pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
   #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
-  #hvut-top a { text-decoration: none; }
+  #hvut-top a { display: block; text-decoration: none; }
 
   .hvut-top-warn { background-color: #fd9; }
   .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid #5C0D11; background-color: #fd9c; color: #e00; z-index: -1; pointer-events: none; }
@@ -3397,9 +3181,10 @@ GM_addStyle(/*css*/`
   .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid; background: linear-gradient(to right, #930 1px, transparent 1px) repeat -1px 0 / 30px; }
   .hvut-top-exp::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: -1; }
   .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: #9cf; z-index: -1; }
-  .hvut-top-server > span { color: #930; }
-  .hvut-top-server > div { left: auto; right: -6px; }
-  .hvut-top-server a { display: block; }
+  .hvut-top-placeholder { flex: 1; }
+  .hvut-top-server { left: auto; right: -6px; }
+  .hvut-top-config { left: auto; right: -6px; }
+  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
 
   .hvut-top-menu { display: flex; }
   .hvut-top-menu > div { position: relative; margin: 0 5px; }
@@ -3407,123 +3192,93 @@ GM_addStyle(/*css*/`
   .hvut-top-menu .hvut-top-sub { width: max-content; }
   .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
   .hvut-top-menu ul:first-child { margin-left: 0; }
-  .hvut-top-menu a { display: block; margin: 3px 0; padding: 0 5px; }
+  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
   .hvut-top-menu a:hover { background-color: #fff; }
   .hvut-top-menu-s { padding: 0 5px; background-color: #5C0D11; color: #fff; }
 
-  //.hvut-top-quick { margin: 0 15px !important; }
-  .hvut-top-quick > a { display: inline-block; position: relative; margin: 0 1px; padding: 0 2px; font-size: 10.5pt; border-radius: 2px; }
-  .hvut-top-quick > a:hover { background-color: #fff; }
-  .hvut-top-quick > a::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
-  .hvut-top-quick > a:hover::after { visibility: visible; }
+  .hvut-top-links { display: flex; }
+  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 12pt; border-radius: 2px; }
+  .hvut-top-links > a:hover { background-color: #fff; }
+  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
+  .hvut-top-links > a:hover > span { display: block; }
   .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
   .hvut-top-ygm:hover { color: #e00 !important; background-image: none; animation: none; filter: none; }
   @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
 `);
 
-function formatPname(pname) {
-  let [name, type] = pname.split('#');
-  if(!type) return pname;
-  type = type.match(new RegExp('.{1,' + 2 + '}', 'g')).map(t=>{
-    const ch = {
-      'Cl':'布',
-      'Li':'轻',
-      'Hv':'重',
-      'Fr': '火',
-      'Cd': '冰',
-      'Dv': '圣',
-      'Fb': '暗',
-      'El': '电',
-      'Wd': '风'
-    }
-    return ch[t]
-  }).join('');
-  return `${name}${type}`
-}
-
 _top.menu = {
-  '角色面板': { s: 'Character', ss: 'ch', text: '主页' },
-  '装备': { s: 'Character', ss: 'eq', text: '装备' },
-  '技能': { s: 'Character', ss: 'ab', text: '技能' },
-  '训练': { s: 'Character', ss: 'tr', isekai: false, text: '训练' },
-  '物品仓库': { s: 'Character', ss: 'it', text: '物品' },
-  '装备仓库': { s: _isekai ? 'Bazaar' : 'Character', ss: _isekai ? 'am' : 'in', text: '装备库' },
-  '设置': { s: 'Character', ss: 'se', text: '设置' },
-  '前往异世界': { s: 'Character', href: '/isekai/', isekai: false, text: '异世界' },
-  '前往永久区': { s: 'Character', href: '/', isekai: true, text: '永久区' },
-  '装备商店': { s: 'Bazaar', ss: _isekai ? 'am&screen=sell' : 'es', text: '装备店' },
-  '物品商店': { s: 'Bazaar', ss: 'is', text: '物品店' },
-  '雪花祭坛': { s: 'Bazaar', ss: 'ss', text: '祭坛' },
-  '交易市场': { s: 'Bazaar', ss: 'mk', text: '市场' },
-  '怪物实验室': { s: 'Bazaar', ss: 'ml', isekai: false, text: '实验室' },
-  '莫古利邮局': { s: 'Bazaar', ss: 'mm', text: '邮箱' },
-  '武器彩票': { s: 'Bazaar', ss: 'lt', isekai: false },
-  '防具彩票': { s: 'Bazaar', ss: 'la', isekai: false },
-  '竞技场': { s: 'Battle', ss: 'ar', text: '竞技场' },
-  '塔楼': { s: 'Battle', ss: 'tw', isekai: true, text: '塔楼' },
-  '浴血擂台': { s: 'Battle', ss: 'rb', text: '擂台' },
-  '压榨界': { s: 'Battle', ss: 'gr', text: '压榨界' },
-  '道具界': { s: 'Battle', ss: 'iw', text: '道具界' },
-  '装备强化': { s: 'Forge', ss: 'up', text: '强化' },
-  '装备修理': { s: 'Forge', ss: 're', text: '修理' },
-  '装备附魔': { s: 'Forge', ss: 'en', text: '附魔' },
-  '装备分解': { s: 'Forge', ss: 'sa', text: '分解' },
-  '装备重铸': { s: 'Forge', ss: 'fo', text: '重铸' },
-  '装备魂绑': { s: 'Forge', ss: 'fu', text: '魂绑' },
+  'Character': { s: 'Character', ss: 'ch', button: 'CH', text: 'Character' },
+  'Equipment': { s: 'Character', ss: 'eq', button: 'EQ', text: 'Equipment' },
+  'Abilities': { s: 'Character', ss: 'ab', button: 'AB', text: 'Abilities' },
+  'Training': { s: 'Character', ss: 'tr', button: 'TR', text: 'Training', disabled: 'isekai' },
+  'Item Inventory': { s: 'Character', ss: 'it', button: 'IT', text: 'Item Inventory' },
+  'Equip Inventory': { s: 'Character', ss: 'in', button: 'IN', text: 'Equip Inventory' },
+  'Settings': { s: 'Character', ss: 'se', button: 'SE', text: 'Settings' },
+  'Equipment Shop': { s: 'Bazaar', ss: 'es', button: 'ES', text: 'Equipment Shop' },
+  'Item Shop': { s: 'Bazaar', ss: 'is', button: 'IS', text: 'Item Shop' },
+  'The Shrine': { s: 'Bazaar', ss: 'ss', button: 'SS', text: 'The Shrine' },
+  'The Market': { s: 'Bazaar', ss: 'mk', button: 'MK', text: 'The Market' },
+  'Monster Lab': { s: 'Bazaar', ss: 'ml', button: 'ML', text: 'Monster Lab', disabled: 'isekai' },
+  'MoogleMail': { s: 'Bazaar', ss: 'mm', button: 'MM', text: 'MoogleMail' },
+  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', button: 'LT', text: 'Weapon Lottery', disabled: 'isekai' },
+  'Armor Lottery': { s: 'Bazaar', ss: 'la', button: 'LA', text: 'Armor Lottery', disabled: 'isekai' },
+  'The Arena': { s: 'Battle', ss: 'ar', button: 'AR', text: 'The Arena' },
+  'The Tower': { s: 'Battle', ss: 'tw', button: 'TW', text: 'The Tower', disabled: 'persistent' },
+  'Ring of Blood': { s: 'Battle', ss: 'rb', button: 'RB', text: 'Ring of Blood' },
+  'GrindFest': { s: 'Battle', ss: 'gr', button: 'GR', text: 'GrindFest' },
+  'Item World': { s: 'Battle', ss: 'iw', button: 'IW', text: 'Item World' },
+  'Repair': { s: 'Forge', ss: 're', button: 'RE', text: 'Repair' },
+  'Upgrade': { s: 'Forge', ss: 'up', button: 'UP', text: 'Upgrade' },
+  'Enchant': { s: 'Forge', ss: 'en', button: 'EN', text: 'Enchant' },
+  'Salvage': { s: 'Forge', ss: 'sa', button: 'SA', text: 'Salvage' },
+  'Reforge': { s: 'Forge', ss: 'fo', button: 'FO', text: 'Reforge' },
+  'Soulfuse': { s: 'Forge', ss: 'fu', button: 'FU', text: 'Soulfuse' },
 };
+Object.values(_top.menu).forEach((m) => {
+  if (!m.href) {
+    m.href = `?s=${m.s}&ss=${m.ss}`;
+  }
+});
 
 _top.create = function () {
   if (_top.inited) {
     return;
   }
   _top.inited = true;
-  const ul = {};
-  if (settings.topMenuIntegrate) {
-    const sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
-    const menuMap = {
-      'Character': '角色',
-      'Bazaar': '商店',
-      'Battle': '战斗',
-      'Forge': '锻造'
-    };
 
-    Object.entries(menuMap).forEach(([enName, cnName]) => {
-      ul[enName] = $element('ul', sub);
-      $element('li', ul[enName], [cnName, '.hvut-top-menu-s']);
+  const ul = {};
+  if ($config.settings.topMenuIntegration) {
+    const menu_sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
+    ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
+      ul[m] = $element('ul', menu_sub);
+      $element('li', ul[m], [m, '.hvut-top-menu-s']);
     });
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
-      const sub = $element('div', _top.node.menu[m], ['.hvut-top-sub']);
-      ul[m] = $element('ul', sub);
+      const menu_sub = $element('div', _top.node.menu[m], ['.hvut-top-sub']);
+      ul[m] = $element('ul', menu_sub);
     });
   }
-  Object.entries(_top.menu).forEach(([k, m]) => {
-    if (!_isekai && m.isekai === true || _isekai && m.isekai === false) {
+  Object.values(_top.menu).forEach((m) => {
+    if (m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
       return;
     }
-    ul[m.s].appendChild($element('li')).appendChild($element('a', null, { textContent: k, href: m.href || `?s=${m.s}&ss=${m.ss}` }));
+    const li = $element('li', ul[m.s]);
+    $element('a', li, { textContent: m.text, href: m.href });
   });
-  /* monsterbation */
-  if ($id('mbsettings')) {
-    ul['Character'].appendChild($element('li')).appendChild($element('a')).appendChild($id('mbsettings'));
-    $id('mbsettings').firstElementChild.className = '';
-    GM_addStyle(/*css*/`
-      #mbsettings { position: relative; }
-      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
-    `);
-  }
-  /* monsterbation */
-  const sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (!_isekai) {
-    _top.node.stamina_form = $element('form', sub, { method: 'POST' }, { submit: () => { _top.stamina_submit(); } });
+
+  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
+  if (!$config.isekai) {
+    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
     $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
-    $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina > settings.disableStaminaRestorative, style: 'width: 200px;' });
+    $input('submit', _top.node.stamina_form, { value: 'USE RESTORATIVE', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
     _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
   }
-  $element('p', sub, _player.condition);
+  $element('p', stamina_sub, _player.condition);
   if (_player.accuracy) {
-    $element('p', sub, [_player.accuracy, '!color: #e00;']);
+    $element('p', stamina_sub, [_player.accuracy, '!color: #e00;']);
   }
+
   if (_player.level !== 500) {
     const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
     const exp = parseInt(exec[1].replace(/,/g, ''));
@@ -3532,20 +3287,34 @@ _top.create = function () {
     const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
     const level_exp = exp - level_start;
     const level_up = up - level_start;
-    const pct = Math.floor(level_exp / level_up * 100);
-    const sub = $element('div', _top.node.level, ['.hvut-top-sub']);
-    $element('p', sub, `累计经验 ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-    $element('p', sub, `升级还需: ${next.toLocaleString()}`);
-    $element('p', sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-    $element('div', sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+    const pct = ((level_exp / level_up) * 100).toFixed(2);
+    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
+    $element('p', level_sub, `Total: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
+    $element('p', level_sub, `Next: ${next.toLocaleString()}`);
+    $element('p', level_sub, `Level: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
+    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
   }
-  if (_top.node.server) {
-    const sub = $element('div', _top.node.server, ['.hvut-top-sub']);
-    if (_isekai) {
-      $element('a', sub, { href: '/', innerHTML: `<p>你现在在异世界</p><p>${_isekai}</p><p>点击切换到永久区</p>` });
-    } else {
-      $element('a', sub, { href: '/isekai/', innerHTML: '<p>你现在在永久区</p><p>点击切换到异世界</p>' });
-    }
+
+  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
+  if ($config.isekai) {
+    const server_on = 'Isekai';
+    const server_to = 'Persistent';
+    $element('a', server_sub, { href: '/', innerHTML: `<p>Currently playing in ${server_on}</p><p>${$config.isekai}</p><p>Click to switch to ${server_to}</p>` });
+  } else {
+    const server_on = 'Persistent';
+    const server_to = 'Isekai';
+    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
+  }
+
+  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
+  $element('div', config_sub, 'HV Utils Settings', () => { $config.open(); });
+  if ($id('mbsettings')) { // monsterbation
+    config_sub.appendChild($id('mbsettings'));
+    $id('mbsettings').firstElementChild.className = '';
+    GM_addStyle(/*css*/`
+      #mbsettings { position: relative; }
+      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
+    `);
   }
 };
 
@@ -3554,21 +3323,19 @@ _top.stamina_create = async function () {
     return;
   }
   _top.stamina_create.inited = true;
-  const p = $element('p', _top.node.stamina_form, '');
+  const p = $element('p', _top.node.stamina_form, 'Loading...');
   await $item.once();
   const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
   if (items.length) {
-    items.forEach((e) => {
-      let displayName = e === 'Energy Drink' ? '能量饮料' : (e === 'Caffeinated Candy' ? '咖啡因糖果' : e);
-      $element('p', _top.node.stamina_form, `${displayName} (${$item.count(e)})`);
-    });
+    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
+    p.remove();
   } else {
-    p.textContent = '没有能量恢复剂';
+    p.textContent = 'No restorative available';
   }
 };
 
 _top.stamina_submit = function (e) {
-  if (settings.confirmStaminaRestorative && !confirm('确定要使用能量恢复剂吗?')) {
+  if ($config.settings.confirmStaminaRestorative && !confirm('Are you sure that you wish to use a stamina restorative?')) {
     e.preventDefault();
   }
 };
@@ -3576,84 +3343,89 @@ _top.stamina_submit = function (e) {
 _top.init = function () {
   _top.node = {};
   _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
-  _top.node.div.style.justifyContent = settings.topMenuAlign;
 
   const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
   _top.node.menu = {};
-  if (settings.topMenuIntegrate) {
-    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>菜单</span>']);
+  if ($config.settings.topMenuIntegration) {
+    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>MENU</span>']);
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((t) => {
       _top.node.menu[t] = $element('div', menu_div, [`/<span>${t.toUpperCase()}</span>`]);
     });
   }
 
-  const quick_div = $element('div', _top.node.div, ['.hvut-top-quick']);
-  const new_mail = $id('nav_mail')?.textContent.trim();
-  if (new_mail && !settings.topMenuLinks.includes('MoogleMail')) {
-    settings.topMenuLinks.push('MoogleMail');
-  }
-  settings.topMenuLinks = settings.topMenuLinks.filter((t) => {
-    const m = _top.menu[t];
-    if (!m || !_isekai && m.isekai === true || _isekai && m.isekai === false) {
+  const links = $config.settings.topMenuLinks.filter((b) => {
+    const m = _top.menu[b];
+    if (!m || m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
       return false;
     } else {
       return true;
     }
   });
-  settings.topMenuLinks.forEach((t) => {
-    const m = _top.menu[t];
-    let text = m.text || m.ss.toUpperCase();
-    const href = m.href || `?s=${m.s}&ss=${m.ss}`;
+  const links_div = $element('div', _top.node.div, ['.hvut-top-links']);
+  const new_mail = $id('nav_mail')?.textContent.trim();
+  if (new_mail && !links.includes('MoogleMail')) {
+    links.push('MoogleMail');
+  }
+  links.forEach((b) => {
+    const m = _top.menu[b];
+    let button = m.button;
     let cn = '';
-    if (t === 'MoogleMail' && new_mail) {
-      text = `[${new_mail}]`;
+    if (b === 'MoogleMail' && new_mail) {
+      button = `[${new_mail}]`;
       cn = 'hvut-top-ygm';
     }
-    const a = $element('a', quick_div, { textContent: text, href: href + (m.ss === 'ab' ? '&tree=general' : m.ss === 'mk' ? '&filter=co' : ''), dataset: { desc: t } });
+    const a = $element('a', links_div, { textContent: button, href: m.href });
     if (cn) {
       a.className = cn;
     }
+    $element('span', a, m.text);
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: auto;', `/<span>精力: ${_player.stamina}</span>`]);
-  _top.node.level = $element('div', _top.node.div, ['!width: auto;', `/<span>Lv.${_player.level}</span>`]);
-  _top.node.dfct = $element('div', _top.node.div, ['!width: auto;', `/<span>${_player.dfct}</span>`]);
-  _top.node.persona = $element('div', _top.node.div, ['!width: auto;', '/<span>Persona</span>']);
-  if (!_isInIframe && settings.randomEncounter) {
-    _top.node.re = $element('div', _top.node.div, ['!width: auto; cursor: pointer;']);
-    $re.clock(_top.node.re);
+  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>Stamina: ${_player.stamina}</span>`]);
+  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
+  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
+  _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>Persona</span>']);
+  if ($config.settings.reNotification) {
+    $re.hv();
   }
-  if (!settings.topMenuIntegrate * 9 + settings.topMenuLinks.length <= 19) {
-    const current = _isekai ? '异世界' : '永久区';
-    _top.node.server = $element('div', _top.node.div, ['!width: auto;', '.hvut-top-server', `/<span>${current}</span>`]);
-    _top.node.server.style.marginLeft = settings.topMenuAlign ? '' : 'auto';
-  }
+  $element('div', _top.node.div, ['.hvut-top-placeholder']);
+  const server = $config.isekai ? 'Isekai' : 'Persistent';
+  _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${server}</span>`]);
+
+  _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
+  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
+
   $id('navbar').after(_top.node.div);
 };
 
 _top.init();
+
 // DIFFICULTY CHANGER
-var $dfct = {
+const $dfct = {
 
-  div: _top.node.dfct,
-  button: _top.node.dfct.firstElementChild,
-  list: ['普通✖1', '困难✖2', '噩梦✖4', '地狱✖7', '任天堂✖10', 'I Wanna✖15', '彩虹小马✖20'],
+  div: _top.node.difficulty,
+  button: _top.node.difficulty.firstElementChild,
+  list: ['Normal', 'Hard', 'Nightmare', 'Hell', 'Nintendo', 'IWBTH', 'PFUDOR'],
 
+  init: function () {
+    const ch_style = $config.get('ch_style', {});
+    if (ch_style.difficulty !== _player.difficulty) {
+      ch_style.difficulty = _player.difficulty;
+      $config.set('ch_style', ch_style);
+    }
+  },
   create: function () {
     if ($dfct.sub) {
       return;
     }
     $dfct.sub = $element('div', $dfct.div, ['.hvut-top-sub']);
-    $dfct.selector = $element('select', $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, {
-      change: () => {
-        $dfct.selector.disabled = true;
-        $dfct.change($dfct.selector.value);
-      }
-    });
-    const options = $dfct.list.map((d, i) => $element('option', null, { value: i + 1, text: d }));
-    $dfct.selector.append(...options.reverse());
-    $dfct.selector.value = $dfct.list.indexOf(_player.dfct) + 1;
+    const options = $dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
+    $dfct.selector = $input(['select', options], $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
+      $dfct.selector.disabled = true;
+      $dfct.change($dfct.selector.value);
+    } });
+    $dfct.selector.value = $dfct.list.indexOf(_player.difficulty) + 1;
   },
   change: async function (value) {
     $dfct.button.textContent = '(D1...)';
@@ -3669,33 +3441,37 @@ var $dfct = {
     $dfct.set_button(doc);
   },
   set_button: function (doc) {
-    const value = /^(.+) Lv\.(\d+)/.test($id('level_readout', doc).textContent.trim()) && RegExp.$1;
+    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
     if (!value) {
       $dfct.button.textContent = '(D: ERROR)';
       return;
     }
-    _player.dfct = value;
+    _player.difficulty = value;
     $dfct.button.textContent = value;
     if ($dfct.selector) {
       $dfct.selector.value = $dfct.list.indexOf(value) + 1;
       $dfct.selector.disabled = false;
     }
-    const ch_style = getValue('ch_style', {});
+    const ch_style = $config.get('ch_style', {});
     ch_style.difficulty = value;
-    setValue('ch_style', ch_style);
+    $config.set('ch_style', ch_style);
   },
-};
-$dfct.div.addEventListener('mouseenter', $dfct.create);
-// PERSONA & EQUIPMENT SET CHANGER
-var $persona = {
 
-  json: getValue('persona', {}),
+};
+
+$dfct.div.addEventListener('mouseenter', $dfct.create);
+$dfct.init();
+
+// PERSONA & EQUIPMENT SET CHANGER
+const $persona = {
+
+  json: $config.get('persona', {}),
   div: _top.node.persona,
   button: _top.node.persona.firstElementChild,
 
   create: function () {
     const json = $persona.json;
-    if (!json.pidx || !json.eidx) {
+    if (!json.pset || !json.eset) {
       return;
     }
     if ($persona.sub) {
@@ -3703,91 +3479,87 @@ var $persona = {
     }
     $persona.sub = $element('div', $persona.div, ['.hvut-top-sub']);
 
-    $persona.selector_p = $element('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 100%;' }, {
-      change: () => {
-        $persona.selector_p.disabled = true;
-        $persona.change_p($persona.selector_p.value);
-      }
-    });
+    $persona.selector_p = $input('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+      $persona.selector_p.disabled = true;
+      $persona.change_p($persona.selector_p.value);
+    } });
     for (let i = 1; i <= json.plen; i++) {
-      $element('option', $persona.selector_p, { value: i, text: formatPname(json[i].name) });
+      $element('option', $persona.selector_p, { value: i, text: json[i].name });
     }
-    $persona.selector_p.value = json.pidx;
+    $persona.selector_p.value = json.pset;
 
-    $persona.selector_e = $element('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 100%;' }, {
-      change: () => {
-        $persona.selector_e.disabled = true;
-        $persona.change_e($persona.selector_e.value);
-      }
-    });
+    $persona.selector_e = $input('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+      $persona.selector_e.disabled = true;
+      $persona.change_e($persona.selector_e.value);
+    } });
     for (let i = 1; i <= json.elen; i++) {
-      $element('option', $persona.selector_e, { value: i, text: json[json.pidx][i].name || `Set ${i}` });
+      $element('option', $persona.selector_e, { value: i, text: json[json.pset][i].name || `Set ${i}` });
     }
-    $persona.selector_e.value = json.eidx;
+    $persona.selector_e.value = json.eset;
   },
   check_p: function (doc) {
     const json = $persona.json;
-    const pidx = parseInt($id('persona_form', doc).elements.persona_set.value);
+    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
     const plen = $id('persona_form', doc).elements.persona_set.options.length;
-    const checked = pidx === json.pidx;
+    const checked = pset === json.pset;
 
     Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
-      const pidx = parseInt(o.value);
+      const pset = parseInt(o.value);
       const pname = o.text;
-      if (!json[pidx]) {
-        json[pidx] = {};
+      if (!json[pset]) {
+        json[pset] = {};
       }
-      json[pidx].name = pname;
+      json[pset].name = pname;
     });
 
-    json.pidx = pidx;
+    json.pset = pset;
     json.plen = plen;
-    json.pname = formatPname(json[pidx].name);
+    json.pname = json[pset].name;
     $persona.set_value();
     return checked;
   },
   check_e: function (doc) {
     const json = $persona.json;
-    const pidx = json.pidx;
-    const eidx = parseInt($qs('img[src$="_on.png"]', doc).src.slice(-8, -7));
+    const pset = json.pset;
+    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.slice(-8, -7));
     const elen = $id('eqsl', doc).childElementCount;
 
     for (let i = 1; i <= elen; i++) {
-      if (!json[pidx][i]) {
-        json[pidx][i] = { name: '' };
+      if (!json[pset][i]) {
+        json[pset][i] = { name: '' };
       }
     }
 
-    json.eidx = eidx;
+    json.eset = eset;
     json.elen = elen;
-    json.ename = json[pidx][eidx].name;
+    json.ename = json[pset][eset].name;
     $persona.set_value();
   },
-  change_p: async function (pidx) {
+  change_p: async function (pset) {
     $persona.button.textContent = '(P...)';
     $dfct.button.textContent = '(D...)';
-    const html = await $ajax.fetch('?s=Character&ss=ch', pidx ? 'persona_set=' + pidx : null);
+    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? 'persona_set=' + pset : null);
     const doc = $doc(html);
     $persona.check_p(doc);
     if ($persona.selector_p) {
-      $persona.selector_p.value = $persona.json.pidx;
+      $persona.selector_p.value = $persona.json.pset;
       $persona.selector_p.disabled = false;
     }
     $persona.change_e();
     $dfct.set_button(doc);
   },
-  change_e: async function (eidx) {
+  change_e: async function (eset) {
     $persona.button.textContent = '(E...)';
-    const html = await $ajax.fetch('?s=Character&ss=eq', eidx ? 'equip_set=' + eidx : null);
+    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? 'equip_set=' + eset : null);
     const doc = $doc(html);
     $persona.check_e(doc);
     const json = $persona.json;
     if ($persona.selector_e) {
       for (let i = 1; i <= json.elen; i++) {
-        const ename = json[json.pidx][i].name;
+        const ename = json[json.pset][i].name;
         $persona.selector_e.options[i - 1].text = ename || 'Set ' + i;
       }
-      $persona.selector_e.value = json.eidx;
+      $persona.selector_e.value = json.eset;
       $persona.selector_e.disabled = false;
     }
     $persona.set_button();
@@ -3795,8 +3567,8 @@ var $persona = {
     $persona.check_warning(doc);
   },
   set_button: function () {
-    const pname = $persona.json.pname || 'Persona ' + $persona.json.pidx;
-    $persona.button.textContent = `${pname} [${$persona.json.eidx}]`;
+    const pname = $persona.json.pname || 'Persona ' + $persona.json.pset;
+    $persona.button.textContent = `${pname.slice(0, 10)} [${$persona.json.eset}]`;
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
@@ -3805,7 +3577,7 @@ var $persona = {
     $persona.save_equipset(doc);
     $persona.parse_stats_pane(doc);
     if (_query.s === 'Battle') {
-      $supply.display_inventory('bt');
+      $battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
       location.href = location.href;
     }
@@ -3813,13 +3585,13 @@ var $persona = {
   set_value: function (name, value) {
     const json = $persona.json;
     if (name) {
-      json[json.pidx][json.eidx][name] = value;
+      json[json.pset][json.eset][name] = value;
     }
-    setValue('persona', json);
+    $config.set('persona', json);
   },
   get_value: function (name) {
     const json = $persona.json;
-    return json[json.pidx][json.eidx][name];
+    return json[json.pset][json.eset][name];
   },
   save_equipset: function (doc) {
     const equipset = $qsa('.eqb', doc).map((d) => {
@@ -3832,7 +3604,7 @@ var $persona = {
         return { slot };
       }
     });
-    setValue('equipset', equipset);
+    $config.set('equipset', equipset);
   },
   check_warning: function (doc) {
     _top.node.message?.remove();
@@ -3842,18 +3614,18 @@ var $persona = {
     if (_player.warn.length) {
       if (_query.s === 'Battle') {
         _top.node.message = _top.node.message || $element('div', null, ['.hvut-top-message']);
-        _top.node.message.textContent = '[警告] ' + _player.warn.join(', ');
+        _top.node.message.textContent = '[WARNING] ' + _player.warn.join(', ');
         _top.node.div.appendChild(_top.node.message);
       }
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.persona.firstElementChild.style.color = '#f22';
+      _top.node.persona.firstElementChild.style.color = '#e00';
     }
     _top.node.stamina.firstElementChild.style.color = '';
-    if (_player.condition.includes('你已经筋疲力尽') || _player.accuracy || _player.stamina < settings.warnLowStamina) {
+    if (_player.condition.includes('Stamina: Exhausted') || _player.accuracy || _player.stamina <= $config.settings.warnLowStamina) {
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.stamina.firstElementChild.style.color = '#f22';
-    } else if (_player.condition.includes('你现在精力充沛')) {
-      _top.node.stamina.firstElementChild.style.color = '#0af';
+      _top.node.stamina.firstElementChild.style.color = '#e00';
+    } else if (_player.condition.includes('Stamina: Great')) {
+      _top.node.stamina.firstElementChild.style.color = '#03c';
     }
   },
   parse_stats_pane: function (doc) {
@@ -3866,12 +3638,12 @@ var $persona = {
         text = text.slice(2);
       }
       if (text === 'hit chance') {
-        const p = type === 'Physical Attack' ? 'Attack ' : type === 'Magical Attack' ? 'Magic ' : '';
-        text = p + 'hit chance'; // equipment: Attack Accuracy, Magic Accuracy
+        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
+        text = `${p} hit chance`; // equipment: Attack Accuracy, Magic Accuracy
       } else if (/crit chance \/ \+([0-9.]+) % damage/.test(text)) {
-        const p = type === 'Physical Attack' ? 'Attack ' : type === 'Magical Attack' ? 'Magic ' : '';
-        text = p + 'crit chance';
-        stats_pane[p + 'Crit Damage'] = parseFloat(RegExp.$1); // equipment: Attack Crit Damage, Spell Crit Damage
+        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
+        text = `${p} crit chance`;
+        stats_pane[`${p} Crit Damage`] = parseFloat(RegExp.$1); // equipment: Attack Crit Damage, Spell Crit Damage
       }
       text = text.replace(/\b[a-z]/g, (s) => s.toUpperCase());
       if ($equip.reg.magic.test(text)) {
@@ -3880,11 +3652,11 @@ var $persona = {
       stats_pane[text] = number;
     });
 
-    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.test($qs('.spn', doc)?.textContent) && RegExp.$1;
+    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.exec($qs('.spn', doc).textContent)[1];
     const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
     const spell_damage = stats_pane[spell_type + ' EDB'];
     const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
-    const ch_style = { level: _player.level, difficulty: _player.dfct };
+    const ch_style = { level: _player.level, difficulty: _player.difficulty };
     stats_pane['Fighting Style'] = fighting_style;
     ch_style['Fighting Style'] = fighting_style;
     if (fighting_style === 'Staff' || spell_damage >= 80) {
@@ -3895,7 +3667,7 @@ var $persona = {
     } else {
       ch_style['Attack Base Damage'] = stats_pane['Attack Base Damage'];
     }
-    setValue('ch_style', ch_style);
+    $config.set('ch_style', ch_style);
     return stats_pane;
   },
   init: function () {
@@ -3905,38 +3677,41 @@ var $persona = {
       } else {
         $persona.set_button();
       }
-    } else if (!$persona.json.pidx || !$persona.json.eidx) {
+    } else if (!$persona.json.pset || !$persona.json.eset) {
       $persona.change_p();
     } else {
       $persona.set_button();
     }
     $persona.check_warning();
   },
+
 };
+
 $persona.div.addEventListener('mouseenter', $persona.create);
 $persona.init();
+
 // BOTTOM MENU
 GM_addStyle(/*css*/`
-    #hvut-bottom { position: absolute; display: ${_isInIframe ? 'none' : 'flex'}; top: 100%; left: -1px; width: 100%; border: 1px solid; font-size: 10pt; line-height: 20px; }
-    #hvut-bottom:empty { display: none; }
-    #hvut-bottom > div { margin: -1px 0 -1px -1px; border: 1px solid #5C0D11; padding: 0 10px; }
-    #hvut-bottom > .hvut-spaceholder ~ div { margin: -1px -1px -1px 0; }
-    #hvut-bottom > .hvut-spaceholder { margin: 0; border: 0; padding: 0; }
-    #hvut-bottom a { color: inherit; }
-    .hvut-bottom-warn { background-color: #5C0D11; color: #fff; }
+  #hvut-bottom { position: absolute; display: flex; top: 100%; left: -1px; width: 100%; border: 1px solid; font-size: 10pt; line-height: 20px; }
+  #hvut-bottom:empty { display: none; }
+  #hvut-bottom > div { margin: -1px 0 -1px -1px; border: 1px solid #5C0D11; padding: 0 10px; }
+  #hvut-bottom > .hvut-spaceholder ~ div { margin: -1px -1px -1px 0; }
+  #hvut-bottom > .hvut-spaceholder { margin: 0; border: 0; padding: 0; }
+  #hvut-bottom a { color: inherit; }
+  .hvut-bottom-warn { background-color: #5C0D11; color: #fff; }
 
-    .hvut-lt-div > a { margin-right: 5px; }
-    .hvut-lt-div > span { display: inline-block; width: 40px; }
-    .hvut-lt-check { background-color: #fd9; }
-  `);
+  .hvut-lt-div > a { margin-right: 5px; }
+  .hvut-lt-div > span { display: inline-block; width: 40px; }
+  .hvut-lt-check { background-color: #fd9; }
+`);
 
 _bottom.node = {};
 _bottom.node.div = $element('div', $id('csp'), ['#hvut-bottom']);
 
 // CREDITS COUNTER
-if (settings.showCredits) {
+if ($config.settings.showCredits === 2) {
   _bottom.show_credits = async function () {
-    _bottom.node.credits = $element('div', _bottom.node.div, '加载中...');
+    _bottom.node.credits = $element('div', _bottom.node.div, 'Loading...');
     if ($id('networth')) {
       _bottom.node.credits.textContent = $id('networth').textContent;
       $id('networth').remove();
@@ -3951,17 +3726,16 @@ if (settings.showCredits) {
 }
 
 // EQUIPMENT COUNTER
-if (settings.showEquipSlots === 2 || settings.showEquipSlots === 1 && _query.s === 'Battle') {
+if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots === 1 && _query.s === 'Battle') {
   _bottom.show_equip = async function () {
-    _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
+    _bottom.node.equip = $element('div', _bottom.node.div, 'Loading...');
     const html = await $ajax.fetch('?s=Character&ss=in');
     const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
-
     const inventory = parseInt(exec[1]);
     const storage = parseInt(exec[2] || 0);
     const slots = parseInt(exec[3]);
     const free = slots - inventory - storage;
-    _bottom.node.equip.textContent = `装备库存量: ${inventory} + ${storage} / ${slots}`;
+    _bottom.node.equip.textContent = `Equip Slots: ${inventory} + ${storage} / ${slots}`;
     if (free < slots / 10) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');
     } else if (free < slots / 2) {
@@ -3973,9 +3747,9 @@ if (settings.showEquipSlots === 2 || settings.showEquipSlots === 1 && _query.s =
 }
 
 // TRAINING TIMER
-if (settings.trainingTimer) {
+if ($config.settings.trainingNotification) {
   _bottom.tr = {
-    json: getValue('tr_timer', {}),
+    json: $config.get('tr_notif', {}, 'hvut_'),
     node: {},
 
     init: function () {
@@ -3984,7 +3758,7 @@ if (settings.trainingTimer) {
         return;
       }
       _bottom.tr.node.div = $element('div', _bottom.node.div);
-      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '?s=Character&ss=tr', textContent: '初始化...', style: 'margin-right: 5px;' });
+      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: 'Initializing...', style: 'margin-right: 5px;' });
       _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
       if (json.error) {
         _bottom.tr.node.link.textContent = json.error;
@@ -4000,16 +3774,16 @@ if (settings.trainingTimer) {
         _bottom.tr.node.clock.textContent = time_format(remain);
         setTimeout(_bottom.tr.clock, 1000);
       } else {
-        _bottom.tr.node.link.textContent = '加载中...';
+        _bottom.tr.node.link.textContent = 'Loading...';
         _bottom.tr.node.clock.textContent = '';
         _bottom.tr.load();
       }
     },
     load: async function (post) {
-      const html = await $ajax.fetch('?s=Character&ss=tr', post);
+      const html = await $ajax.fetch('/?s=Character&ss=tr', post);
       const doc = $doc(html);
       if (!$id('train_outer', doc)) {
-        _bottom.tr.node.link.textContent = '请稍等...';
+        _bottom.tr.node.link.textContent = 'Waiting...';
         setTimeout(_bottom.tr.clock, 60000);
         return;
       }
@@ -4022,7 +3796,7 @@ if (settings.trainingTimer) {
       if ($id('train_progress', doc)) {
         json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
         json.current_level = level[json.current_name];
-        json.current_end = /var end_time = (\d+);/.test(html) && parseInt(RegExp.$1) * 1000;
+        json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
         _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
         _bottom.tr.clock();
       } else if (json.next_name) {
@@ -4035,17 +3809,17 @@ if (settings.trainingTimer) {
           if ($qs(`img[onclick*="training.start_training(${json.next_id})"]`, doc)) {
             _bottom.tr.load('start_train=' + json.next_id);
           } else {
-            json.error = "现在无法开始训练";
+            json.error = "Can't start Training";
             _bottom.tr.node.link.textContent = json.error;
             setTimeout(_bottom.tr.clock, 60000);
           }
         } else {
-          _bottom.tr.node.link.textContent = '训练完成!';
+          _bottom.tr.node.link.textContent = 'Training completed!';
         }
       } else {
-        _bottom.tr.node.link.textContent = '训练完成!';
+        _bottom.tr.node.link.textContent = 'Training completed!';
       }
-      setValue('tr_timer', json);
+      $config.set('tr_notif', json, 'hvut_');
     },
   };
 
@@ -4053,26 +3827,27 @@ if (settings.trainingTimer) {
 }
 
 // LOTTERY
-if (settings.showLottery) {
+if ($config.settings.lotteryNotification) {
   _bottom.show_lottery = function (ss) {
-    const json = getValue(ss + '_show', {}, 'hvut_');
+    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
+    const lottery = json[ss];
     const now = Date.now();
-    if (json.date > now && json.hide) {
+    if (lottery.date > now && lottery.hide) {
       return;
     }
     _bottom.node[ss] = {};
     _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: '/?s=Bazaar&ss=' + ss, target: !_isekai ? '_self' : '_blank' });
+    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: 'Loading...', href: '/?s=Bazaar&ss=' + ss, target: !$config.isekai ? '_self' : '_blank' });
     _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
 
-    if (json.date > now) {
-      if (json.date - now < 3600000) {
+    if (lottery.date > now) {
+      if (lottery.date - now < 3600000) {
         _bottom.node[ss].div.classList.add('hvut-bottom-warn');
-      } else if (json.check) {
+      } else if (lottery.check) {
         _bottom.node[ss].div.classList.add('hvut-lt-check');
       }
-      _bottom.node[ss].equip.textContent = json.equip;
-      _bottom.node[ss].time.textContent = time_format(json.date - now, 1);
+      _bottom.node[ss].equip.textContent = lottery.equip;
+      _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
       return;
     }
     _bottom.node[ss].div.classList.add('hvut-bottom-warn');
@@ -4084,38 +3859,40 @@ if (settings.showLottery) {
     const doc = $doc(html);
     const eqname = $id('lottery_eqname', doc);
     if (!eqname) {
-      _bottom.node[ss].equip.textContent = '加载失败';
+      _bottom.node[ss].equip.textContent = 'Failed to load';
       return;
     }
     const text = $id('rightpane', doc).lastElementChild.textContent;
-    const json = getValue(ss + '_show', {}, 'hvut_');
+    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
+    const lottery = json[ss];
     const now = Date.now();
     let date = Date.now();
     let margin = 0;
     if (/Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.test(text)) {
       date += (60 * parseInt(RegExp.$1 || 0) + parseInt(RegExp.$2 || 0)) * 60000;
       margin = 2;
-    } else if (text.includes("今日彩票销售已截止")) {
+    } else if (text.includes("Today's ticket sale is closed")) {
       margin = 10;
     } else {
-      throw new Error('分析错误');
+      throw new Error('Parsing Error');
     }
     const mm = (new Date(date)).getUTCMinutes();
     if (date && (mm < 1 || 60 - mm <= margin)) {
       date = Math.round(date / 3600000) * 3600000;
     }
-    json.id = /lottery=(\d+)/.test($qs('img[src*="lottery_prev_a.png"]', doc).getAttribute('onclick')) && parseInt(RegExp.$1) + 1;
-    json.equip = eqname.textContent;
-    json.date = date;
-    json.check = $equip.filter(json.equip, settings.lotteryCheck);
-    json.hide = !settings.showLottery;
-    setValue(ss + '_show', json, 'hvut_');
-    if (json.check) {
-      popup(`<p>${eqname.previousElementSibling.textContent}</p><p style="color: #f00; font-weight: bold;">${json.equip}</p>`);
+    lottery.id = parseInt(/lottery=(\d+)/.exec($qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick'))[1] || 0) + 1;
+    lottery.equip = eqname.textContent;
+    lottery.date = date;
+    lottery.check = $equip.filter($config.settings.lotteryFilters, lottery.equip);
+    lottery.hide = !$config.settings.lotteryNotification;
+    $config.set('lt_notif', json, 'hvut_');
+    if (lottery.check) {
+      const date_text = eqname.previousElementSibling.textContent;
+      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lottery.equip}</p>`);
     }
 
-    _bottom.node[ss].equip.textContent = json.equip;
-    _bottom.node[ss].time.textContent = time_format(json.date - now, 1);
+    _bottom.node[ss].equip.textContent = lottery.equip;
+    _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
   };
 
   $element('div', _bottom.node.div, ['.hvut-spaceholder']);
@@ -4124,388 +3901,89 @@ if (settings.showLottery) {
   _bottom.show_lottery('la');
 }
 
-_href = {
-  get: function (sector) {
-    const [s, ss, screen] = sector instanceof Array ? sector : _href.sectors[sector];
-    if (!s) return undefined;
-    let href = `?s=${s}`;
-    if (!ss) return href;
-    href += `&ss=${ss}`;
-    if (_query.screen) href += `&screen=${_query.screen}`;
-    if (_query.playerstock) href += `&playerstock=on`;
-    if (_query.marketstock) href += `&marketstock=on`;
-    if (_query.showobs) href += `&showobs=on`;
-    return href;
-  },
-  s: {
-    ch: `Character`,
-    bz: `Bazaar`,
-    bt: `Battle`,
-    fg: `Forge`,
-  },
-  sc: {
-    bi: `browseitems`,
-    so: `sellorders`,
-    bo: `buyorders`,
-  },
-  alias: {
-    0: 100,
-    410: 411,
-  },
-  mk: {
-    sector: (f, sc) => [_href.s.bz, `mk`],
-    bi: (f) => _href.mk.sector(f, _href.sc.bi),
-    so: (f) => _href.mk.sector(f, _href.sc.so),
-    bo: (f) => _href.mk.sector(f, _href.sc.bo),
-  },
-}
 
-_href.sectors = {
-  0: [], // 主页
-  100: [_href.s.ch, `ch`], // 角色（主页）
-  101: [_href.s.ch, `tr`], // 训练
-  102: [_href.s.bz, `ml`], // 实验室
-  103: [_href.s.bz, `ss`], // 祭坛
-  104: [_href.s.ch, `ab`], // 技能
-  105: [_href.s.ch, `se`], // 设置
-
-  201: [_href.s.ch, `eq`], // 装备
-  202: [_href.s.ch, `in`], // 装备仓库
-  203: [_href.s.bz, `es`], // 装备商店
-  204: [_href.s.bz, `am`], // 装备商店
-
-  401: [_href.s.ch, `it`], // 物品仓库
-  402: [_href.s.bz, `is`], // 物品商店
-  410: [_href.s.bz, `mk`], // 市场
-
-  500: [_href.s.bt], // 战斗（主界面）
-  501: [_href.s.bt, `tw`], // 塔楼
-  502: [_href.s.bt, `ar`], // 竞技场
-  503: [_href.s.bt, `rb`], // 擂台
-  504: [_href.s.bt, `gr`], // 压榨届
-  505: [_href.s.bt, `iw`], // 道具界
-  510: [_href.s.bt, `ba`], // 遭遇战
-
-  601: [_href.s.fg, `fu`], // 绑魂
-}
-
-// Subpages
-_subpage = {
-  subpageDict: {
-    true: [ // persistent
-    [[0, 100, 500, 510], // 主页
-  101, 102, 103, 104,
-  203, 402, 410,
-  502, 503,
-  ],
-    [[410]],// 市场
-      [[421, 422, 423, 424, 425, 426]],// 市场买单
-      [[431, 432, 433, 434, 435, 436]],// 市场卖单
-      [[201], 202], // 装备
-      [[202, 203, 103]], // 装备
-      [[502, 503, 504, 505]], // 战斗
-      [[104]], // 技能
-      ],
-        false: [ // isekai
-          [[0, 100, 500], // 主页
-           103, 104,
-           204, 410, 402,
-           501, 502, 503,
-          ],
-          [[410]], // 市场
-          [[421, 422, 423]], // 市场买单
-          [[431, 432, 433]], // 市场卖单
-          [[201], 204], // 装备
-          [[204, 103]], // 装备
-          [[501, 502, 503, 504, 505]], // 战斗
-          [[104]], // 技能
-        ]
-},
-  supply: [0, 100, 510, 501, 502, 503, 504, 505],
-    getSubpageList: function () {
-      if(_query.itemid && _query.itemid !== '0') return [false, null, null, null];
-      let query = [!_isekai, _query.s, _query.ss];
-      while (query.length) {
-        const p = query.pop();
-        if (!p) continue;
-        query.push(p);
-        break;
-      }
-      const dict = _subpage.subpageDict[query.shift()];
-      const queryJ = JSON.stringify(query);
-      const sector = (id) => JSON.stringify(_href.sectors[id]);
-      let filtingSector;
-      let filterNow;
-      let filters;
-      let filterName;
-
-      if(_query.tree){
-        filterName = 'tree';
-        filterNow = _query.tree;
-        filtingSector = 104;
-        filters = [
-          'general',
-          'onehanded',
-          'twohanded',
-          'dualwield',
-          'niten',
-          'staff',
-          'cloth',
-          'light',
-          'heavy',
-          'deprecating1',
-          'deprecating2',
-          'supportive1',
-          'supportive2',
-          'elemental',
-          'forbidden',
-          'divine',
-        ];
-      } else if(_query.filter) {
-        filterName = 'filter'
-        filterNow = _query.filter;
-        filtingSector = 410;
-        filters = _isekai ? ['co', 'ma', 'tr'] : [ 'co', 'ma', 'tr', 'ar', 'fi', 'mo' ];
-      }
-
-      for (let list of dict) {
-        const ids = list.shift();
-        for (const id of ids) {
-          if (sector(id) !== queryJ) continue;
-          if (!list.length) list = ids;
-          filters = filters?.filter(s=>filterNow != s).map(s=>'&' + filterName + '='+s);
-          return [_subpage.supply.includes(id), list.filter(id => ![sector(id), sector(_href.alias[id])].includes(queryJ)), filters, filtingSector];
-        }
-      }
-      return [false, null, null, null];
-    },
-      setStickyContainer: function (length, supply) {
-        const stickyContainer = $element('div', $id('csp'), ['#hvut-stickyContainer', `!
-      pointer-events: none;
-      height: calc(100% + 25px + 5px + ${length} * 708px);
-      position:absolute;
-      top: -5px;
-      width:100%;
-      left:-1px;
-      z-index: 2;
-    `]);
-        _bottom.node.div.style.cssText += `
-      flex-flow: wrap;
-      position: sticky;
-      display: flex;
-      top: max(119.23px, calc(100% - 22.5px));
-      left: -1px;
-      border: 1px solid;
-      font-size: 10pt;
-      line-height: 20px;
-      background: #000;
-      pointer-events: all;
-    `
-        stickyContainer.appendChild(_top.node.div);
-        if (supply) $supply.set_sticky();
-        stickyContainer.appendChild(_bottom.node.div);
-        $id('mainpane').style.cssText += 'top: 27.23px; position: relative;';
-        _top.node.div.style.cssText += 'justify-content: space-evenly;pointer-events: all; position: sticky; top: 0px; background:#000;'
-      },
-        setSubpage: function (container, iframes, p, t) {
-          const elem = $element('iframe', container, {src: `${_href.get(_href.sectors[p])}` + t, scrolling: 'no', style: 'width: 100%; height: 708px; border:0' });
-            iframes.unshift([elem, p]);
-            elem.onload = () => {
-              const location = elem.contentWindow.location;
-              elem.contentWindow.document.body.classList.add(`iframe-body`);
-              const query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
-              console.log(`subpage onload: ${JSON.stringify(query)}`);
-              if (query.s === 'Battle' && query.ss === undefined) {
-                window.location.href = location.href;
-              }
-            }
-        },
-        init: function () {
-          const [supply, hreflist, filters, filtingSector] = _subpage.getSubpageList();
-          var length = (hreflist?.length ?? 0) + (filters?.length ?? 0);
-          if (length === 0) return;
-          _subpage.setStickyContainer(length, supply);
-          const container = $element('div', document.body, ['#hvut-subpageContainer', `!
-            padding: 0;
-            margin: 2px 0 0 0;
-            width: calc(100% + 2px);
-            left: -2px;
-            position: relative;
-            display: grid!important;
-          `]);
-          const iframes = [];
-          filters?.forEach(t => {
-            _subpage.setSubpage(container, iframes, filtingSector, t);
-          });
-          hreflist?.forEach(p => {
-            _subpage.setSubpage(container, iframes, p, '');
-          });
-          window.addEventListener('scroll', function () {
-            for (let [elem, p] of iframes) {
-              if (elem.getBoundingClientRect().y > 724.49 / 2) continue;
-              $supply.set_display_mode((_href.sectors[p][0] === _href.s.bt && _href.sectors[p][1] !== `iw`) ? 'fixed' : 'cancel');
-              break;
-            }
-          });
-        }
-};
-
-_hath = {
-  creat: function creatHathUI(data) {
-    var ui = $element('button', null, [`#${data.id}`, `!position: absolute; bottom: ${data.bottom}px; left: 0px; width: 100px;`]);
-    ui.textContent = data.text;
-    if (data.href) {
-      ui.addEventListener('click', function () {
-        window.open(data.href, '_blank');
-      });
-    }
-    _bottom?.node?.div?.appendChild(ui);
-    return ui;
-  },
-  perksBtn: {
-    bottom: 22.5,
-    text: '购买能力',
-    id: 'buyHathButton',
-    href: 'https://e-hentai.org/hathperks.php',
-  },
-  exchangeBtn: {
-    bottom: 45,
-    text: '购买hath',
-    id: 'buyHathExchangeButton',
-    href: 'https://e-hentai.org/exchange.php?t=hath'
-  },
-  getPriceDisplay: (price) => {
-    return {
-      bottom: 69.5,
-      text: 'HATH 价格：' + price, // 将匹配到的字符串转换为整数（去除逗号）
-      id: 'hathDataDisplay',
-    }
-  },
-  asyncCreatPriceDisplay: function () { // 发起 AJAX 请求以获取页面内容
-    $ajax.fetch('https://e-hentai.org/exchange.php?t=hath').then(response => {
-      if(!response) return;
-      // 解析响应并提取所需的数据
-      const priceElement = new DOMParser().parseFromString(response, 'text/html').querySelector('td:nth-of-type(5)'); // 获取第5个 td 元素
-      if (!priceElement) {
-        console.error('无法找到 HATH 价格数据');
-        return;
-      }
-      // 获取价格数据，使用正则表达式提取数字部分，匹配数字或逗号
-      const match = priceElement.textContent.trim().match(/[\d,]+/);
-      if (!match) {
-        console.error('无法提取价格数据');
-        return;
-      }
-      // 显示价格数据在指定的数据框体中
-      _hath.creat(_hath.getPriceDisplay(parseInt(match[0].replace(',', '')))).style.cssText += `
-        background: #000;
-        color: #fff;border: 1px solid #fff;
-        padding: 3px;
-        font-size: 12px;
-      `;
-    }).catch(error => {
-      console.error('请求失败：', error);
-    });
-  },
-  init: function () {
-    _hath.creat(_hath.perksBtn);
-    _hath.creat(_hath.exchangeBtn);
-    _hath.asyncCreatPriceDisplay();
-  }
-};
-
-if (!_isInIframe) {
-  if(settings.subpage){
-    _subpage.init();
-  }
-  _hath.init();
-}
-
-//* [1] 角色 - 角色
-if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer'))) {
+//* [1] Character - Character
+if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
-  _ch.total_exp = _window.total_exp;
-  _ch.exp = [null, { total: 0 }];
-  _ch.prof = {};
-  _ch.ass = getValue('tr_level', {})['同化者'] || 0;
-
-  _ch.init_simulate = function () {
-    _ch.node.div.innerHTML = '';
-    $qs('img[onclick*="do_attr_post"]').style.visibility = 'hidden';
-    $id('prof_outer').classList.add('hvut-ch-prof');
-
-    Object.values(_ch.prof).forEach((p) => {
-      p.current = parseFloat(p.tr.cells[1].textContent);
-      p.exp = _ch.get_exp(p.current);
-      p.tr.cells[1].textContent = p.current;
-      $element('td', p.tr);
-      $element('td', p.tr);
-    });
-
-    _ch.node.level = $input(['number', '等级', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 500, style: 'width: 50px;' });
-    _ch.node.level.addEventListener('wheel', () => {
-      _ch.calc_prof();
-    });
-    _ch.node.ass = $input(['number', '同化者等级', 'before'], _ch.node.div, { value: _ch.ass, min: 0, max: 25, style: 'width: 30px;' });
-    _ch.node.ass.addEventListener('wheel', () => {
-      _ch.calc_prof();
-    });
-    // 添加重置按钮
-    $input(['button', '重置'], _ch.node.div, null, () => {
-      location.reload();
-    });
-    _ch.calc_prof();
-  };
-
-  _ch.calc_prof = function () {
-    const level = parseFloat(_ch.node.level.value);
-    const ass = parseInt(_ch.node.ass.value);
-    if (isNaN(level) || level < 1 || level > 600 || isNaN(ass) || ass < 0 || ass > 25) {
-      return;
-    }
-
-    _window.total_exp = _ch.get_exp(level);
-    _window.update_usable_exp();
-    _window.update_display('str');
-
-    const exp_gain = _window.total_exp - _ch.total_exp;
-    const prof_gain = Math.max(0, exp_gain * 4 * (1 + ass * 0.1));
-    Object.values(_ch.prof).forEach((p) => {
-      p.level = _ch.get_level(p.exp + prof_gain, p.current);
-      p.tr.cells[2].textContent = '+' + (p.level - p.current).toFixed(3);
-      p.tr.cells[3].textContent = p.level.toFixed(3);
-    });
-  };
+  _ch.exp_table = [null, { total: 0 }];
 
   _ch.get_exp = function (level) {
     const num = parseInt(level);
     const dec = level % 1;
-    if (!_ch.exp[num]) {
-      _ch.exp[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
+    if (!_ch.exp_table[num]) {
+      _ch.exp_table[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
     }
-    let exp = _ch.exp[num].total;
+    let exp = _ch.exp_table[num].total;
     if (dec) {
-      if (!_ch.exp[num].next) {
-        _ch.exp[num].next = _ch.get_exp(num + 1) - exp;
+      if (!_ch.exp_table[num].next) {
+        _ch.exp_table[num].next = _ch.get_exp(num + 1) - exp;
       }
-      exp += Math.round(_ch.exp[num].next * dec);
+      exp += Math.round(_ch.exp_table[num].next * dec);
     }
     return exp;
   };
 
   _ch.get_level = function (exp, level) {
     level = parseInt(level) || 1;
-    while (exp >= _ch.exp[level].total) {
+    while (exp >= _ch.exp_table[level].total) {
       level++;
-      if (!_ch.exp[level]) {
-        _ch.exp[level] = { total: _ch.get_exp(level) };
+      if (!_ch.exp_table[level]) {
+        _ch.exp_table[level] = { total: _ch.get_exp(level) };
       }
     }
     level--;
-    if (!_ch.exp[level].next) {
-      _ch.exp[level].next = _ch.exp[level + 1].total - _ch.exp[level].total;
+    if (!_ch.exp_table[level].next) {
+      _ch.exp_table[level].next = _ch.exp_table[level + 1].total - _ch.exp_table[level].total;
     }
-    return level + (exp - _ch.exp[level].total) / _ch.exp[level].next;
+    return level + (exp - _ch.exp_table[level].total) / _ch.exp_table[level].next;
+  };
+
+  _ch.exp = {
+
+    total: _window.total_exp,
+    prof: {},
+
+    init: function () {
+      _ch.node.div.innerHTML = '';
+      $qs('img[onclick*="do_attr_post"]').style.visibility = 'hidden';
+      $id('prof_outer').classList.add('hvut-ch-prof');
+
+      $qsa('#prof_outer tr').forEach((tr) => {
+        const p = { tr: tr };
+        const name = tr.cells[0].textContent;
+        _ch.exp.prof[name] = p;
+        p.current = parseFloat(tr.cells[1].textContent);
+        p.exp = _ch.get_exp(p.current);
+        tr.cells[1].textContent = p.current;
+        $element('td', tr);
+        $element('td', tr);
+      });
+      _ch.node.level = $input(['number', 'Level', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
+      const ass = $config.get('tr_level', {})['Assimilator'] || 0;
+      _ch.node.ass = $input(['number', 'Training: Assimilator', 'before'], _ch.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
+      _ch.exp.calc();
+    },
+
+    calc: function () {
+      const level = parseFloat(_ch.node.level.value);
+      const ass = parseInt(_ch.node.ass.value);
+      if (isNaN(level) || level < 1 || level > 600 || isNaN(ass) || ass < 0 || ass > 25) {
+        return;
+      }
+
+      _window.total_exp = _ch.get_exp(level);
+      _window.update_usable_exp();
+      _window.update_display('str');
+
+      const exp_gain = _window.total_exp - _ch.exp.total;
+      const prof_gain = Math.max(0, exp_gain * 4 * (1 + ass * 0.1));
+      Object.values(_ch.exp.prof).forEach((p) => {
+        p.level = _ch.get_level(p.exp + prof_gain, p.current);
+        p.tr.cells[2].textContent = '+' + (p.level - p.current).toFixed(3);
+        p.tr.cells[3].textContent = p.level.toFixed(3);
+      });
+    },
+
   };
 
   GM_addStyle(/*css*/`
@@ -4522,503 +4000,520 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
   `);
 
   _ch.node = {};
-  _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.calc_prof(); } });
-  $input(['button', '经验/熟练度模拟器'], _ch.node.div, null, () => { _ch.init_simulate(); });
-
-  $qsa('#prof_outer tr').forEach((tr) => {
-    _ch.prof[tr.cells[0].textContent] = { tr: tr };
-  });
+  _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.exp.calc(); } });
+  $input(['button', 'EXP Simulator'], _ch.node.div, null, () => { _ch.exp.init(); });
 
   $persona.parse_stats_pane();
 } else
-  // [END 1] 角色 - 角色 */
+// [END 1] Character - Character */
 
 
-  //* [2] Character - Equipment
-  if (settings.equipment && _query.s === 'Character' && _query.ss === 'eq') {
-    _eq.mage_stats = function () {
-      // to get exact numbers
-      const stats_pane = _eq.stats_pane;
-      const stats_equip = $equip.parse.equiplist(_eq.equiplist);
+//* [2] Character - Equipment
+if (_query.s === 'Character' && _query.ss === 'eq') {
+  _eq.mage_stats = function () {
+  // to get exact numbers
+    const stats_pane = _eq.stats_pane;
+    const stats_equip = $equip.parse.equiplist(_eq.equiplist);
 
-      const spell_type = stats_pane['Spell Type'];
-      if (!spell_type) {
-        return;
-      }
-      const prof_factor = stats_pane['Proficiency Factor'];
-      const edb_infusion = $persona.get_value('infusion') ? 0.25 : 0;
-      const edb = stats_pane[spell_type + ' EDB'] / 100 + edb_infusion;
-      const magic_damage = stats_pane['Magic Base Damage'];
-      const magic_crit_chance = stats_pane['Magic Crit Chance'] / 100;
-      const magic_crit_damage = 0.5 + (stats_equip['Spell Crit Damage'] || 0) / 100; // stats_equip['Spell Crit Damage'] is more accurate than stats_pane['Magic Crit Damage']
-      const magic_score = magic_damage * (1 + edb) * (1 + magic_crit_chance * magic_crit_damage);
-      const arcane_crit_chance = 1 - (1 - magic_crit_chance) * (1 - 0.1);
-      const arcane_crit_damage = magic_crit_damage + (_player.level >= 405 ? 0.15 : _player.level >= 365 ? 0.14 : _player.level >= 325 ? 0.12 : _player.level >= 285 ? 0.10 : _player.level >= 245 ? 0.08 : _player.level >= 205 ? 0.06 : _player.level >= 175 ? 0.03 : 0);
-      const arcane_score = magic_damage * 1.25 * (1 + edb) * (1 + arcane_crit_chance * arcane_crit_damage);
+    const spell_type = stats_pane['Spell Type'];
+    if (!spell_type) {
+      return;
+    }
+    const prof_factor = stats_pane['Proficiency Factor'];
+    const edb_infusion = $persona.get_value('infusion') ? 0.25 : 0;
+    const edb = stats_pane[spell_type + ' EDB'] / 100 + edb_infusion;
+    const magic_damage = stats_pane['Magic Base Damage'];
+    const magic_crit_chance = stats_pane['Magic Crit Chance'] / 100;
+    const magic_crit_damage = 0.5 + (stats_equip['Spell Crit Damage'] || 0) / 100; // stats_equip['Spell Crit Damage'] is more accurate than stats_pane['Magic Crit Damage']
+    const magic_score = magic_damage * (1 + edb) * (1 + magic_crit_chance * magic_crit_damage);
+    const arcane_crit_chance = 1 - (1 - magic_crit_chance) * (1 - 0.1);
+    const arcane_crit_damage = magic_crit_damage + (_player.level >= 405 ? 0.15 : _player.level >= 365 ? 0.14 : _player.level >= 325 ? 0.12 : _player.level >= 285 ? 0.10 : _player.level >= 245 ? 0.08 : _player.level >= 205 ? 0.06 : _player.level >= 175 ? 0.03 : 0);
+    const arcane_score = magic_damage * 1.25 * (1 + edb) * (1 + arcane_crit_chance * arcane_crit_damage);
 
-      const cr_staff = stats_equip['Counter-Resist'] || 0;
-      const cr_spell = prof_factor / 2 + cr_staff / 100;
-      const prof_dep = Math.max(0, Math.min(1, stats_pane['Deprecating'] / _player.level - 1));
-      const cr_dep = prof_dep / 2 + cr_staff / 100;
-      const prof_sup = Math.min(1, stats_pane['Supportive'] / _player.level - 1);
-      const cure_bonus = prof_sup / (prof_sup > 0 ? 2 : 5);
-      const mit_imperil = !$persona.get_value('imperil') ? 0 : (spell_type === 'Holy' || spell_type === 'Dark') ? 0.25 : 0.4;
-      const mit_reduce = Math.pow(prof_factor, 1.5) * 0.5 + mit_imperil;
-      const mit_day = $persona.get_value('daybonus') ? 0.1 : 0;
-      const resist_dfct = _player.dfct === 'PFUDOR' ? 0.1 : 0;
-      const mitigations = [0, 0.5, 0.62, 0.75];
+    const cr_staff = stats_equip['Counter-Resist'] || 0;
+    const cr_spell = prof_factor / 2 + cr_staff / 100;
+    const prof_dep = Math.max(0, Math.min(1, stats_pane['Deprecating'] / _player.level - 1));
+    const cr_dep = prof_dep / 2 + cr_staff / 100;
+    const prof_sup = Math.min(1, stats_pane['Supportive'] / _player.level - 1);
+    const cure_bonus = prof_sup / (prof_sup > 0 ? 2 : 5);
+    const mit_imperil = !$persona.get_value('imperil') ? 0 : (spell_type === 'Holy' || spell_type === 'Dark') ? 0.25 : 0.4;
+    const mit_reduce = Math.pow(prof_factor, 1.5) * 0.5 + mit_imperil;
+    const mit_day = $persona.get_value('daybonus') ? 0.1 : 0;
+    const resist_dfct = _player.difficulty === 'PFUDOR' ? 0.1 : 0;
+    const mitigations = [0, 0.5, 0.62, 0.75];
 
-      if (!_eq.node.mage) {
-        _eq.node.mage = $element('div', $id('eqch_left'), ['.hvut-eq-mage']);
-      }
-      _eq.node.mage.innerHTML = '';
-      const div = $element('div', _eq.node.mage, ['.hvut-eq-chart'], (e) => { _eq.click_stats(e); });
+    if (!_eq.node.mage) {
+      _eq.node.mage = $element('div', $id('eqch_left'), ['.hvut-eq-mage']);
+    }
+    _eq.node.mage.innerHTML = '';
+    const div = $element('div', _eq.node.mage, ['.hvut-eq-chart'], (e) => { _eq.click_stats(e); });
 
-      const options_div = $element('div', div, ['.hvut-eq-options']);
-      $input(['checkbox', '彩虹小马难度'], options_div, { dataset: { action: 'set' }, checked: resist_dfct });
-      $input(['checkbox', '魔药'], options_div, { dataset: { action: 'set', name: 'infusion', value: 'this' }, checked: edb_infusion });
-      $input(['checkbox', '陷危'], options_div, { dataset: { action: 'set', name: 'imperil', value: 'this' }, checked: mit_imperil });
-      $input(['checkbox', '属性日'], options_div, { dataset: { action: 'set', name: 'daybonus', value: 'this' }, checked: mit_day });
+    const options_div = $element('div', div, ['.hvut-eq-options']);
+    $input(['checkbox', 'PFUDOR'], options_div, { dataset: { action: 'set' }, checked: resist_dfct });
+    $input(['checkbox', 'Infusion'], options_div, { dataset: { action: 'set', name: 'infusion', value: 'this' }, checked: edb_infusion });
+    $input(['checkbox', 'Imperil'], options_div, { dataset: { action: 'set', name: 'imperil', value: 'this' }, checked: mit_imperil });
+    $input(['checkbox', 'Day of the Week'], options_div, { dataset: { action: 'set', name: 'daybonus', value: 'this' }, checked: mit_day });
 
-      let ul = $element('ul', div, ['.hvut-eq-stats']);
-      $element('li', ul, '法师属性');
-      // 创建一个映射表来翻译属性
-      const spellTypeMap = new Map([
-        ['Fire', '火焰'],
-        ['Cold', '冰冷'],
-        ['Elec', '闪电'],
-        ['Wind', '疾风'],
-        ['Holy', '神圣'],
-        ['Dark', '黑暗'],
-        // 添加更多属性的翻译
-      ]);
-      $element('li', ul, [`/<span>${Math.round(magic_score).toLocaleString()}</span><span>魔法得分</span>`]);
-      $element('li', ul, [`/<span>${Math.round(arcane_score).toLocaleString()}</span><span>秘法得分(开启"奥术集中"时)</span>`]);
-      $element('li', ul, [`/<span>${(prof_factor).toFixed(3)}</span><span>熟练度因子</span>`]);
-      $element('li', ul, [`/<span>${(mit_reduce * 100).toFixed(2)}%</span><span>降低敌方对应属性减伤</span>`]);
-      $element('li', ul, [`/<span>${(cr_staff).toFixed(2)}%</span><span>法杖基础反抵抗率</span>`]);
-      $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>降低敌方${spellTypeMap.get(spell_type)}减伤</span>`]);
-      $element('li', ul, [`/<span>${(cr_dep * 100).toFixed(2)}%</span><span>减益魔法反抵抗率</span>`]);
-      $element('li', ul, [`/<span>${(cure_bonus * 100).toFixed(2)}%</span><span>治疗效果加成</span>`]);
+    ul = $element('ul', div, ['.hvut-eq-stats']);
+    $element('li', ul, 'Mage Stats');
+    $element('li', ul, [`/<span>${Math.round(magic_score).toLocaleString()}</span><span>Magic Score</span>`]);
+    $element('li', ul, [`/<span>${Math.round(arcane_score).toLocaleString()}</span><span>Arcane Score</span>`]);
+    $element('li', ul, [`/<span>${(prof_factor).toFixed(3)}</span><span>Proficiency Factor</span>`]);
+    $element('li', ul, [`/<span>${(mit_reduce * 100).toFixed(2)}%</span><span>Mitigation Reduction</span>`]);
+    $element('li', ul, [`/<span>${(cr_staff).toFixed(2)}%</span><span>Base Counter-Resist</span>`]);
+    $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>${spell_type} C-R</span>`]);
+    $element('li', ul, [`/<span>${(cr_dep * 100).toFixed(2)}%</span><span>Deprecating C-R</span>`]);
+    $element('li', ul, [`/<span>${(cure_bonus * 100).toFixed(2)}%</span><span>Cure Bonus</span>`]);
 
-      ul = $element('ul', div, ['.hvut-eq-monster']);
-      $element('li', ul, '怪物抗性');
-      $element('li', ul, '基础抵抗率');
-      $element('li', ul, '减益魔法抵抗率');
-      $element('li', ul, `${spellTypeMap.get(spell_type)}抗性`);
-      $element('li', ul, '魔法减伤率');
-      mitigations.forEach((mit) => { $element('li', ul, `魔法减伤率 ${mit * 100}%`); });
+    ul = $element('ul', div, ['.hvut-eq-monster']);
+    $element('li', ul, 'Monster Resist');
+    $element('li', ul, 'Base Resist');
+    $element('li', ul, 'Deprecating Resist');
+    $element('li', ul, `${spell_type} Resist`);
+    $element('li', ul, 'Damage Reduction');
+    mitigations.forEach((mit) => { $element('li', ul, `Mitigation ${mit * 100}%`); });
 
-      [{ n: '女高中生们', s: 10, t: 0 }, { n: '平均', s: 8.5, t: 5 }, { n: '最大', s: 10, t: 10 }].forEach((r) => {
-        const rb = 1 - (1 - r.s / 100) * (1 - r.t / 100) * (1 - resist_dfct); // base resist
-        const rs = rb * (1 - cr_spell); // spell resist
-        /* damage resist
-                = Math.pow(rs, 1) * Math.pow(1 - rs, 2) * C(3, 1) * 0.5
-                + Math.pow(rs, 2) * Math.pow(1 - rs, 1) * C(3, 2) * 0.75
-                + Math.pow(rs, 3) * 1 * 0.9;
-              */
-        const rd = 0.15 * rs * rs * rs - 0.75 * rs * rs + 1.5 * rs;
-        const r_dep = rb * (1 - cr_dep);
+    [{ n: 'Schoolgirl', s: 10, t: 0 }, { n: 'Average', s: 8.5, t: 5 }, { n: 'Maximum', s: 10, t: 10 }].forEach((r) => {
+      const rb = 1 - (1 - r.s / 100) * (1 - r.t / 100) * (1 - resist_dfct); // base resist
+      const rs = rb * (1 - cr_spell); // spell resist
+      /* damage resist
+        = Math.pow(rs, 1) * Math.pow(1 - rs, 2) * C(3, 1) * 0.5
+        + Math.pow(rs, 2) * Math.pow(1 - rs, 1) * C(3, 2) * 0.75
+        + Math.pow(rs, 3) * 1 * 0.9;
+      */
+      const rd = 0.15 * rs * rs * rs - 0.75 * rs * rs + 1.5 * rs;
+      const r_dep = rb * (1 - cr_dep);
 
-        const ul = $element('ul', div, ['.hvut-eq-damage']);
-        $element('li', ul, r.n);
-        $element('li', ul, (rb * 100).toFixed(2) + '%');
-        $element('li', ul, (r_dep * 100).toFixed(2) + '%');
-        $element('li', ul, (rs * 100).toFixed(2) + '%');
-        $element('li', ul, (rd * 100).toFixed(2) + '%');
+      const ul = $element('ul', div, ['.hvut-eq-damage']);
+      $element('li', ul, r.n);
+      $element('li', ul, (rb * 100).toFixed(2) + '%');
+      $element('li', ul, (r_dep * 100).toFixed(2) + '%');
+      $element('li', ul, (rs * 100).toFixed(2) + '%');
+      $element('li', ul, (rd * 100).toFixed(2) + '%');
 
-        mitigations.forEach((mit) => {
-          mit -= mit_day;
-          mit = mit < 0 ? mit : mit < mit_reduce ? 0 : mit - mit_reduce;
-          const damage = arcane_score * (1 - rd) * (1 - mit);
-          $element('li', ul, Math.round(damage).toLocaleString());
-        });
+      mitigations.forEach((mit) => {
+        mit -= mit_day;
+        mit = mit < 0 ? mit : mit < mit_reduce ? 0 : mit - mit_reduce;
+        const damage = arcane_score * (1 - rd) * (1 - mit);
+        $element('li', ul, Math.round(damage).toLocaleString());
       });
-    };
+    });
+  };
 
-    _eq.click_stats = function (e) {
+  _eq.click_stats = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, name, value } = target.dataset;
+    if (action === 'set') {
+      if (value === 'this') {
+        $persona.set_value(name, target.checked);
+      }
+      _eq.mage_stats();
+    }
+  };
+
+  _eq.show_base = async function () {
+    const html = await $ajax.fetch('?s=Character&ss=ch');
+    const doc = $doc(html);
+    const base = {};
+    $qsa('#attr_table tr:nth-last-child(n+2), #prof_outer tr', doc).forEach((tr) => {
+      base[tr.children[0].textContent.toLowerCase()] = tr.children[1].textContent;
+    });
+    const stats = ['strength', 'dexterity', 'agility', 'endurance', 'intelligence', 'wisdom', 'elemental', 'divine', 'forbidden', 'deprecating', 'supportive'];
+    $qsa('.st2:nth-last-child(-n+3) .fal > div').forEach((d) => {
+      const s = d.textContent.trim();
+      if (stats.includes(s)) {
+        d.innerHTML = `&nbsp;[${Math.round(base[s])}]${d.textContent}`;
+      }
+    });
+  };
+
+  _eq.equip_code = function () {
+    const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+    popup_text(code, 900, 150);
+  };
+
+  _eq.equip_popups = function () {
+    if (_eq.node.popups) {
+      _eq.node.popups.classList.toggle('hvut-none');
+      return;
+    }
+    _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1500px;' : '')]);
+    _eq.equiplist.forEach((eq) => { $element('iframe', _eq.node.popups, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }); });
+  };
+
+  _eq.prof = {
+    node: {},
+    list: [],
+    equips: {
+      'Oak Staff': { base: 6.45, pxp: 371 },
+      'Willow Staff': { base: 6.14, pxp: 371 },
+      'Redwood Staff': { base: 8.29, pxp: 371 },
+      'Redwood Staff of the Elementalist': { base: 16.24, pxp: 371 },
+      'Katalox Staff': { base: 8.28, pxp: 368 },
+      'Katalox Staff of the Heaven-sent/Demon-fiend': { base: 16.24, pxp: 368 },
+      'Cotton Cap': { base: 8.29, pxp: 377 },
+      'Cotton Robe': { base: 9.89, pxp: 377 },
+      'Cotton Gloves': { base: 7.5, pxp: 377 },
+      'Cotton Pants': { base: 9.09, pxp: 377 },
+      'Cotton Shoes': { base: 6.7, pxp: 377 },
+    },
+    click: function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) {
         return;
       }
-      const { action, name, value } = target.dataset;
-      if (action === 'set') {
-        if (value === 'this') {
-          $persona.set_value(name, target.checked);
-        }
-        _eq.mage_stats();
+      const { action, key } = target.dataset;
+      if (action === 'close') {
+        _eq.prof.toggle();
+      } else if (action === 'add') {
+        _eq.prof.add();
+      } else if (action === 'load') {
+        _eq.prof.load(key);
+      } else if (action === 'name') {
+        _eq.prof.name(key);
+      } else if (action === 'save') {
+        _eq.prof.save(key);
+      } else if (action === 'delete') {
+        _eq.prof.delete(key);
       }
-    };
-
-    _eq.show_base = async function () {
-      const html = await $ajax.fetch('?s=Character&ss=ch');
-      const doc = $doc(html);
-      const base = {};
-      $qsa('#attr_table tr:nth-last-child(n+2), #prof_outer tr', doc).forEach((tr) => {
-        base[tr.children[0].textContent.toLowerCase()] = tr.children[1].textContent;
-      });
-      const stats = ['strength', 'dexterity', 'agility', 'endurance', 'intelligence', 'wisdom', 'elemental', 'divine', 'forbidden', 'deprecating', 'supportive'];
-      $qsa('.st2:nth-last-child(-n+3) .fal > div').forEach((d) => {
-        const s = d.textContent.trim();
-        if (stats.includes(s)) {
-          d.innerHTML = `&nbsp;[${Math.round(base[s])}]${d.textContent}`;
-        }
-      });
-    };
-
-    _eq.equip_code = function () {
-      const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
-      popup_text(code, 'width: 900px; height: 150px; white-space: pre;');
-    };
-
-    _eq.equip_popups = function () {
-      if (_eq.node.popups) {
-        _eq.node.popups.classList.toggle('hvut-none');
+      const { equip, value } = target.dataset;
+      if (action === 'max') {
+        _eq.prof.set_max(equip, value);
+      } else if (action === 'factor') {
+        _eq.prof.set_factor(value);
+      }
+    },
+    init: function () {
+      if (_eq.prof.inited) {
         return;
       }
-      _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1500px;' : '')]);
-      _eq.equiplist.forEach((eq) => { $element('iframe', _eq.node.popups, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }); });
-    };
-
-    _eq.prof = {
-      node: {},
-      data: {},
-      equipdata: {
-        '橡木法杖': { base: 6.45, pxp: 371 },
-        '柳木法杖': { base: 6.14, pxp: 371 },
-        '红木法杖': { base: 8.29, pxp: 371 },
-        '元素使前缀的红木仗': { base: 16.24, pxp: 371 },
-        '铁木法杖': { base: 8.28, pxp: 368 },
-        '圣/暗前缀的铁木杖': { base: 16.24, pxp: 368 },
-        '法师-帽子': { base: 8.29, pxp: 377 },
-        '法师-身体': { base: 9.89, pxp: 377 },
-        '法师-手套': { base: 7.5, pxp: 377 },
-        '法师-裤子': { base: 9.09, pxp: 377 },
-        '法师-鞋子': { base: 6.7, pxp: 377 },
-      },
-      click: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, name } = target.dataset;
-        if (action === 'close') {
-          _eq.prof.toggle();
-        } else if (action === 'add') {
-          _eq.prof.add();
-        } else if (action === 'load') {
-          _eq.prof.load(name);
-        } else if (action === 'save') {
-          _eq.prof.save(name);
-        } else if (action === 'delete') {
-          _eq.prof.delete(name);
-        }
-        const { equip, value } = target.dataset;
-        if (action === 'max') {
-          _eq.prof.set_max(equip, value);
-        } else if (action === 'factor') {
-          _eq.prof.set_factor(value);
-        }
-      },
-      init: function () {
-        if (_eq.prof.inited) {
-          return;
-        }
-        _eq.prof.inited = true;
-        _eq.prof.current = null;
-        _eq.prof.data = getValue('eq_prof', {});
-
-        const node = _eq.prof.node;
-        node.div = $element('div', $id('eqch_left'), ['.hvut-eq-prof'], { click: (e) => { _eq.prof.click(e); }, input: (e) => { _eq.prof.change(e); } });
-        node.side = $element('div', node.div, ['.hvut-eq-side']);
-        node.buttons = {};
-        $input(['button', '关闭'], node.side, { dataset: { action: 'close' } });
-        $input(['button', '新建'], node.side, { dataset: { action: 'add' } });
-
-        const h4 = $element('h4', node.div);
-        node.name = $element('span', h4);
-        $input(['button', '保存'], h4, { dataset: { action: 'save' } });
-        $input(['button', '删除'], h4, { dataset: { action: 'delete' } });
-
-        const summary = $element('ul', node.div, ['.hvut-eq-summary']);
-        node.proficiency = $element('li', summary, ['/<span>总熟练度</span><span></span>']).lastChild;
-        node.prof_factor = $element('li', summary, ['/<span>熟练度系数</span><span></span>']).lastChild;
-        node.mit_reduction = $element('li', summary, ['/<span>属性减伤降低</span><span></span>']).lastChild;
-        node.counter_resist = $element('li', summary, ['/<span>反抵抗率</span><span></span>']).lastChild;
-
-        $element('h4', node.div, '玩家数据');
-        const player = $element('ul', node.div, ['.hvut-eq-player', { dataset: { action: 'player' } }]);
-        let li;
-        li = $element('li', player, ['/<span>等级</span>']);
-        node.level = $input('number', li, { min: 0, max: 500, step: 1, required: true });
-        li = $element('li', player, ['/<span>基础熟练度</span>']);
-        node.base = $input('number', li, { min: 0, step: 0.1 });
-        node.base_factor = $element('span', li);
-        $element('span', li, ['[1.0]', { dataset: { action: 'factor', value: '1.0 ' } }]);
-        $element('span', li, ['[1.1]', { dataset: { action: 'factor', value: '1.1 ' } }]);
-        $element('span', li, ['[1.2]', { dataset: { action: 'factor', value: '1.2 ' } }]);
-        li = $element('li', player);
-        node.hathperk = $input(['checkbox', '有Hath Perk？'], $element('span', li));
-        node.hath_bonus = $input('number', li, { step: 0.001, readOnly: true });
-
-        $element('h4', node.div, '装备');
-        const equip = $element('table', node.div, ['.hvut-eq-equip']);
-        $element('tr', equip, ['/<td></td><td>装备部位</td><td>魂绑</td><td>装备等级</td><td>pxp</td><td>最大pxp</td><td>基础熟练度</td><td>最大熟练</td><td>强化等级</td><td>最终熟练度</td>']);
-
-        node.equips = ['柳木法杖', '法师-帽子', '法师-身体', '法师-手套', '法师-裤子', '法师-鞋子'].map((e, i) => {
-          const eqnode = {};
-          const eq = _eq.prof.equipdata[e];
-          const tr = $element('tr', equip, [{ dataset: { action: 'equip', equip: i } }, '/<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>']);
-
-          if (i === 0) {
-            eqnode.type = $element('select', tr.children[1], [{ dataset: { action: 'staff' } }, '/' + ['橡木法杖', '柳木法杖', '红木法杖', '元素使前缀的红木仗', '铁木法杖', '圣/暗前缀的铁木杖'].map((e) => `<option>${e}</option>`).join('')]);
-          } else {
-            tr.children[1].textContent = e;
-          }
-
-          eqnode.check = $input('checkbox', tr.children[0]);
-          eqnode.soulbound = $input('checkbox', tr.children[2]);
-          eqnode.level = $input('number', tr.children[3], { min: 1, max: 500, step: 1, required: true });
-          eqnode.pxp = $input('number', tr.children[4], { min: 200, max: eq.pxp, step: 1, required: true });
-          eqnode.pxpmax = $element('span', tr.children[5], [eq.pxp, { dataset: { action: 'max', equip: i, value: 'pxp' } }]);
-          eqnode.base = $input('number', tr.children[6], { min: 1, max: eq.base, step: 0.01, required: true });
-          eqnode.pmax = $element('span', tr.children[7], [eq.base, { dataset: { action: 'max', equip: i, value: 'base' } }]);
-          eqnode.upgrade = $input('number', tr.children[8], { min: 0, max: 50, step: 1 });
-          eqnode.scaled = tr.children[9];
-          return eqnode;
-        });
-
-        Object.keys(_eq.prof.data).forEach((name) => {
-          _eq.prof.add_button(name);
-        });
-        _eq.prof.load();
-      },
-      load: function (name) {
-        if (!name) {
-          name = Object.keys(_eq.prof.data)[0];
-        }
-        if (!name) {
-          _eq.prof.add();
-          return;
-        }
-        if (name === _eq.prof.current) {
-          return;
-        }
-        if (_eq.prof.current) {
-          _eq.prof.node.buttons[_eq.prof.current].classList.remove('hvut-eq-current');
-        }
-        _eq.prof.current = name;
-        _eq.prof.node.buttons[name].classList.add('hvut-eq-current');
-
-        const current = _eq.prof.data[name];
-        const node = _eq.prof.node;
-        node.name.textContent = name;
-
-        node.level.value = current.level || '';
-        node.base.value = current.base || '';
-        node.hathperk.checked = current.hathperk;
-        _eq.prof.change_player();
-
-        node.equips[0].type.value = current.equips[0].type;
-        _eq.prof.change_staff();
-
-        node.equips.forEach((eqnode, i) => {
-          const eq = current.equips[i];
-          eqnode.check.checked = eq.check;
-          eqnode.soulbound.checked = eq.soulbound;
-          eqnode.level.value = eq.level || '';
-          eqnode.pxp.value = eq.pxp || '';
-          eqnode.base.value = eq.base || '';
-          eqnode.upgrade.value = eq.upgrade || '';
-          _eq.prof.change_equip(i);
-        });
-        //_eq.prof.calc();
-      },
-      add: function () {
-        let name;
-        let i = 0;
-        do {
-          i++;
-          name = `*未命名${i}`;
-        } while (name in _eq.prof.data);
-        _eq.prof.data[name] = {
-          isnew: true,
-          level: _player.level,
-          base: _player.level,
-          hathperk: true,
-          equips: ['柳木法杖', '法师-帽子', '法师-身体', '法师-手套', '法师-裤子', '法师-鞋子'].map((e) => {
-            const eq = { ..._eq.prof.equipdata[e] };
-            eq.type = e;
-            eq.check = false;
-            eq.soulbound = false;
-            eq.level = _player.level;
-            eq.pxp = Math.round(eq.pxp * 0.95);
-            eq.base = Math.round(eq.base * 0.95 * 100) / 100;
-            eq.upgrade = 0;
-            return eq;
-          }),
+      _eq.prof.inited = true;
+      _eq.prof.current = null;
+      _eq.prof.list = $config.get('eq_prof', []).map((json, i) => {
+        const data = {
+          key: i + 1,
+          json,
+          values: JSON.parse(JSON.stringify(json)),
+          node: {},
         };
-        _eq.prof.add_button(name);
-        _eq.prof.load(name);
-      },
-      add_button: function (name) {
-        _eq.prof.node.buttons[name] = $input(['button', name], _eq.prof.node.side, { dataset: { action: 'load', name: name } });
-      },
-      change: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
+        return data;
+      });
+
+      const node = _eq.prof.node;
+      node.div = $element('div', $id('eqch_left'), ['.hvut-eq-prof'], { click: (e) => { _eq.prof.click(e); }, input: (e) => { _eq.prof.change(e); } });
+      node.side = $element('div', node.div, ['.hvut-side hvut-eq-side']);
+      $input(['button', 'Close'], node.side, { dataset: { action: 'close' } });
+      $input(['button', 'New'], node.side, { dataset: { action: 'add' }, className: 'hvut-side-margin' });
+
+      const p = $element('p', node.div);
+      node.name = $element('span', p);
+      $input(['button', 'Change Name'], p, { dataset: { action: 'name' } });
+      $input(['button', 'Save'], p, { dataset: { action: 'save' } });
+      $input(['button', 'Delete'], p, { dataset: { action: 'delete' } });
+
+      const summary = $element('ul', node.div, ['.hvut-eq-summary']);
+      node.proficiency = $element('li', summary, ['/<span>Total Proficiency</span><span></span>']).lastChild;
+      node.prof_factor = $element('li', summary, ['/<span>Proficiency Factor</span><span></span>']).lastChild;
+      node.mit_reduction = $element('li', summary, ['/<span>Mitigation Reduction</span><span></span>']).lastChild;
+      node.counter_resist = $element('li', summary, ['/<span>Counter-Resist</span><span></span>']).lastChild;
+
+      $element('p', node.div, 'Character');
+      const char = $element('ul', node.div, ['.hvut-eq-char', { dataset: { action: 'char' } }]);
+      let li;
+      li = $element('li', char, ['/<span>Level</span>']);
+      node.level = $input('number', li, { min: 0, max: 500, step: 1, required: true });
+      li = $element('li', char, ['/<span>Base Proficiency</span>']);
+      node.base = $input('number', li, { min: 0, step: 0.1 });
+      node.base_factor = $element('span', li);
+      $input(['button', 'x1.0'], li, { dataset: { action: 'factor', value: '1.0 ' } });
+      $input(['button', 'x1.1'], li, { dataset: { action: 'factor', value: '1.1 ' } });
+      $input(['button', 'x1.2'], li, { dataset: { action: 'factor', value: '1.2 ' } });
+      li = $element('li', char);
+      node.hathperk = $input(['checkbox', 'Hath Perk'], $element('span', li));
+      node.hath_bonus = $input('number', li, { step: 0.001, readOnly: true });
+
+      $element('p', node.div, 'Equipment');
+      const equip = $element('table', node.div, ['.hvut-eq-equip']);
+      $element('tr', equip, ['/<td></td><td>type</td><td>soulbound</td><td>level</td><td>pxp</td><td>max</td><td>base</td><td>max</td><td>upgrade</td><td>scaled</td>']);
+
+      node.equips = ['Willow Staff', 'Cotton Cap', 'Cotton Robe', 'Cotton Gloves', 'Cotton Pants', 'Cotton Shoes'].map((e, i) => {
+        const eqnode = {};
+        const eq = _eq.prof.equips[e];
+        const tr = $element('tr', equip, [{ dataset: { action: 'equip', equip: i } }, '/<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>']);
+
+        if (i === 0) {
+          eqnode.type = $input(['select', ['Oak Staff', 'Willow Staff', 'Redwood Staff', 'Redwood Staff of the Elementalist', 'Katalox Staff', 'Katalox Staff of the Heaven-sent/Demon-fiend']], tr.children[1], { dataset: { action: 'staff' } });
+        } else {
+          tr.children[1].textContent = e;
         }
-        const { action, equip } = target.dataset;
-        if (action === 'player') {
-          _eq.prof.change_player();
-        } else if (action === 'equip') {
-          _eq.prof.change_equip(equip);
-        } else if (action === 'staff') {
-          _eq.prof.change_staff();
+
+        eqnode.check = $input('checkbox', tr.children[0]);
+        eqnode.soulbound = $input('checkbox', tr.children[2]);
+        eqnode.level = $input('number', tr.children[3], { min: 1, max: 500, step: 1, required: true });
+        eqnode.pxp = $input('number', tr.children[4], { min: 200, max: eq.pxp, step: 1, required: true });
+        eqnode.pxpmax = $element('span', tr.children[5], [eq.pxp, { dataset: { action: 'max', equip: i, value: 'pxp' } }]);
+        eqnode.base = $input('number', tr.children[6], { min: 1, max: eq.base, step: 0.01, required: true });
+        eqnode.pmax = $element('span', tr.children[7], [eq.base, { dataset: { action: 'max', equip: i, value: 'base' } }]);
+        eqnode.upgrade = $input('number', tr.children[8], { min: 0, max: 50, step: 1 });
+        eqnode.scaled = tr.children[9];
+        return eqnode;
+      });
+
+      _eq.prof.list.forEach((data) => {
+        _eq.prof.add_button(data);
+      });
+      _eq.prof.load();
+    },
+    load: function (key) {
+      if (!_eq.prof.list.length) {
+        _eq.prof.add();
+        return;
+      }
+      if (!key) {
+        key = _eq.prof.list[0].key;
+      }
+      if (!Number.isInteger(key)) {
+        key = parseInt(key);
+      }
+      if (key === _eq.prof.current) {
+        return;
+      }
+      const prev = _eq.prof.get();
+      if (prev) {
+        prev.node.button.classList.remove('hvut-eq-current');
+      }
+      _eq.prof.current = key;
+
+      const data = _eq.prof.get(key);
+      data.node.button.classList.add('hvut-eq-current');
+      const node = _eq.prof.node;
+      node.name.textContent = data.values.name;
+
+      node.level.value = data.values.level || '';
+      node.base.value = data.values.base || '';
+      node.hathperk.checked = data.values.hathperk;
+      _eq.prof.change_char();
+
+      node.equips[0].type.value = data.values.equips[0].type;
+      _eq.prof.change_staff();
+
+      node.equips.forEach((eqnode, i) => {
+        const eq = data.values.equips[i];
+        eqnode.check.checked = eq.check;
+        eqnode.soulbound.checked = eq.soulbound;
+        eqnode.level.value = eq.level || '';
+        eqnode.pxp.value = eq.pxp || '';
+        eqnode.base.value = eq.base || '';
+        eqnode.upgrade.value = eq.upgrade || '';
+        _eq.prof.change_equip(i);
+      });
+      //_eq.prof.calc();
+    },
+    get: function (key = _eq.prof.current) {
+      return _eq.prof.list.find((data) => data.key == key);
+    },
+    add: function () {
+      let key = 1;
+      while (_eq.prof.get(key)) {
+        key++;
+      }
+      const json = {
+        name: `Noname${key}`,
+        level: _player.level,
+        base: _player.level,
+        hathperk: true,
+        equips: ['Willow Staff', 'Cotton Cap', 'Cotton Robe', 'Cotton Gloves', 'Cotton Pants', 'Cotton Shoes'].map((e) => {
+          const eq = { ..._eq.prof.equips[e] };
+          eq.type = e;
+          eq.check = false;
+          eq.soulbound = false;
+          eq.level = _player.level;
+          eq.pxp = Math.round(eq.pxp * 0.95);
+          eq.base = Math.round(eq.base * 0.95 * 100) / 100;
+          eq.upgrade = 0;
+          return eq;
+        }),
+      };
+      const data = {
+        new: true,
+        key,
+        json,
+        values: JSON.parse(JSON.stringify(json)),
+        node: {},
+      };
+      _eq.prof.list.push(data);
+      _eq.prof.add_button(data);
+      _eq.prof.load(data.key);
+    },
+    add_button: function (data) {
+      data.node.button = $input(['button', data.values.name], _eq.prof.node.side, { dataset: { action: 'load', key: data.key } });
+      if (data.new) {
+        data.node.button.classList.add('hvut-eq-new');
+      }
+    },
+    change: function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, equip } = target.dataset;
+      if (action === 'char') {
+        _eq.prof.change_char();
+      } else if (action === 'equip') {
+        _eq.prof.change_equip(equip);
+      } else if (action === 'staff') {
+        _eq.prof.change_staff();
+      }
+    },
+    change_char: function () {
+      const data = _eq.prof.get();
+      const values = data.values;
+      const node = _eq.prof.node;
+      const prev_level = values.level;
+      ['level', 'base', 'hathperk'].forEach((e) => {
+        if (node[e].type === 'number') {
+          values[e] = parseFloat(node[e].value) || 0;
+        } else if (node[e].type === 'checkbox') {
+          values[e] = node[e].checked;
+        } else {
+          values[e] = node[e].value;
         }
-      },
-      change_player: function () {
-        const current = _eq.prof.data[_eq.prof.current];
-        const node = _eq.prof.node;
-        const prev_level = current.level;
-        ['level', 'base', 'hathperk'].forEach((e) => {
-          if (node[e].type === 'number') {
-            current[e] = parseFloat(node[e].value) || 0;
-          } else if (node[e].type === 'checkbox') {
-            current[e] = node[e].checked;
-          } else {
-            current[e] = node[e].value;
+      });
+
+      if (values.level !== prev_level) {
+        node.base.max = values.level * 10 * 1.2 / 10;
+        node.equips.forEach((eqnode, i) => {
+          const eq = values.equips[i];
+          eqnode.level.max = values.level;
+          if (eq.soulbound) {
+            _eq.prof.change_equip(i);
           }
         });
+      }
+      node.base_factor.textContent = ' = Level * ' + (values.base / values.level).toFixed(3);
+      node.hath_bonus.value = values.hathperk ? (values.base * 0.1).toFixed(2) : 0;
 
-        if (current.level !== prev_level) {
-          node.base.max = current.level * 10 * 1.2 / 10;
-          node.equips.forEach((eqnode, i) => {
-            const eq = current.equips[i];
-            eqnode.level.max = current.level;
-            if (eq.soulbound) {
-              _eq.prof.change_equip(i);
-            }
-          });
+      _eq.prof.calc();
+    },
+    change_equip: function (n) {
+      const data = _eq.prof.get();
+      const values = data.values;
+      const eq = values.equips[n];
+      const eqnode = _eq.prof.node.equips[n];
+      ['check', 'soulbound', 'level', 'pxp', 'base', 'upgrade'].forEach((e) => {
+        if (eqnode[e].type === 'number') {
+          eq[e] = parseFloat(eqnode[e].value) || 0;
+        } else if (eqnode[e].type === 'checkbox') {
+          eq[e] = eqnode[e].checked;
+        } else {
+          eq[e] = eqnode[e].value;
         }
-        node.base_factor.textContent = ' = Level * ' + (current.base / current.level).toFixed(3);
-        node.hath_bonus.value = current.hathperk ? (current.base * 0.1).toFixed(2) : 0;
+      });
 
-        _eq.prof.calc();
-      },
-      change_equip: function (n) {
-        const current = _eq.prof.data[_eq.prof.current];
-        const eq = current.equips[n];
-        const eqnode = _eq.prof.node.equips[n];
-        ['check', 'soulbound', 'level', 'pxp', 'base', 'upgrade'].forEach((e) => {
-          if (eqnode[e].type === 'number') {
-            eq[e] = parseFloat(eqnode[e].value) || 0;
-          } else if (eqnode[e].type === 'checkbox') {
-            eq[e] = eqnode[e].checked;
-          } else {
-            eq[e] = eqnode[e].value;
-          }
-        });
+      eqnode.level.disabled = eq.soulbound;
+      if (eq.soulbound) {
+        eq.level = values.level;
+        eqnode.level.value = eq.level;
+      }
+      eq.scaled = $equip.forge('Elemental', eq.base, eq.upgrade, eq.pxp, eq.level);
+      eqnode.scaled.textContent = eq.scaled.toFixed(2);
 
-        eqnode.level.disabled = eq.soulbound;
-        if (eq.soulbound) {
-          eq.level = current.level;
-          eqnode.level.value = eq.level;
+      _eq.prof.calc();
+    },
+    change_staff: function () {
+      const eqnode = _eq.prof.node.equips[0];
+      const equips = _eq.prof.equips[eqnode.type.value];
+      eqnode.pxp.max = equips.pxp;
+      eqnode.pxpmax.textContent = equips.pxp;
+      eqnode.base.max = equips.base;
+      eqnode.pmax.textContent = equips.base;
+    },
+    set_max: function (n, stat) {
+      const eqnode = _eq.prof.node.equips[n];
+      eqnode[stat].value = eqnode[stat].max;
+      _eq.prof.change_equip(n);
+    },
+    set_factor: function (value) {
+      const data = _eq.prof.get();
+      const values = data.values;
+      _eq.prof.node.base.value = (values.level * value).toFixed(1);
+      _eq.prof.change_char();
+    },
+    calc: function () {
+      const data = _eq.prof.get();
+      const values = data.values;
+      const node = _eq.prof.node;
+
+      values.proficiency = values.base;
+      if (values.hathperk) {
+        values.proficiency += values.base * 0.1;
+      }
+      values.equips.forEach((eq) => {
+        if (eq.check) {
+          values.proficiency += eq.scaled;
         }
-        eq.scaled = $equip.forge('Elemental', eq.base, eq.upgrade, eq.pxp, eq.level);
-        eqnode.scaled.textContent = eq.scaled.toFixed(2);
+      });
+      values.prof_factor = Math.max(0, Math.min(1, values.proficiency / values.level - 1));
+      values.mit_reduction = Math.pow(values.prof_factor, 1.5) / 2;
+      values.counter_resist = values.prof_factor / 2;
 
-        _eq.prof.calc();
-      },
-      change_staff: function () {
-        const eqnode = _eq.prof.node.equips[0];
-        const equipdata = _eq.prof.equipdata[eqnode.type.value];
-        eqnode.pxp.max = equipdata.pxp;
-        eqnode.pxpmax.textContent = equipdata.pxp;
-        eqnode.base.max = equipdata.base;
-        eqnode.pmax.textContent = equipdata.base;
-      },
-      set_max: function (n, stat) {
-        const eqnode = _eq.prof.node.equips[n];
-        eqnode[stat].value = eqnode[stat].max;
-        _eq.prof.change_equip(n);
-      },
-      set_factor: function (value) {
-        _eq.prof.node.base.value = _eq.prof.data[_eq.prof.current].level * value;
-        _eq.prof.change_player();
-      },
-      calc: function () {
-        const current = _eq.prof.data[_eq.prof.current];
-        const node = _eq.prof.node;
+      node.proficiency.textContent = values.proficiency.toFixed(3);
+      node.prof_factor.textContent = values.prof_factor.toFixed(3);
+      node.mit_reduction.textContent = (values.mit_reduction * 100).toFixed(2) + '%';
+      node.counter_resist.textContent = (values.counter_resist * 100).toFixed(2) + '%';
+    },
+    save: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      if (data.new) {
+        data.node.button.classList.remove('hvut-eq-new');
+        data.new = false;
+      }
+      data.json = JSON.parse(JSON.stringify(data.values));
+      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
+      $config.set('eq_prof', json);
+    },
+    name: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      const name = prompt('Enter the name of the settings', data.values.name)?.trim();
+      if (!name) {
+        return;
+      }
+      data.values.name = name;
+      data.node.button.value = name;
+      _eq.prof.node.name.textContent = name;
+    },
+    delete: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      data.node.button.remove();
+      const index = _eq.prof.list.findIndex((data) => data.key === key);
+      _eq.prof.list.splice(index, 1);
+      if (key == _eq.prof.current) {
+        _eq.prof.current = null;
+      }
+      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
+      $config.set('eq_prof', json);
+      _eq.prof.load();
+    },
+    toggle: function () {
+      _eq.prof.node.div?.classList.toggle('hvut-none');
+      _eq.prof.init();
+    },
+  };
 
-        current.proficiency = current.base;
-        if (current.hathperk) {
-          current.proficiency += current.base * 0.1;
-        }
-        current.equips.forEach((eq) => {
-          if (eq.check) {
-            current.proficiency += eq.scaled;
-          }
-        });
-        current.prof_factor = Math.max(0, Math.min(1, current.proficiency / current.level - 1));
-        current.mit_reduction = Math.pow(current.prof_factor, 1.5) / 2;
-        current.counter_resist = current.prof_factor / 2;
+  _eq.node = {};
 
-        node.proficiency.textContent = current.proficiency.toFixed(3);
-        node.prof_factor.textContent = current.prof_factor.toFixed(3);
-        node.mit_reduction.textContent = (current.mit_reduction * 100).toFixed(2) + '%';
-        node.counter_resist.textContent = (current.counter_resist * 100).toFixed(2) + '%';
-      },
-      save: function (name = _eq.prof.current) {
-        if (_eq.prof.data[name].isnew) {
-          const newname = prompt('输入方案名称')?.trim();
-          if (!newname) {
-            return;
-          } else if (newname in _eq.prof.data) {
-            if (!prompt(`${newname} already exists.\nOverwrite it?`)) {
-              return;
-            }
-          } else {
-            _eq.prof.add_button(newname);
-          }
-          _eq.prof.node.buttons[name].remove();
-
-          _eq.prof.data[newname] = _eq.prof.data[name];
-          delete _eq.prof.data[newname].isnew;
-          delete _eq.prof.data[name];
-          _eq.prof.load(newname);
-          name = newname;
-        }
-        const json = getValue('eq_prof', {});
-        json[name] = _eq.prof.data[name];
-        setValue('eq_prof', json);
-      },
-      delete: function (name = _eq.prof.current) {
-        _eq.prof.node.buttons[name].remove();
-        delete _eq.prof.data[name];
-        const json = getValue('eq_prof', {});
-        delete json[name];
-        setValue('eq_prof', json);
-        _eq.prof.load();
-      },
-      toggle: function () {
-        _eq.prof.node.div?.classList.toggle('hvut-none');
-        _eq.prof.init();
-      },
-    };
-
-    _eq.node = {};
-
-    if (_query.equip_slot) {
-      GM_addStyle(/*css*/`
+  if (_query.equip_slot) {
+    GM_addStyle(/*css*/`
       #eqch_left .eqb { padding: 0; height: auto; font-size: 10pt; line-height: 20px; text-align: center; overflow: hidden; }
       #eqch_left .eqb > div:last-child { padding: 1px 0; position: relative; }
     `);
 
-      $equip.list($qs('#equip_pane .equiplist'));
-    } else {
-      GM_addStyle(/*css*/`
+    $equip.list($qs('#equip_pane .equiplist'));
+  } else {
+    GM_addStyle(/*css*/`
       #popup_box.hvut-eq-popupbox { margin-top: 15px; }
       #eqch_left { height: 654px; padding-top: 3px; }
       #eqsh { display: none; }
@@ -5053,20 +4548,18 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-eq-prof input[type='checkbox'] { top: 3px; }
       .hvut-eq-prof input:invalid { color: #e00; }
       .hvut-eq-prof span { display: inline-block; }
-      .hvut-eq-prof h4 { margin: 5px 0; }
-      .hvut-eq-prof h4 > span { min-width: 120px; }
+      .hvut-eq-prof p { margin: 5px 0; font-weight: bold; white-space: nowrap; }
+      .hvut-eq-prof p > span { min-width: 150px; }
       .hvut-eq-prof ul { margin: 5px 0 15px; padding: 0; max-width: 530px; list-style: none; }
       .hvut-eq-prof li { margin: 1px 0; height: 22px; line-height: 22px; }
-      .hvut-eq-side { position: absolute; top: 0; left: 0; width: 100px; display: flex; flex-direction: column; }
-      .hvut-eq-side input { margin: 3px 0; white-space: normal; }
-      .hvut-eq-side input:nth-child(2) { margin-bottom: 10px; }
+      .hvut-eq-side { top: 0; left: 0; }
       .hvut-eq-current { color: #03c !important; border-color: #03c !important; }
-      .hvut-eq-summary span:first-child { width: 120px; }
+      .hvut-eq-new { font-style: italic; }
+      .hvut-eq-summary span:first-child { width: 150px; }
       .hvut-eq-summary span:last-child { width: 50px; font-weight: bold; text-align: right; }
-      .hvut-eq-player li > *:nth-child(1) { width: 120px; }
-      .hvut-eq-player li > *:nth-child(2) { width: 60px; }
-      .hvut-eq-player li > *:nth-child(3) { margin-left: 10px; }
-      .hvut-eq-player li > *:nth-child(n+4) { margin-left: 10px; cursor: pointer; }
+      .hvut-eq-char li > *:nth-child(1) { width: 130px; }
+      .hvut-eq-char li > *:nth-child(2) { width: 60px; }
+      .hvut-eq-char li > *:nth-child(3) { margin: 0 10px; }
       .hvut-eq-equip { table-layout: fixed; width: 530px; line-height: 22px; }
       .hvut-eq-equip td { padding: 1px 5px; }
       .hvut-eq-equip input { width: 100%; margin: 0; box-sizing: border-box; }
@@ -5087,481 +4580,284 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-eq-popups iframe { width: 372px; height: 445px; border: 1px solid; margin: 0 -1px -1px 0; overflow: hidden; }
     `);
 
-      $id('popup_box').classList.add('hvut-eq-popupbox');
+    $id('popup_box').classList.add('hvut-eq-popupbox');
 
-      $persona.check_e();
-      $persona.set_button();
-      $persona.save_equipset();
+    $persona.check_e();
+    $persona.set_button();
+    $persona.save_equipset();
 
-      _eq.stats_pane = $persona.parse_stats_pane();
-      _eq.show_base();
-      _eq.equiplist = $equip.list($id('eqsb'), false);
-      _eq.equiplist.forEach((eq) => {
-        if (!eq?.node) return;
-        eq.node.div.textContent = eq.node.div.textContent;
-        $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']).append(
-          $element('span', null, [(eq.info.soulbound ? 'Soulbound' : 'Lv.' + eq.info.level), (eq.info.soulbound || !eq.info.tradeable ? '.hvut-eq-untradeable' : '')]), ' : ',
-          $element('span', null, 'IW ' + eq.info.tier), ' : ',
-          $element('span', null, [Math.ceil(eq.info.cdt * 100) + '%', (eq.info.cdt <= 0.5 ? '.hvut-eq-cdt2' : eq.info.cdt <= 0.6 ? '.hvut-eq-cdt1' : '')])
-        );
-      });
+    _eq.stats_pane = $persona.parse_stats_pane();
+    _eq.show_base();
+    _eq.equiplist = $equip.list($id('eqsb'), false);
+    _eq.equiplist.forEach((eq) => {
+      eq.node.div.textContent = eq.node.div.textContent;
+      $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']).append(
+        $element('span', null, [(eq.info.soulbound ? 'Soulbound' : 'Lv.' + eq.info.level), (eq.info.soulbound || !eq.info.tradeable ? '.hvut-eq-untradeable' : '')]), ' : ',
+        $element('span', null, 'IW ' + eq.info.tier), ' : ',
+        $element('span', null, [Math.ceil(eq.info.cdt * 100) + '%', (eq.info.cdt <= 0.5 ? '.hvut-eq-cdt2' : eq.info.cdt <= 0.6 ? '.hvut-eq-cdt1' : '')])
+      );
+    });
 
-      _eq.node.buttons = $element('div', [$id('eqch_left'), 'afterbegin'], ['.hvut-eq-buttons']);
-      $input(['button', '生成装备代码'], _eq.node.buttons, null, () => { _eq.equip_code(); });
-      $input(['button', '生成装备一览'], _eq.node.buttons, null, () => { _eq.equip_popups(); });
-      $input(['button', '熟练度计算器'], _eq.node.buttons, null, () => { _eq.prof.toggle(); });
-      _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || '套装 ' + $persona.json.eidx, style: 'width: 100px; margin-left: auto; text-align: center;' });
-      $input(['button', '保存'], _eq.node.buttons, null, () => { $persona.set_value('name', _eq.node.equipset_name.value); });
+    _eq.node.buttons = $element('div', [$id('eqch_left'), 'afterbegin'], ['.hvut-eq-buttons']);
+    $input(['button', 'Equip Code'], _eq.node.buttons, null, () => { _eq.equip_code(); });
+    $input(['button', 'Equip Pop-ups'], _eq.node.buttons, null, () => { _eq.equip_popups(); });
+    $input(['button', 'Proficiency Simulator'], _eq.node.buttons, null, () => { _eq.prof.toggle(); });
+    _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || 'Set ' + $persona.json.eset, style: 'width: 100px; margin-left: auto; text-align: center;' });
+    $input(['button', 'Save'], _eq.node.buttons, null, () => { $persona.set_value('name', _eq.node.equipset_name.value); });
 
-      if (_eq.stats_pane['Spell Type']) {
-        if (settings.equipmentStatsAnalyzer) {
-          _eq.mage_stats();
-        }
+    if (_eq.stats_pane['Spell Type']) {
+      _eq.mage_stats();
+    }
+  }
+} else
+// [END 2] Character - Equipment */
+
+
+//* [3] Character - Abilities
+if (_query.s === 'Character' && _query.ss === 'ab') {
+  _ab.ability = {
+    'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
+    'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
+    'SP Tank': { category: 'General', img: '3.png', pos: -68, unlock: [0, 40, 80, 120, 170, 220, 270, 330, 390, 450], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
+    'Better Health Pots': { category: 'General', img: '1.png', pos: 0, unlock: [0, 100, 200, 300, 400], point: [1, 2, 3, 4, 5] },
+    'Better Mana Pots': { category: 'General', img: '1.png', pos: -34, unlock: [0, 80, 140, 220, 380], point: [2, 3, 5, 7, 9] },
+    'Better Spirit Pots': { category: 'General', img: '1.png', pos: -68, unlock: [0, 90, 160, 240, 400], point: [2, 3, 5, 7, 9] },
+    '1H Damage': { category: 'One-handed', img: 'e.png', pos: -68, unlock: [0, 100, 200], point: [2, 3, 5] },
+    '1H Accuracy': { category: 'One-handed', img: 'e.png', pos: -34, unlock: [50, 150], point: [1, 2] },
+    '1H Block': { category: 'One-handed', img: 'e.png', pos: 0, unlock: [250], point: [3] },
+    '2H Damage': { category: 'Two-handed', img: 'k.png', pos: -34, unlock: [0, 100, 200], point: [2, 3, 5] },
+    '2H Accuracy': { category: 'Two-handed', img: 'k.png', pos: 0, unlock: [50, 150], point: [1, 2] },
+    '2H Parry': { category: 'Two-handed', img: 'e.png', pos: -102, unlock: [250], point: [3] },
+    'DW Damage': { category: 'Dual-wielding', img: 'j.png', pos: 0, unlock: [0, 100, 200], point: [2, 3, 5] },
+    'DW Accuracy': { category: 'Dual-wielding', img: 'k.png', pos: -68, unlock: [50, 150], point: [1, 2] },
+    'DW Crit': { category: 'Dual-wielding', img: 'k.png', pos: -102, unlock: [250], point: [3] },
+    'Staff Spell Damage': { category: 'Staff', img: '9.png', pos: -68, unlock: [0, 100, 200], point: [2, 3, 5] },
+    'Staff Accuracy': { category: 'Staff', img: 'v.png', pos: 0, unlock: [50, 150], point: [1, 2] },
+    'Staff Damage': { category: 'Staff', img: 'k.png', pos: -136, unlock: [0], point: [3] },
+    'Cloth Spellacc': { category: 'Cloth Armor', img: '5.png', pos: 0, unlock: [120], point: [5] },
+    'Cloth Spellcrit': { category: 'Cloth Armor', img: '5.png', pos: -34, unlock: [0, 40, 90, 130, 190], point: [1, 2, 3, 5, 7] },
+    'Cloth Castspeed': { category: 'Cloth Armor', img: '5.png', pos: -68, unlock: [150, 250], point: [2, 5] },
+    'Cloth MP': { category: 'Cloth Armor', img: 'u.png', pos: -136, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
+    'Light Acc': { category: 'Light Armor', img: '7.png', pos: -34, unlock: [0], point: [3] },
+    'Light Crit': { category: 'Light Armor', img: '7.png', pos: 0, unlock: [0, 40, 90, 130, 190], point: [1, 2, 3, 5, 7] },
+    'Light Speed': { category: 'Light Armor', img: '6.png', pos: -68, unlock: [150, 250], point: [2, 5] },
+    'Light HP/MP': { category: 'Light Armor', img: '5.png', pos: -102, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
+    'Heavy Crush': { category: 'Heavy Armor', img: 'j.png', pos: -34, unlock: [0, 75, 150], point: [3, 5, 7] },
+    'Heavy Prcg': { category: 'Heavy Armor', img: 'a.png', pos: -102, unlock: [0, 75, 150], point: [3, 5, 7] },
+    'Heavy Slsh': { category: 'Heavy Armor', img: 'j.png', pos: -68, unlock: [0, 75, 150], point: [3, 5, 7] },
+    'Heavy HP': { category: 'Heavy Armor', img: 'u.png', pos: -102, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
+    'Better Weaken': { category: 'Deprecating 1', img: '4.png', pos: 0, unlock: [70, 100, 130, 190, 250], point: [1, 2, 3, 5, 7] },
+    'Faster Weaken': { category: 'Deprecating 1', img: 'b.png', pos: -68, unlock: [80, 165, 250], point: [3, 5, 7] },
+    'Better Imperil': { category: 'Deprecating 1', img: 'a.png', pos: -68, unlock: [130, 175, 230, 285, 330], point: [1, 2, 3, 4, 5] },
+    'Faster Imperil': { category: 'Deprecating 1', img: 'r.png', pos: 0, unlock: [140, 225, 310], point: [3, 5, 7] },
+    'Better Blind': { category: 'Deprecating 1', img: 'r.png', pos: -34, unlock: [110, 130, 160, 190, 220], point: [1, 2, 3, 4, 5] },
+    'Faster Blind': { category: 'Deprecating 1', img: '9.png', pos: -102, unlock: [120, 215, 275], point: [1, 2, 3] },
+    'Mind Control': { category: 'Deprecating 1', img: '9.png', pos: -136, unlock: [80, 130, 170], point: [1, 3, 5] },
+    'Better Silence': { category: 'Deprecating 2', img: 'c.png', pos: -170, unlock: [120, 170, 215], point: [3, 5, 7] },
+    'Better MagNet': { category: 'Deprecating 2', img: 'u.png', pos: 0, unlock: [250, 295, 340, 370, 400], point: [1, 2, 3, 4, 5] },
+    'Better Slow': { category: 'Deprecating 2', img: 'c.png', pos: 0, unlock: [30, 50, 75, 105, 135], point: [1, 2, 3, 4, 5] },
+    'Better Drain': { category: 'Deprecating 2', img: '2.png', pos: 0, unlock: [20, 50, 90], point: [2, 3, 5] },
+    'Faster Drain': { category: 'Deprecating 2', img: 'n.png', pos: 0, unlock: [30, 70, 110, 150, 200], point: [1, 2, 3, 4, 5] },
+    'Ether Theft': { category: 'Deprecating 2', img: '2.png', pos: -34, unlock: [150], point: [5] },
+    'Spirit Theft': { category: 'Deprecating 2', img: '2.png', pos: -68, unlock: [150], point: [5] },
+    'Better Haste': { category: 'Supportive 1', img: '9.png', pos: -34, unlock: [60, 75, 90, 110, 130], point: [1, 2, 3, 4, 5] },
+    'Better Shadow Veil': { category: 'Supportive 1', img: '6.png', pos: -34, unlock: [90, 105, 120, 135, 155], point: [1, 2, 3, 5, 7] },
+    'Better Absorb': { category: 'Supportive 1', img: 'c.png', pos: -34, unlock: [40, 60, 80], point: [1, 2, 3] },
+    'Stronger Spirit': { category: 'Supportive 1', img: 'a.png', pos: 0, unlock: [200, 220, 240, 265, 285], point: [1, 2, 3, 4, 5] },
+    'Better Heartseeker': { category: 'Supportive 1', img: '6.png', pos: 0, unlock: [140, 185, 225, 265, 305, 345, 385], point: [1, 2, 3, 4, 5, 6, 7] },
+    'Better Arcane Focus': { category: 'Supportive 1', img: 'q.png', pos: 0, unlock: [175, 205, 245, 285, 325, 365, 405], point: [1, 2, 3, 4, 5, 6, 7] },
+    'Better Regen': { category: 'Supportive 1', img: 'b.png', pos: -34, unlock: [50, 70, 95, 145, 195, 245, 295, 375, 445, 500], point: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    'Better Cure': { category: 'Supportive 1', img: 'i.png', pos: -102, unlock: [0, 35, 65], point: [2, 3, 5] },
+    'Better Spark': { category: 'Supportive 2', img: 'q.png', pos: -170, unlock: [100, 125, 150], point: [2, 3, 5] },
+    'Better Protection': { category: 'Supportive 2', img: 'o.png', pos: 0, unlock: [40, 55, 75, 95, 120], point: [1, 2, 3, 4, 5] },
+    'Flame Spike Shield': { category: 'Supportive 2', img: 's.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
+    'Frost Spike Shield': { category: 'Supportive 2', img: 'p.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
+    'Shock Spike Shield': { category: 'Supportive 2', img: 'g.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
+    'Storm Spike Shield': { category: 'Supportive 2', img: 'a.png', pos: -34, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
+    'Conflagration': { category: 'Elemental', img: 'h.png', pos: 0, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
+    'Cryomancy': { category: 'Elemental', img: 'i.png', pos: -34, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
+    'Havoc': { category: 'Elemental', img: '9.png', pos: 0, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
+    'Tempest': { category: 'Elemental', img: 'i.png', pos: -68, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
+    'Sorcery': { category: 'Elemental', img: 'c.png', pos: -68, unlock: [70, 140, 210, 280, 350], point: [1, 2, 3, 4, 5] },
+    'Elementalism': { category: 'Elemental', img: 'c.png', pos: -136, unlock: [85, 170, 255, 340, 425], point: [2, 3, 5, 7, 9] },
+    'Archmage': { category: 'Elemental', img: 'i.png', pos: 0, unlock: [90, 180, 270, 360, 450], point: [5, 7, 9, 12, 15] },
+    'Better Corruption': { category: 'Forbidden', img: 't.png', pos: 0, unlock: [75, 150], point: [3, 5] },
+    'Better Disintegrate': { category: 'Forbidden', img: 't.png', pos: -34, unlock: [175, 250], point: [5, 7] },
+    'Better Ragnarok': { category: 'Forbidden', img: 'u.png', pos: -68, unlock: [250, 325, 400], point: [7, 9, 12] },
+    'Ripened Soul': { category: 'Forbidden', img: 'u.png', pos: -34, unlock: [150, 300, 450], point: [7, 10, 15] },
+    'Dark Imperil': { category: 'Forbidden', img: 't.png', pos: -68, unlock: [175, 225, 275, 325, 375], point: [2, 3, 5, 7, 9] },
+    'Better Smite': { category: 'Divine', img: 'q.png', pos: -136, unlock: [75, 150], point: [3, 5] },
+    'Better Banish': { category: 'Divine', img: 'q.png', pos: -34, unlock: [175, 250], point: [5, 7] },
+    'Better Paradise': { category: 'Divine', img: 'q.png', pos: -68, unlock: [250, 325, 400], point: [7, 9, 12] },
+    'Soul Fire': { category: 'Divine', img: 'l.png', pos: 0, unlock: [150, 300, 450], point: [7, 10, 15] },
+    'Holy Imperil': { category: 'Divine', img: 'v.png', pos: -34, unlock: [175, 225, 275, 325, 375], point: [2, 3, 5, 7, 9] },
+  };
+
+  _ab.preset = {
+    'Current Set': [],
+    'One-handed': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '1H Damage', '1H Accuracy', '1H Block', 'Heavy Crush', 'Heavy Prcg', 'Heavy Slsh', 'Heavy HP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Two-handed': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Accuracy', '2H Parry', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Dual-wielding': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'DW Damage', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Niten Ichiryu': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Parry', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Elemental mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Conflagration', 'Sorcery', 'Elementalism', 'Archmage'],
+    'Dark mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Corruption', 'Better Disintegrate', 'Better Ragnarok', 'Ripened Soul', 'Dark Imperil'],
+    'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
+  };
+
+  _ab.point = parseInt(/Ability Points: (\d+)/.exec($id('ability_top').children[3].textContent)[1]);
+  _ab.level = {};
+
+  _ab.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, name, to } = target.dataset;
+    if (action === 'unlock') {
+      e.stopPropagation();
+      _ab.unlock(name, to);
+    }
+  };
+
+  _ab.unlock = async function (name, to) {
+    const ab = _ab.ability[name];
+    const count = to - ab.level;
+
+    async function unlock(ab) {
+      const html = await $ajax.fetch(location.href, 'unlock_ability=' + ab.id);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        popup(error);
+      } else {
+        const button = $qs('div[style*="u.png"]', ab.div.children[2]);
+        button.style.opacity = 0.5;
+        button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
       }
     }
-  } else
-    // [END 2] Character - Equipment */
 
+    const requests = $ajax.repeat(count, unlock, ab);
+    await Promise.all(requests);
+    location.href = location.href;
+  };
 
-    //* [3] Character - Abilities
-    if (settings.abilities && _query.s === 'Character' && _query.ss === 'ab') {
-      _ab.ability = {
-        'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
-        'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
-        'SP Tank': { category: 'General', img: '3.png', pos: -68, unlock: [0, 40, 80, 120, 170, 220, 270, 330, 390, 450], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
-        'Better Health Pots': { category: 'General', img: '1.png', pos: 0, unlock: [0, 100, 200, 300, 400], point: [1, 2, 3, 4, 5] },
-        'Better Mana Pots': { category: 'General', img: '1.png', pos: -34, unlock: [0, 80, 140, 220, 380], point: [2, 3, 5, 7, 9] },
-        'Better Spirit Pots': { category: 'General', img: '1.png', pos: -68, unlock: [0, 90, 160, 240, 400], point: [2, 3, 5, 7, 9] },
-        '1H Damage': { category: 'One-handed', img: 'e.png', pos: -68, unlock: [0, 100, 200], point: [2, 3, 5] },
-        '1H Accuracy': { category: 'One-handed', img: 'e.png', pos: -34, unlock: [50, 150], point: [1, 2] },
-        '1H Block': { category: 'One-handed', img: 'e.png', pos: 0, unlock: [250], point: [3] },
-        '2H Damage': { category: 'Two-handed', img: 'k.png', pos: -34, unlock: [0, 100, 200], point: [2, 3, 5] },
-        '2H Accuracy': { category: 'Two-handed', img: 'k.png', pos: 0, unlock: [50, 150], point: [1, 2] },
-        '2H Parry': { category: 'Two-handed', img: 'e.png', pos: -102, unlock: [250], point: [3] },
-        'DW Damage': { category: 'Dual-wielding', img: 'j.png', pos: 0, unlock: [0, 100, 200], point: [2, 3, 5] },
-        'DW Accuracy': { category: 'Dual-wielding', img: 'k.png', pos: -68, unlock: [50, 150], point: [1, 2] },
-        'DW Crit': { category: 'Dual-wielding', img: 'k.png', pos: -102, unlock: [250], point: [3] },
-        'Staff Spell Damage': { category: 'Staff', img: '9.png', pos: -68, unlock: [0, 100, 200], point: [2, 3, 5] },
-        'Staff Accuracy': { category: 'Staff', img: 'v.png', pos: 0, unlock: [50, 150], point: [1, 2] },
-        'Staff Damage': { category: 'Staff', img: 'k.png', pos: -136, unlock: [0], point: [3] },
-        'Cloth Spellacc': { category: 'Cloth Armor', img: '5.png', pos: 0, unlock: [120], point: [5] },
-        'Cloth Spellcrit': { category: 'Cloth Armor', img: '5.png', pos: -34, unlock: [0, 40, 90, 130, 190], point: [1, 2, 3, 5, 7] },
-        'Cloth Castspeed': { category: 'Cloth Armor', img: '5.png', pos: -68, unlock: [150, 250], point: [2, 5] },
-        'Cloth MP': { category: 'Cloth Armor', img: 'u.png', pos: -136, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
-        'Light Acc': { category: 'Light Armor', img: '7.png', pos: -34, unlock: [0], point: [3] },
-        'Light Crit': { category: 'Light Armor', img: '7.png', pos: 0, unlock: [0, 40, 90, 130, 190], point: [1, 2, 3, 5, 7] },
-        'Light Speed': { category: 'Light Armor', img: '6.png', pos: -68, unlock: [150, 250], point: [2, 5] },
-        'Light HP/MP': { category: 'Light Armor', img: '5.png', pos: -102, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
-        'Heavy Crush': { category: 'Heavy Armor', img: 'j.png', pos: -34, unlock: [0, 75, 150], point: [3, 5, 7] },
-        'Heavy Prcg': { category: 'Heavy Armor', img: 'a.png', pos: -102, unlock: [0, 75, 150], point: [3, 5, 7] },
-        'Heavy Slsh': { category: 'Heavy Armor', img: 'j.png', pos: -68, unlock: [0, 75, 150], point: [3, 5, 7] },
-        'Heavy HP': { category: 'Heavy Armor', img: 'u.png', pos: -102, unlock: [0, 60, 110, 170, 230, 290, 350], point: [1, 2, 3, 3, 4, 4, 5] },
-        'Better Weaken': { category: 'Deprecating 1', img: '4.png', pos: 0, unlock: [70, 100, 130, 190, 250], point: [1, 2, 3, 5, 7] },
-        'Faster Weaken': { category: 'Deprecating 1', img: 'b.png', pos: -68, unlock: [80, 165, 250], point: [3, 5, 7] },
-        'Better Imperil': { category: 'Deprecating 1', img: 'a.png', pos: -68, unlock: [130, 175, 230, 285, 330], point: [1, 2, 3, 4, 5] },
-        'Faster Imperil': { category: 'Deprecating 1', img: 'r.png', pos: 0, unlock: [140, 225, 310], point: [3, 5, 7] },
-        'Better Blind': { category: 'Deprecating 1', img: 'r.png', pos: -34, unlock: [110, 130, 160, 190, 220], point: [1, 2, 3, 4, 5] },
-        'Faster Blind': { category: 'Deprecating 1', img: '9.png', pos: -102, unlock: [120, 215, 275], point: [1, 2, 3] },
-        'Mind Control': { category: 'Deprecating 1', img: '9.png', pos: -136, unlock: [80, 130, 170], point: [1, 3, 5] },
-        'Better Silence': { category: 'Deprecating 2', img: 'c.png', pos: -170, unlock: [120, 170, 215], point: [3, 5, 7] },
-        'Better MagNet': { category: 'Deprecating 2', img: 'u.png', pos: 0, unlock: [250, 295, 340, 370, 400], point: [1, 2, 3, 4, 5] },
-        'Better Slow': { category: 'Deprecating 2', img: 'c.png', pos: 0, unlock: [30, 50, 75, 105, 135], point: [1, 2, 3, 4, 5] },
-        'Better Drain': { category: 'Deprecating 2', img: '2.png', pos: 0, unlock: [20, 50, 90], point: [2, 3, 5] },
-        'Faster Drain': { category: 'Deprecating 2', img: 'n.png', pos: 0, unlock: [30, 70, 110, 150, 200], point: [1, 2, 3, 4, 5] },
-        'Ether Theft': { category: 'Deprecating 2', img: '2.png', pos: -34, unlock: [150], point: [5] },
-        'Spirit Theft': { category: 'Deprecating 2', img: '2.png', pos: -68, unlock: [150], point: [5] },
-        'Better Haste': { category: 'Supportive 1', img: '9.png', pos: -34, unlock: [60, 75, 90, 110, 130], point: [1, 2, 3, 4, 5] },
-        'Better Shadow Veil': { category: 'Supportive 1', img: '6.png', pos: -34, unlock: [90, 105, 120, 135, 155], point: [1, 2, 3, 5, 7] },
-        'Better Absorb': { category: 'Supportive 1', img: 'c.png', pos: -34, unlock: [40, 60, 80], point: [1, 2, 3] },
-        'Stronger Spirit': { category: 'Supportive 1', img: 'a.png', pos: 0, unlock: [200, 220, 240, 265, 285], point: [1, 2, 3, 4, 5] },
-        'Better Heartseeker': { category: 'Supportive 1', img: '6.png', pos: 0, unlock: [140, 185, 225, 265, 305, 345, 385], point: [1, 2, 3, 4, 5, 6, 7] },
-        'Better Arcane Focus': { category: 'Supportive 1', img: 'q.png', pos: 0, unlock: [175, 205, 245, 285, 325, 365, 405], point: [1, 2, 3, 4, 5, 6, 7] },
-        'Better Regen': { category: 'Supportive 1', img: 'b.png', pos: -34, unlock: [50, 70, 95, 145, 195, 245, 295, 375, 445, 500], point: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-        'Better Cure': { category: 'Supportive 1', img: 'i.png', pos: -102, unlock: [0, 35, 65], point: [2, 3, 5] },
-        'Better Spark': { category: 'Supportive 2', img: 'q.png', pos: -170, unlock: [100, 125, 150], point: [2, 3, 5] },
-        'Better Protection': { category: 'Supportive 2', img: 'o.png', pos: 0, unlock: [40, 55, 75, 95, 120], point: [1, 2, 3, 4, 5] },
-        'Flame Spike Shield': { category: 'Supportive 2', img: 's.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
-        'Frost Spike Shield': { category: 'Supportive 2', img: 'p.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
-        'Shock Spike Shield': { category: 'Supportive 2', img: 'g.png', pos: 0, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
-        'Storm Spike Shield': { category: 'Supportive 2', img: 'a.png', pos: -34, unlock: [10, 65, 140, 220, 300], point: [3, 1, 2, 3, 4] },
-        'Conflagration': { category: 'Elemental', img: 'h.png', pos: 0, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
-        'Cryomancy': { category: 'Elemental', img: 'i.png', pos: -34, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
-        'Havoc': { category: 'Elemental', img: '9.png', pos: 0, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
-        'Tempest': { category: 'Elemental', img: 'i.png', pos: -68, unlock: [50, 100, 150, 200, 250, 300, 400], point: [3, 4, 5, 6, 8, 10, 12] },
-        'Sorcery': { category: 'Elemental', img: 'c.png', pos: -68, unlock: [70, 140, 210, 280, 350], point: [1, 2, 3, 4, 5] },
-        'Elementalism': { category: 'Elemental', img: 'c.png', pos: -136, unlock: [85, 170, 255, 340, 425], point: [2, 3, 5, 7, 9] },
-        'Archmage': { category: 'Elemental', img: 'i.png', pos: 0, unlock: [90, 180, 270, 360, 450], point: [5, 7, 9, 12, 15] },
-        'Better Corruption': { category: 'Forbidden', img: 't.png', pos: 0, unlock: [75, 150], point: [3, 5] },
-        'Better Disintegrate': { category: 'Forbidden', img: 't.png', pos: -34, unlock: [175, 250], point: [5, 7] },
-        'Better Ragnarok': { category: 'Forbidden', img: 'u.png', pos: -68, unlock: [250, 325, 400], point: [7, 9, 12] },
-        'Ripened Soul': { category: 'Forbidden', img: 'u.png', pos: -34, unlock: [150, 300, 450], point: [7, 10, 15] },
-        'Dark Imperil': { category: 'Forbidden', img: 't.png', pos: -68, unlock: [175, 225, 275, 325, 375], point: [2, 3, 5, 7, 9] },
-        'Better Smite': { category: 'Divine', img: 'q.png', pos: -136, unlock: [75, 150], point: [3, 5] },
-        'Better Banish': { category: 'Divine', img: 'q.png', pos: -34, unlock: [175, 250], point: [5, 7] },
-        'Better Paradise': { category: 'Divine', img: 'q.png', pos: -68, unlock: [250, 325, 400], point: [7, 9, 12] },
-        'Soul Fire': { category: 'Divine', img: 'l.png', pos: 0, unlock: [150, 300, 450], point: [7, 10, 15] },
-        'Holy Imperil': { category: 'Divine', img: 'v.png', pos: -34, unlock: [175, 225, 275, 325, 375], point: [2, 3, 5, 7, 9] },
-      };
+  _ab.calc = {
 
-      _ab.preset = {
-        '目前流派': [],
-        '单手重甲盾战': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '1H Damage', '1H Accuracy', '1H Block', 'Heavy Crush', 'Heavy Prcg', 'Heavy Slsh', 'Heavy HP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-        '双手轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Accuracy', '2H Parry', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-        '双持轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'DW Damage', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-        '二天轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Parry', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-        '元素法师': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Conflagration', 'Sorcery', 'Elementalism', 'Archmage'],
-        '暗法': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Corruption', 'Better Disintegrate', 'Better Ragnarok', 'Ripened Soul', 'Dark Imperil'],
-        '圣法': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
-      };
+    node: { ability: {} },
+    level: [],
+    selected: [],
 
+    init: function () {
+      if (_ab.calc.inited) {
+        return;
+      }
+      _ab.calc.inited = true;
 
+      Object.entries(_ab.ability).forEach(([n, ab]) => {
+        ab.unlock.forEach((u, i) => {
+          if (!_ab.calc.level[u]) {
+            _ab.calc.level[u] = [];
+          }
+          _ab.calc.level[u].push({ name: n, level: i + 1, point: ab.point[i] });
+        });
+      });
 
-      _ab.point = /Ability Points: (\d+)/.test($id('ability_top').children[3].textContent) && parseInt(RegExp.$1);
-      _ab.level = {};
+      const node = _ab.calc.node;
+      node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (e) => { _ab.calc.click(e); });
+      node.side = $element('div', node.div, ['.hvut-side hvut-ab-side']);
+      node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
+      node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
 
-      _ab.click = function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
+      $input(['button', 'Close'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
+      Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
+
+      let category;
+      let li;
+      Object.entries(_ab.ability).forEach(([n, ab]) => {
+        if (category !== ab.category) {
+          category = ab.category;
+          li = $element('li', node.ul);
+          $element('span', li, [category, '.hvut-ab-category']);
+        }
+        const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
+        $element('span', icon, [n, '.hvut-ab-tooltip']);
+        node.ability[n] = icon;
+      });
+
+      _ab.calc.preset('Current Set');
+    },
+
+    preset: function (name) {
+      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
+      _ab.calc.selected = _ab.preset[name].slice();
+      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
+      _ab.calc.table();
+    },
+
+    ability: function (name) {
+      const selected = _ab.calc.selected;
+      if (selected.includes(name)) {
+        selected.splice(selected.indexOf(name), 1);
+        _ab.calc.node.ability[name].classList.add('hvut-ab-off');
+      } else {
+        selected.push(name);
+        _ab.calc.node.ability[name].classList.remove('hvut-ab-off');
+      }
+      _ab.calc.table();
+    },
+
+    table: function () {
+      const tbody = [];
+      let sum = 0;
+      _ab.calc.level.forEach((list, unlock) => {
+        const selected = list.filter(({ name }) => _ab.calc.selected.includes(name));
+        if (!selected.length) {
           return;
         }
-        const { action, name, to } = target.dataset;
-        if (action === 'unlock') {
-          e.stopPropagation();
-          _ab.unlock(name, to);
-        }
-      };
+        sum += selected.reduce((s, e) => (s + e.point), 0);
+        const aboost = sum - unlock;
+        const tr = $element('tr', null, [_player.level < unlock ? '.hvut-ab-nolevel' : '']);
+        $element('td', tr, unlock);
+        $element('td', tr, sum);
+        $element('td', tr, [`/<span>${aboost}</span>`, aboost < 0 ? '.hvut-ab-noab' : '']);
+        const td = $element('td', tr);
+        selected.forEach(({ name, level, point }) => {
+          const ab = _ab.ability[name];
+          const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
+          $element('span', icon, [point, '.hvut-ab-point']);
+          $element('span', icon, [`${name} Lv.${level}`, '.hvut-ab-tooltip']);
+        });
+        tbody.push(tr);
+      });
 
-      _ab.unlock = async function (name, to) {
-        const ab = _ab.ability[name];
-        const count = to - ab.level;
+      _ab.calc.node.table.innerHTML = '<thead><tr><td>Level</td><td>Ability Points</td><td>Ability Boost</td><td>Abilities</td></tr></thead><tbody></tbody>';
+      _ab.calc.node.table.tBodies[0].append(...tbody);
+      $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1).scrollIntoView({ block: 'center' });
+    },
 
-        async function unlock(ab) {
-          const html = await $ajax.fetch(location.href, 'unlock_ability=' + ab.id);
-          const doc = $doc(html);
-          const error = get_message(doc);
-          if (error) {
-            popup(error);
-          } else {
-            const button = $qs('div[style*="u.png"]', ab.div.children[2]);
-            button.style.opacity = 0.5;
-            button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
-          }
-        }
+    toggle: function () {
+      _ab.calc.node.div?.classList.toggle('hvut-none');
+      _ab.calc.init();
+    },
 
-        const requests = $ajax.repeat(count, unlock, ab);
-        await Promise.all(requests);
-        location.href = location.href;
-      };
+    click: function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, name } = target.dataset;
+      if (action === 'preset') {
+        _ab.calc.preset(name);
+      } else if (action === 'ability') {
+        _ab.calc.ability(name);
+      } else if (action === 'toggle') {
+        _ab.calc.toggle();
+      }
+    },
 
-      _ab.calc = {
+  };
 
-        node: { ability: {} },
-        level: [],
-        selected: [],
-        order: true,
-
-        init: function () {
-          if (_ab.calc.inited) {
-            return;
-          }
-          _ab.calc.inited = true;
-
-          Object.entries(_ab.ability).forEach(([n, ab]) => {
-            ab.unlock.forEach((u, i) => {
-              if (!_ab.calc.level[u]) {
-                _ab.calc.level[u] = [];
-              }
-              _ab.calc.level[u].push({ name: n, level: i + 1, point: ab.point[i] });
-            });
-          });
-
-          const node = _ab.calc.node;
-          node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (e) => { _ab.calc.click(e); });
-          node.side = $element('div', node.div, ['.hvut-ab-side']);
-          node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
-          node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
-
-          $input(['button', '关闭'], node.side, { dataset: { action: 'toggle' } });
-          Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
-
-
-          const categoryMap = {
-            'General': '通用',
-            'One-handed': '单手',
-            'Two-handed': '双手',
-            'Dual-wielding': '双持',
-            'Light Armor': '轻甲',
-            'Cloth Armor': '布甲',
-            'Heavy Armor': '重甲',
-            'Staff': '法杖',
-            'Elemental': '元素魔法',
-            'Divine': '神圣魔法',
-            'Forbidden': '黑暗魔法',
-            'Supportive 1': '增益魔法 1',
-            'Deprecating 1': '减益魔法 1',
-            'Supportive 2': '增益魔法 2',
-            'Deprecating 2': '减益魔法 2',
-            // 添加更多类别的映射
-          };
-
-          let category;
-          let li;
-          Object.entries(_ab.ability).forEach(([n, ab]) => {
-            const translatedCategory = categoryMap[ab.category] || ab.category;
-            if (category !== ab.category) {
-              category = ab.category;
-              li = $element('li', node.ul);
-              $element('span', li, [translatedCategory, '.hvut-ab-category']);
-            }
-            const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-            const tooltipTranslations = {
-              'HP Tank': '生命值增幅',
-              'MP Tank': '魔力值增幅',
-              'SP Tank': '灵力值增幅',
-              'Better Health Pots': '生命药水效果加成',
-              'Better Mana Pots': '魔力药水效果加成',
-              'Better Spirit Pots': '灵力药水效果加成',
-              '2H Damage': '双手流伤害加成',
-              '1H Damage': '单手流伤害加成',
-              'DW Damage': '双持流伤害加成',
-              'Light Acc': '轻甲套命中率加成',
-              'Light Crit': '轻甲套暴击率加成',
-              'Light Speed': '轻甲套攻速加成',
-              'Light HP/MP': '轻甲套生命/魔力值加成',
-              '1H Accuracy': '单手流命中率加成',
-              '1H Block': '单手流格挡率加成',
-              '2H Accuracy': '双手流命中率加成',
-              '2H Parry': '双手流招架率加成',
-              'DW Accuracy': '双持流命中率加成',
-              'DW Crit': '双持流暴击率加成',
-              'Staff Spell Damage': '法杖流魔法伤害加成',
-              'Staff Accuracy': '法杖流全域命中率加成',
-              'Staff Damage': '法杖流法杖攻击伤害加成',
-              'Cloth Spellacc': '布甲套法术命中率加成',
-              'Cloth Spellcrit': '布甲套法术暴击加成',
-              'Cloth Castspeed': '布甲套咏唱速度加成',
-              'Cloth MP': '布甲套魔力值加成',
-              'Heavy Crush': '重甲套打击减伤加成',
-              'Heavy Prcg': '重甲套刺击减伤加成',
-              'Heavy Slsh': '重甲套斩击减伤加成',
-              'Heavy HP': '重甲套生命值加成',
-              'Better Weaken': '强力虚弱',
-              'Faster Weaken': '快速虚弱',
-              'Better Imperil': '强力陷危',
-              'Faster Imperil': '快速陷危',
-              'Better Blind': '强力致盲',
-              'Faster Blind': '快速致盲',
-              'Mind Control': '精神控制',
-              'Better Silence': '强力沉默',
-              'Better MagNet': '强力魔磁网',
-              'Better Slow': '强力缓慢',
-              'Better Drain': '强力枯竭',
-              'Faster Drain': '快速枯竭',
-              'Ether Theft': '魔力窃取',
-              'Spirit Theft': '灵力窃取',
-              'Better Haste': '强力急速',
-              'Better Shadow Veil': '强力影纱',
-              'Better Absorb': '强力吸收',
-              'Stronger Spirit': '强力灵能力',
-              'Better Heartseeker': '强力觅心者',
-              'Better Arcane Focus': '强力奥数集成',
-              'Better Regen': '强力细胞活化',
-              'Better Cure': '强力治疗',
-              'Better Spark': '强力生命火花',
-              'Better Protection': '强力守护',
-              'Flame Spike Shield': '烈焰刺盾',
-              'Frost Spike Shield': '冰霜刺盾',
-              'Shock Spike Shield': '闪电刺盾',
-              'Storm Spike Shield': '风暴刺盾',
-              'Conflagration': '火灾',
-              'Cryomancy': '寒灾',
-              'Havoc': '雷暴',
-              'Tempest': '风灾',
-              'Sorcery': '巫术',
-              'Elementalism': '自然崇拜者',
-              'Archmage': '大法师',
-              'Better Corruption': '强力腐败',
-              'Better Disintegrate': '强力瓦解',
-              'Better Ragnarok': '强力诸神黄昏',
-              'Ripened Soul': '成熟的灵魂',
-              'Dark Imperil': '黑暗陷危',
-              'Better Smite': '强力惩戒',
-              'Better Banish': '强力放逐',
-              'Better Paradise': '强力失乐园',
-              'Soul Fire': '焚烧的灵魂',
-              'Holy Imperil': '神圣陷危',
-              // 其他需要翻译的内容
-            };
-            // 获取当前图标的能力名称
-            const abilityName = n;
-
-            // 获取对应的翻译文本
-            const translatedTooltip = tooltipTranslations[abilityName];
-            $element('span', icon, [translatedTooltip, '.hvut-ab-tooltip']);
-            node.ability[n] = icon;
-          });
-
-          _ab.calc.preset('目前流派');
-        },
-        preset: function (name) {
-          _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
-          _ab.calc.selected = _ab.preset[name].slice();
-          _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
-          _ab.calc.table();
-        },
-        ability: function (name) {
-          const selected = _ab.calc.selected;
-          if (selected.includes(name)) {
-            selected.splice(selected.indexOf(name), 1);
-            _ab.calc.node.ability[name].classList.add('hvut-ab-off');
-          } else {
-            selected.push(name);
-            _ab.calc.node.ability[name].classList.remove('hvut-ab-off');
-          }
-          _ab.calc.table();
-        },
-
-        table: function () {
-          const tbody = [];
-          let sum = 0;
-          _ab.calc.level.forEach((list, unlock) => {
-            const selected = list.filter(({ name }) => _ab.calc.selected.includes(name));
-            if (!selected.length) {
-              return;
-            }
-            sum += selected.reduce((s, e) => s + e.point, 0);
-            const aboost = sum - unlock;
-            const tr = $element('tr', null, [_player.level < unlock ? '.hvut-ab-nolevel' : '']);
-            $element('td', tr, unlock);
-            $element('td', tr, sum);
-            $element('td', tr, [`/<span>${aboost}</span>`, aboost < 0 ? '.hvut-ab-noab' : '']);
-            const td = $element('td', tr);
-            selected.forEach(({ name, level, point }) => {
-              // 创建英文名称和中文翻译的映射表
-              var nameTranslationMap = {
-                'HP Tank': '生命值增幅',
-                'MP Tank': '魔力值增幅',
-                'SP Tank': '灵力值增幅',
-                'Better Health Pots': '生命药水效果加成',
-                'Better Mana Pots': '魔力药水效果加成',
-                'Better Spirit Pots': '灵力药水效果加成',
-                '2H Damage': '双手流伤害加成',
-                '1H Damage': '单手流伤害加成',
-                'DW Damage': '双持流伤害加成',
-                'Light Acc': '轻甲套命中率加成',
-                'Light Crit': '轻甲套暴击率加成',
-                'Light Speed': '轻甲套攻速加成',
-                'Light HP/MP': '轻甲套生命/魔力值加成',
-                '1H Accuracy': '单手流命中率加成',
-                '1H Block': '单手流格挡率加成',
-                '2H Accuracy': '双手流命中率加成',
-                '2H Parry': '双手流招架率加成',
-                'DW Accuracy': '双持流命中率加成',
-                'DW Crit': '双持流暴击率加成',
-                'Staff Spell Damage': '法杖流魔法伤害加成',
-                'Staff Accuracy': '法杖流全域命中率加成',
-                'Staff Damage': '法杖流法杖攻击伤害加成',
-                'Cloth Spellacc': '布甲套法术命中率加成',
-                'Cloth Spellcrit': '布甲套法术暴击加成',
-                'Cloth Castspeed': '布甲套咏唱速度加成',
-                'Cloth MP': '布甲套魔力值加成',
-                'Heavy Crush': '重甲套打击减伤加成',
-                'Heavy Prcg': '重甲套刺击减伤加成',
-                'Heavy Slsh': '重甲套斩击减伤加成',
-                'Heavy HP': '重甲套生命值加成',
-                'Better Weaken': '强力虚弱',
-                'Faster Weaken': '快速虚弱',
-                'Better Imperil': '强力陷危',
-                'Faster Imperil': '快速陷危',
-                'Better Blind': '强力致盲',
-                'Faster Blind': '快速致盲',
-                'Mind Control': '精神控制',
-                'Better Silence': '强力沉默',
-                'Better MagNet': '强力魔磁网',
-                'Better Slow': '强力缓慢',
-                'Better Drain': '强力枯竭',
-                'Faster Drain': '快速枯竭',
-                'Ether Theft': '魔力窃取',
-                'Spirit Theft': '灵力窃取',
-                'Better Haste': '强力急速',
-                'Better Shadow Veil': '强力影纱',
-                'Better Absorb': '强力吸收',
-                'Stronger Spirit': '强力灵能力',
-                'Better Heartseeker': '强力觅心者',
-                'Better Arcane Focus': '强力奥数集成',
-                'Better Regen': '强力细胞活化',
-                'Better Cure': '强力治疗',
-                'Better Spark': '强力生命火花',
-                'Better Protection': '强力守护',
-                'Flame Spike Shield': '烈焰刺盾',
-                'Frost Spike Shield': '冰霜刺盾',
-                'Shock Spike Shield': '闪电刺盾',
-                'Storm Spike Shield': '风暴刺盾',
-                'Conflagration': '火灾',
-                'Cryomancy': '寒灾',
-                'Havoc': '雷暴',
-                'Tempest': '风灾',
-                'Sorcery': '巫术',
-                'Elementalism': '自然崇拜者',
-                'Archmage': '大法师',
-                'Better Corruption': '强力腐败',
-                'Better Disintegrate': '强力瓦解',
-                'Better Ragnarok': '强力诸神黄昏',
-                'Ripened Soul': '成熟的灵魂',
-                'Dark Imperil': '黑暗陷危',
-                'Better Smite': '强力惩戒',
-                'Better Banish': '强力放逐',
-                'Better Paradise': '强力失乐园',
-                'Soul Fire': '焚烧的灵魂',
-                'Holy Imperil': '神圣陷危',
-              };
-              const translatedName = nameTranslationMap[name] || name; // 查找对应的中文翻译，如果没有找到则使用原始英文名称
-              const ab = _ab.ability[name];
-              const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-              $element('span', icon, [point, '.hvut-ab-point']);
-              $element('span', icon, [`${translatedName} 等级${level}`, '.hvut-ab-tooltip']);
-            });
-            tbody.push(tr);
-          });
-          if (!_ab.calc.order) {
-            tbody.reverse();
-          }
-
-          const arrow = (_ab.calc.order ? '&#x25B2;' : '&#x25BC;');
-          _ab.calc.node.table.innerHTML = `<thead><tr><td data-action="reverse">${arrow} 等级</td><td>所需技能点</td><td>"能力升级"需求级数</td><td>获得能力</td></tr></thead><tbody></tbody>`;
-          _ab.calc.node.table.tBodies[0].append(...tbody);
-        },
-
-        reverse: function () {
-          _ab.calc.order = !_ab.calc.order;
-          _ab.calc.table();
-        },
-
-        toggle: function () {
-          _ab.calc.node.div?.classList.toggle('hvut-none');
-          _ab.calc.init();
-        },
-
-        click: function (e) {
-          const target = e.target.closest('[data-action]');
-          if (!target) {
-            return;
-          }
-          const { action, name } = target.dataset;
-          if (action === 'preset') {
-            _ab.calc.preset(name);
-          } else if (action === 'ability') {
-            _ab.calc.ability(name);
-          } else if (action === 'reverse') {
-            _ab.calc.reverse();
-          } else if (action === 'toggle') {
-            _ab.calc.toggle();
-          }
-        },
-
-      };
-
-      GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: #fff; }
     .hvut-ab-max { background-color: #333; }
     .hvut-ab-limit { background-color: #03c; }
@@ -5572,7 +4868,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ab-bux { color: #999; display: block; cursor: not-allowed; }
     .hvut-ab-bx { color: #999; }
 
-    #ability_treepane > div > div:nth-child(1) { padding-top: 13px; }
+    #ability_treepane > div > div:first-child { padding-top: 13px; }
     .hvut-ab-warn { display: block; margin-top: -6px; }
     .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: #c00; color: #fff; font-size: 9pt; }
 
@@ -5586,9 +4882,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid; background-color: #fff; font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
     .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
 
-    .hvut-ab-side { width: 100px; display: flex; flex-direction: column; }
-    .hvut-ab-side input { margin: 3px 0; white-space: normal; }
-    .hvut-ab-side input:nth-child(1) { margin-bottom: 10px; }
+    .hvut-ab-side { position: static; }
     .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid; list-style: none; }
     .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid; }
     .hvut-ab-ul > li:last-child { border-bottom: none; }
@@ -5596,7 +4890,6 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
     .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
     .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: #edb; z-index: 1; }
-    .hvut-ab-table td[data-action='reverse'] { cursor: pointer; }
     .hvut-ab-table td { border-style: solid; border-width: 0 1px 1px 0; padding: 2px 5px; }
     .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
     .hvut-ab-table td:nth-child(2) { width: 50px; }
@@ -5607,411 +4900,276 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ab-noab > span { color: #999; }
   `);
 
-      $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
-        const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
-        const name = exec[1];
-        const ab = _ab.ability[name];
+  $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
+    const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
+    const name = exec[1];
+    const ab = _ab.ability[name];
 
-        ab.slotted = true;
-        ab.level = exec[2] ? 0 : ab.unlock.indexOf(parseInt(exec[3])) + 1;
-        ab.max = ab.unlock.length;
-        ab.limit = ab.unlock.findIndex((e) => e > _player.level);
-        if (ab.limit === -1) {
-          ab.limit = ab.max;
-        }
+    ab.slotted = true;
+    ab.level = exec[2] ? 0 : ab.unlock.indexOf(parseInt(exec[3])) + 1;
+    ab.max = ab.unlock.length;
+    ab.limit = ab.unlock.findIndex((e) => e > _player.level);
+    if (ab.limit === -1) {
+      ab.limit = ab.max;
+    }
 
-        _ab.preset['目前流派'].push(name);
-        if (ab.level) {
-          _ab.level[name] = ab.level;
-        }
+    _ab.preset['Current Set'].push(name);
+    if (ab.level) {
+      _ab.level[name] = ab.level;
+    }
 
-        const span = $element('span', div, ['.hvut-ab-slot']);
-        if (ab.level === ab.max) {
-          span.textContent = '已满';
-          span.classList.add('hvut-ab-max');
-        } else if (ab.level === ab.limit) {
-          span.textContent = `${ab.level}/${ab.max}`;
-          span.classList.add('hvut-ab-limit');
+    const span = $element('span', div, ['.hvut-ab-slot']);
+    if (ab.level === ab.max) {
+      span.textContent = 'max';
+      span.classList.add('hvut-ab-max');
+    } else if (ab.level === ab.limit) {
+      span.textContent = `${ab.level}/${ab.max}`;
+      span.classList.add('hvut-ab-limit');
+    } else {
+      span.textContent = `${ab.level}/${ab.max}`;
+      span.classList.add('hvut-ab-up');
+      const categories = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
+      const index = categories.indexOf(ab.category);
+      $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
+    }
+  });
+  $config.set('ab_level', _ab.level);
+
+  $id('ability_treepane').addEventListener('click', _ab.click, true);
+  $qsa('#ability_treepane > div').forEach((div) => {
+    const name = div.firstElementChild.textContent;
+    const ab = _ab.ability[name];
+    let point = _ab.point;
+
+    ab.div = div;
+    ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
+    ab.level = 0;
+
+    Array.from(div.children[2].children).forEach((button, i) => {
+      const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
+      button.classList.add('hvut-ab-bar');
+
+      if (type === 'f') {
+        ab.level++;
+      } else if (type === 'u') {
+        point -= ab.point[i];
+        if (point < 0) {
+          $element('span', button, [ab.point[i], '.hvut-ab-bux']);
         } else {
-          span.textContent = `${ab.level}/${ab.max}`;
-          span.classList.add('hvut-ab-up');
-          const index = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'].indexOf(ab.category);
-          $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
+          $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
         }
-      });
-      setValue('ab_level', _ab.level);
+      } else if (type === 'x') {
+        $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
+      }
+    });
 
-      $id('ability_treepane').addEventListener('click', _ab.click, true);
-      $qsa('#ability_treepane > div').forEach((div) => {
-        const name = div.firstElementChild.textContent;
-        const ab = _ab.ability[name];
-        let point = _ab.point;
+    if (ab.level) {
+      if (!ab.slotted) {
+        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
+        div.firstElementChild.firstElementChild.dataset.warn = 'unslotted';
+      } else if (ab.level !== ab.limit) {
+        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
+        div.firstElementChild.firstElementChild.dataset.warn = 'unleveled';
+      }
+    }
+  });
 
-        ab.div = div;
-        ab.id = /do_unlock_ability\((\d+)\)/.test(div.children[2].getAttribute('onclick') || '') && RegExp.$1;
-        ab.level = 0;
-
-        Array.from(div.children[2].children).forEach((button, i) => {
-          const type = /(.)\.png/.test(button.style.backgroundImage) && RegExp.$1;
-          if (!type) {
-            return;
-          }
-          button.classList.add('hvut-ab-bar');
-
-          if (type === 'f') {
-            ab.level++;
-          } else if (type === 'u') {
-            point -= ab.point[i];
-            if (point < 0) {
-              $element('span', button, [ab.point[i], '.hvut-ab-bux']);
-            } else {
-              $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
-            }
-          } else if (type === 'x') {
-            $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
-          }
-        });
-
-        if (ab.level) {
-          if (!ab.slotted) {
-            div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-            div.firstElementChild.firstElementChild.dataset.warn = '未激活';
-          } else if (ab.level !== ab.limit) {
-            div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-            div.firstElementChild.firstElementChild.dataset.warn = '可升级';
-          }
-        }
-      });
-
-      $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
-    } else
-      // [END 3] Character - Abilities */
+  $input(['button', 'Ability Simulator'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
+} else
+// [END 3] Character - Abilities */
 
 
-      //* [4] Character - Training
-      if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
-        _tr.training = {
-          'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
-          'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
-          'Ability Boost': { id: 80, b: 100, l: 100, e: 0.0005548607 },
-          'Manifest Destiny': { id: 81, b: 1000000, l: 1000000, e: 0 },
-          'Scavenger': { id: 70, b: 500, l: 500, e: 0.0088310825 },
-          'Luck of the Draw': { id: 71, b: 2000, l: 2000, e: 0.0168750623 },
-          'Quartermaster': { id: 72, b: 5000, l: 5000, e: 0.017883894 },
-          'Archaeologist': { id: 73, b: 25000, l: 25000, e: 0.030981982 },
-          'Metabolism': { id: 84, b: 1000000, l: 1000000, e: 0 },
-          'Inspiration': { id: 85, b: 2000000, l: 2000000, e: 0 },
-          'Scholar of War': { id: 90, b: 30000, l: 10000, e: 0 },
-          'Tincture': { id: 91, b: 30000, l: 10000, e: 0 },
-          'Pack Rat': { id: 98, b: 10000, l: 10000, e: 0 },
-          'Dissociation': { id: 88, b: 1000000, l: 1000000, e: 0 },
-          'Set Collector': { id: 96, b: 12500, l: 12500, e: 0 },
-        };
+//* [4] Character - Training
+if (_query.s === 'Character' && _query.ss === 'tr') {
+  _tr.data = {
+    'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
+    'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
+    'Ability Boost': { id: 80, b: 100, l: 100, e: 0.0005548607 },
+    'Manifest Destiny': { id: 81, b: 1000000, l: 1000000, e: 0 },
+    'Scavenger': { id: 70, b: 500, l: 500, e: 0.0088310825 },
+    'Luck of the Draw': { id: 71, b: 2000, l: 2000, e: 0.0168750623 },
+    'Quartermaster': { id: 72, b: 5000, l: 5000, e: 0.017883894 },
+    'Archaeologist': { id: 73, b: 25000, l: 25000, e: 0.030981982 },
+    'Metabolism': { id: 84, b: 1000000, l: 1000000, e: 0 },
+    'Inspiration': { id: 85, b: 2000000, l: 2000000, e: 0 },
+    'Scholar of War': { id: 90, b: 30000, l: 10000, e: 0 },
+    'Tincture': { id: 91, b: 30000, l: 10000, e: 0 },
+    'Pack Rat': { id: 98, b: 10000, l: 10000, e: 0 },
+    'Dissociation': { id: 88, b: 1000000, l: 1000000, e: 0 },
+    'Set Collector': { id: 96, b: 12500, l: 12500, e: 0 },
+  };
 
-        _tr.click = function (e) {
-          const target = e.target.closest('[data-action]');
-          if (!target) {
-            return;
-          }
-          const { action, name } = target.dataset;
-          if (action === 'change') {
-            _tr.change(name);
-          }
-        };
+  _tr.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, name } = target.dataset;
+    if (action === 'change') {
+      _tr.change(name);
+    }
+  };
 
-        _tr.change = function (name, level) {
-          const training = _tr.training[name];
-          if (!training?.time) {
-            _tr.node.select.value = '';
-            _tr.node.level.value = '';
-            _tr.node.level.disabled = true;
-            _tr.node.cost.value = '';
-            return;
-          }
-          if (!level) {
-            level = training.level;
-          }
-          _tr.node.select.value = name;
-          _tr.node.level.value = level;
-          _tr.node.level.min = training.level;
-          _tr.node.level.max = training.max;
-          _tr.node.level.disabled = false;
-          _tr.calc();
-        };
+  _tr.change = function (name, level) {
+    const training = _tr.data[name];
+    if (!training?.time) {
+      _tr.node.select.value = '';
+      _tr.node.level.value = '';
+      _tr.node.level.disabled = true;
+      _tr.node.cost.value = '';
+      return;
+    }
+    if (!level) {
+      level = training.level;
+    }
+    _tr.node.select.value = name;
+    _tr.node.level.value = level;
+    _tr.node.level.min = training.level;
+    _tr.node.level.max = training.max;
+    _tr.node.level.disabled = false;
+    _tr.calc();
+  };
 
-        _tr.calc = function () {
-          const name = _tr.node.select.value;
-          const to = parseInt(_tr.node.level.value);
-          if (!name || !to) {
-            return;
-          }
+  _tr.calc = function () {
+    const name = _tr.node.select.value;
+    const to = parseInt(_tr.node.level.value);
+    if (!name || !to) {
+      return;
+    }
 
-          const training = _tr.training[name];
-          let from = training.level;
-          let cost = 0;
-          if (name === _tr.current) {
-            from++;
-          }
-          while (from < to) {
-            cost += Math.round(Math.pow(training.b + training.l * from, 1 + training.e * from));
-            from++;
-          }
-          _tr.node.cost.value = cost.toLocaleString();
-        };
+    const training = _tr.data[name];
+    let from = training.level;
+    let cost = 0;
+    if (name === _tr.current) {
+      from++;
+    }
+    while (from < to) {
+      cost += Math.round(Math.pow(training.b + training.l * from, 1 + training.e * from));
+      from++;
+    }
+    _tr.node.cost.value = cost.toLocaleString();
+  };
 
-        _tr.set = function (reload) {
-          if (_tr.node.select.value) {
-            _tr.json.next_name = _tr.node.select.value;
-            _tr.json.next_level = parseInt(_tr.node.level.value);
-            _tr.json.next_id = _tr.training[_tr.node.select.value].id;
-          } else {
-            _tr.json.next_name = '';
-            _tr.json.next_level = 0;
-            _tr.json.next_id = 0;
-          }
-          setValue('tr_timer', _tr.json);
+  _tr.set = function (reload) {
+    if (_tr.node.select.value) {
+      _tr.json.next_name = _tr.node.select.value;
+      _tr.json.next_level = parseInt(_tr.node.level.value);
+      _tr.json.next_id = _tr.data[_tr.node.select.value].id;
+    } else {
+      _tr.json.next_name = '';
+      _tr.json.next_level = 0;
+      _tr.json.next_id = 0;
+    }
+    $config.set('tr_notif', _tr.json, 'hvut_');
 
-          if (reload) {
-            location.href = location.href;
-          }
-        };
+    if (reload) {
+      location.href = location.href;
+    }
+  };
 
-        _tr.cancel = function (reload) {
-          _tr.node.select.value = '';
-          _tr.set(reload);
-        };
+  _tr.cancel = function (reload) {
+    _tr.node.select.value = '';
+    _tr.set(reload);
+  };
 
-        GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     #train_table > tbody > tr > td:last-child { width: 100px; padding-right: 10px; }
     #train_table > tbody > tr:last-child > td { font-weight: bold; }
   `);
 
-        _tr.node = {};
-        _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + (settings.trainingTimer ? '' : ' display: none;')]);
-        _tr.node.select = $element('select', _tr.node.div, ['/<option value="">选择计划训练项目</option>'], {
-          change: () => {
-            _tr.change(_tr.node.select.value);
-          },
-          wheel: function (event) {
-            event.preventDefault();
-            const delta = Math.sign(event.deltaY); // 获取鼠标滚轮滚动方向，1为向下滚动，-1为向上滚动
-            let currentIndex = this.selectedIndex;
-            currentIndex += delta;
-            if (currentIndex < 0) {
-              currentIndex = 0;
-            } else if (currentIndex >= this.options.length) {
-              currentIndex = this.options.length - 1;
-            }
-            this.selectedIndex = currentIndex;
-            _tr.change(this.value);
-          }
-        });
-        _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, {
-          input: () => {
-            _tr.calc();
-          },
-          wheel: function (event) {
-            event.preventDefault();
-            const delta = Math.sign(event.deltaY); // 获取鼠标滚轮滚动方向，1为向上滚动，-1为向下滚动
-            let currentValue = parseInt(this.value) || 0;
-            currentValue += delta;
-            if (currentValue < parseInt(this.min)) {
-              currentValue = parseInt(this.min);
-            } else if (currentValue > parseInt(this.max)) {
-              currentValue = parseInt(this.max);
-            }
-            this.value = currentValue;
-            _tr.calc();
-          }
-        });
-        $input(['button', '训练至目标等级'], _tr.node.div, null, () => { _tr.set(true); });
-        _tr.node.cost = $input('text', _tr.node.div, { readOnly: true, style: 'width: 90px; text-align: right;' });
-        $input(['button', '取消训练计划'], _tr.node.div, null, () => { _tr.cancel(true); });
+  _tr.node = {};
+  _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + ($config.settings.trainingNotification ? '' : ' display: none;')]);
+  _tr.node.select = $input(['select', [':Plan Training...']], _tr.node.div, null, { change: () => { _tr.change(_tr.node.select.value); } });
+  _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, { input: () => { _tr.calc(); } });
+  $input(['button', 'Set'], _tr.node.div, null, () => { _tr.set(true); });
+  _tr.node.cost = $input('text', _tr.node.div, { readOnly: true, style: 'width: 90px; text-align: right;' });
+  $input(['button', 'Cancel Planning'], _tr.node.div, null, () => { _tr.cancel(true); });
 
-        _tr.json = getValue('tr_timer', {});
-        _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
-        _tr.level = {};
-        _tr.spent = 0;
+  _tr.json = $config.get('tr_notif', {}, 'hvut_');
+  _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
+  _tr.level = {};
+  _tr.spent = 0;
 
-        if ($id('train_progress')) {
-          confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', '你确定要取消训练吗?', null, _tr.cancel);
-        }
+  if ($id('train_progress')) {
+    confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', 'Are you sure that you wish to cancel the current training?', null, _tr.cancel);
+  }
 
-        $id('train_table').addEventListener('click', _tr.click);
-        Array.from($id('train_table').rows).forEach((tr, i) => {
-          if (!i) {
-            $element('th', tr);
-            $element('th', tr, ['/<div class="fc2 fac fcb"><div>花费/H</div></div>']);
-            $element('th', tr, ['/<div class="fc2 fac fcb"><div>单项累计花费</div></div>']);
-            return;
-          }
-          const name = tr.cells[0].textContent.trim();
-          const time = parseFloat(tr.cells[3].textContent);
-          const level = parseInt(tr.cells[4].textContent);
-          const max = parseInt(tr.cells[6].textContent);
+  $id('train_table').addEventListener('click', _tr.click);
+  Array.from($id('train_table').rows).forEach((tr, i) => {
+    if (!i) {
+      $element('th', tr);
+      $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits per Hour</div></div>']);
+      $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits</div></div>']);
+      return;
+    }
+    const name = tr.cells[0].textContent.trim();
+    const time = parseFloat(tr.cells[3].textContent);
+    const level = parseInt(tr.cells[4].textContent);
+    const max = parseInt(tr.cells[6].textContent);
 
-          _tr.level[name] = level;
+    _tr.level[name] = level;
 
-          const training = _tr.training[name];
-          if (!training) {
-            return;
-          }
-          training.time = time;
-          training.level = level;
-          training.max = max;
-          if (training.time) {
-            tr.classList.add('hvut-cphu');
-            tr.dataset.action = 'change';
-            tr.dataset.name = name;
-            $element('option', _tr.node.select, { text: name, value: name });
-          }
+    const training = _tr.data[name];
+    if (!training) {
+      return;
+    }
+    training.time = time;
+    training.level = level;
+    training.max = max;
+    if (training.time) {
+      tr.classList.add('hvut-cphu');
+      tr.dataset.action = 'change';
+      tr.dataset.name = name;
+      $element('option', _tr.node.select, { text: name, value: name });
+    }
 
-          let spent = 0;
-          for (let i = 0; i < level; i++) {
-            spent += Math.round(Math.pow(training.b + training.l * i, 1 + training.e * i));
-          }
-          _tr.spent += spent;
-          const nextCost = Math.round(Math.pow(training.b + training.l * level, 1 + training.e * level));
-          let costPerHour = isNaN(time) ? '-' : Math.round(nextCost / time);
-          $element('td', tr, [`/<div class="fc4 far fcb"><div>${costPerHour}</div></div>`]);
-          $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
-        });
-        $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
+    let spent = 0;
+    for (let i = 0; i < level; i++) {
+      spent += Math.round(Math.pow(training.b + training.l * i, 1 + training.e * i));
+    }
+    _tr.spent += spent;
+    const nextCost = Math.round(Math.pow(training.b + training.l * level, 1 + training.e * level));
+    let costPerHour = isNaN(time) ? '-' : Math.round(nextCost / time);
+    $element('td', tr, [`/<div class="fc4 far fcb"><div>${costPerHour}</div></div>`]);
+    $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
+  });
+  $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
-        setValue('tr_level', _tr.level);
+  $config.set('tr_level', _tr.level);
 
-        if (_tr.current && _tr.training[_tr.current]) {
-          _tr.json.current_name = _tr.current;
-          _tr.json.current_level = _tr.training[_tr.current].level;
-          _tr.json.current_end = _window.end_time * 1000;
-        } else {
-          _tr.json.current_name = '';
-          _tr.json.current_level = 0;
-          _tr.json.current_end = 0;
-        }
-        if (_tr.json.next_name) {
-          if (_tr.training[_tr.json.next_name].level < _tr.json.next_level) {
-            _tr.change(_tr.json.next_name, _tr.json.next_level);
-          } else {
-            _tr.json.next_name = '';
-            _tr.json.next_level = 0;
-            _tr.json.next_id = 0;
-          }
-        }
-        _tr.json.error = '';
-        setValue('tr_timer', _tr.json);
-      } else
-        // [END 4] Character - Training */
+  if (_tr.current && _tr.data[_tr.current]) {
+    _tr.json.current_name = _tr.current;
+    _tr.json.current_level = _tr.data[_tr.current].level;
+    _tr.json.current_end = _window.end_time * 1000;
+  } else {
+    _tr.json.current_name = '';
+    _tr.json.current_level = 0;
+    _tr.json.current_end = 0;
+  }
+  if (_tr.json.next_name) {
+    if (_tr.data[_tr.json.next_name].level < _tr.json.next_level) {
+      _tr.change(_tr.json.next_name, _tr.json.next_level);
+    } else {
+      _tr.json.next_name = '';
+      _tr.json.next_level = 0;
+      _tr.json.next_id = 0;
+    }
+  }
+  _tr.json.error = '';
+  $config.set('tr_notif', _tr.json, 'hvut_');
+} else
+// [END 4] Character - Training */
 
 
-        //* [5] Character - Item Inventory
-        if (settings.itemInventory && _query.s === 'Character' && _query.ss === 'it') {
-          _it.node = {};
-          _it.template = getValue('it_template', settings.itemCodeTemplate.trim());
+//* [5] Character - Item Inventory
+if (_query.s === 'Character' && _query.ss === 'it') {
+  $qsa('.itemlist tr').forEach((tr) => {
+    const div = tr.cells[0].firstElementChild;
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    tr.classList.add('hvut-it-' + type);
+  });
 
-          _it.edit_template = function () {
-            popup_text(_it.template, 'width: 600px; height: 500px; white-space: pre;', [
-              {
-                value: 'Save Template', click: (w, t) => {
-                  _it.template = t.value || settings.itemCodeTemplate.trim();
-                  setValue('it_template', _it.template);
-                  w.remove();
-                  _it.node.wts.w.remove();
-                  _it.wts();
-                }
-              },
-              {
-                value: 'Default', click: (w, t) => {
-                  t.value = settings.itemCodeTemplate;
-                }
-              },
-            ]);
-          };
-
-          _it.wts = function () {
-            const prices = $price.get('WTS');
-            let code = [];
-            const option = {
-              itemCode: '{$zero?[color=transparent]$zero[/color]}{$count} x {$name}{$price? @ $price}',
-              unpricedCode: '{$zero}{$count} x {$name} (offer)',
-              stockoutCode: '[color=#999][s]{$zero}{$count} x {$name}{$price? @ $price}[/s][/color]',
-            };
-
-            _it.template.split('\n').forEach((s, i, a) => {
-              if (s.startsWith('//')) {
-                if (/^\/\/\s*set (\w+)\s*=\s*([^;]*)/.test(s)) {
-                  const o = RegExp.$1;
-                  let v = RegExp.$2;
-                  if (o === 'keepStock' && /^min\((.+)\)/.test(v)) {
-                    v = Math.min(...RegExp.$1.split(',').map((n) => $item.count(n)));
-                  } else if (o === 'stockDigits' && v === 'block') {
-                    let array = a.slice(i + 1);
-                    const next = array.findIndex((s) => /^\/\/\s*set stockDigits/.test(s));
-                    if (next !== -1) {
-                      array = array.slice(0, next);
-                    }
-                    v = Math.max(...array.map((s) => (/\{([^{}]+)\}/.test(s) ? $item.count(RegExp.$1) : 0).toString().length));
-                  }
-                  option[o] = v && !isNaN(v) ? Number(v) : v;
-                }
-                return;
-              }
-
-              if (/\{([^{}]+)\}/.test(s)) {
-                const name = RegExp.$1;
-                let count = $item.count(name);
-
-                if (option.keepStock) {
-                  count = Math.max(0, count - option.keepStock);
-                }
-                if (!option.unpricedCode && !(name in prices) || !option.stockoutCode && !count) {
-                  code.push('__SKIP__');
-                  return;
-                }
-
-                let zero = option.stockDigits - count.toString().length;
-                if (zero > 0) {
-                  zero = '0'.repeat(zero);
-                } else {
-                  zero = undefined;
-                }
-
-                let price = prices[name];
-                if (price >= 1000000) {
-                  price = (price / 1000000) + 'm';
-                } else if (price >= 1000) {
-                  price = (price / 1000) + 'k';
-                }
-
-                const itemcode = (!count ? option.stockoutCode : !(name in prices) ? option.unpricedCode : option.itemCode).toString();
-                const text = itemcode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
-                  const values = { name, count, zero, price };
-                  const v = values[k];
-                  if (!e) {
-                    return v ?? '';
-                  } else {
-                    const r = v ? t : f || '';
-                    return r.replace(/\$(\w+)/g, (s, k) => { const v = values[k]; return v ?? ''; });
-                  }
-                }).trim();
-                code.push(s.replace(`{${name}}`, text));
-              } else {
-                code.push(s);
-              }
-            });
-            code = code.join('\n').replace(/(?:__SKIP__|\n)+/g, (s) => s.split('__SKIP__').sort().pop());
-
-            _it.node.wts = popup_text(code, 'width: 600px; height: 500px; white-space: pre;', [
-              {
-                value: 'Edit Template', click: () => {
-                  _it.edit_template();
-                }
-              },
-            ]);
-          };
-
-          GM_addStyle(/*css*/`
-    #item_outer { margin-left: 130px; }
+  GM_addStyle(/*css*/`
     #item_left { width: 400px; }
     #item_left .cspp { overflow-y: scroll; }
     #item_list .itemlist td:nth-child(1) { width: 285px !important; }
@@ -6020,501 +5178,376 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     #item_slots { height: 572px; margin-top: 19px; }
     #item_slots > div { width: 300px; }
     .sa { height: 30px; margin: 8px auto; line-height: 20px; }
-    .sa > div:first-child { padding: 5px 15px; }
-    .sa > div:last-child { height: 30px; }
-    .sa > div:last-child > div { padding: 5px; }
-
-    .hvut-it-side { position: absolute; top: 53px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-it-side input { margin: 3px 0; white-space: normal; }
-    .hvut-it-side select { margin: 3px 0; }
+    .sa > div { height: 20px !important; padding: 5px 10px !important; }
+    .sa > div:last-child > div { padding: 0; }
   `);
-
-          $item.list = {};
-          Array.from($qs('.itemlist').rows).forEach((tr) => {
-            const div = tr.cells[0].firstElementChild;
-            const name = div.textContent;
-            const type = $item.type(div.getAttribute('onmouseover'));
-            tr.classList.add('hvut-it-' + type);
-            const count = parseInt(tr.cells[1].textContent);
-            $item.list[name] = count;
-          });
-          $item.list['Crystal Pack'] = Math.floor(Math.min(...['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].map((n) => $item.count(n))) / 1000);
-
-          _it.node.side = $element('div', $id('item_outer'), ['.hvut-it-side']);
-          $input(['button', '生成出售代码'], _it.node.side, null, () => { _it.wts(); });
-          $input(['button', '设定出售标价'], _it.node.side, null, () => { $price.edit('WTS'); });
-          _it.node.side.appendChild($price.selector());
-        } else
-          // [END 5] Character - Item Inventory */
+} else
+// [END 5] Character - Item Inventory */
 
 
-          //* [6] Character - Equip Inventory
-          if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
-            _in.filter = _query.filter || '1handed';
-            _in.category = { '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
-            _in.equiplist = [];
-            _in.node = {};
-            _in.equipdata = getValue('in_equipdata', {});
-            _in.equipcode = getValue('in_equipcode', settings.equipCode);
-            _in.namecode = getValue('in_namecode', settings.equipNameCode);
-            _in.json_migration = function () {
-              if (!_in.equipdata.version) {
-                const json = getValue('in_json');
-                deleteValue('in_json');
-                Object.assign(_in.equipdata, json);
-                _in.equipdata.version = 1;
-                setValue('in_equipdata', _in.equipdata);
+//* [6] Character - Equip Inventory
+if (_query.s === 'Character' && _query.ss === 'in') {
+  _in.filter = _query.filter || '1handed';
+  _in.category = { '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
+  _in.equiplist = [];
+  _in.equipdata = $config.get('equipdata', { version: 1 });
+  _in.node = {};
 
-                const equipcode = getValue('in_equipcode');
-                if (equipcode) {
-                  _in.equipcode = equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
-                  setValue('in_equipcode', _in.equipcode);
-                }
-                const it_template = getValue('it_template');
-                if (it_template) {
-                  _it.template = it_template.replace(/(\{\$\w+):/g, '$1?');
-                  setValue('it_template', _it.template);
-                }
-              }
-            };
-            _in.json_migration();
+  _in.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, eid, filter } = target.dataset;
+    const eq = eid && _in.equiplist.find((eq) => eq.info.eid == eid);
+    if (action === 'lpr') {
+      _in.get_lpr(eq);
+    } else if (action === 'scroll') {
+      _in.scroll(filter);
+    }
+  };
 
-            _in.click = function (e) {
-              const target = e.target.closest('[data-action]');
-              if (!target) {
-                return;
-              }
-              const { action, eid, filter } = target.dataset;
-              const eq = eid && _in.equiplist.find((eq) => eq.info.eid == eid);
-              if (action === 'lpr') {
-                _in.get_lpr(eq);
-              } else if (action === 'scroll') {
-                _in.scroll(filter);
-              }
-            };
+  _in.init_list = function (filter) {
+    const parent = ['acloth', 'alight', 'aheavy'].includes(filter) ? $id('inv_eqstor') : $id('inv_equip');
+    _in.category[filter].div = $element('div', parent, ['.equiplist nosel']);
+    $element('p', _in.category[filter].div, [$equip.alias[filter], '.hvut-eq-category']);
+    $element('span', $qs('.hvut-in-header', parent.parentNode), { textContent: $equip.alias[filter], dataset: { action: 'scroll', filter } });
+  };
 
-            _in.init_list = function (filter) {
-              const parent = ['acloth', 'alight', 'aheavy'].includes(filter) ? $id('inv_eqstor') : $id('inv_equip');
-              _in.category[filter].div = $element('div', parent, ['.equiplist nosel']);
-              $element('p', _in.category[filter].div, [$equip.alias[filter], '.hvut-eq-category']);
-              $element('span', $qs('.hvut-in-header', parent.parentNode), { textContent: $equip.alias[filter], dataset: { action: 'scroll', filter } });
-            };
+  _in.load_list = async function (filter) {
+    _in.init_list(filter);
+    _in.category[filter].div.classList.add('hvut-eq-loading');
 
-            _in.load_list = async function (filter) {
-              _in.init_list(filter);
-              _in.category[filter].div.classList.add('hvut-eq-loading');
+    const html = await $ajax.fetch('?s=Character&ss=in&filter=' + filter);
+    const doc = $doc(html);
+    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+    _in.get_list(filter, $id('eqinv_outer', doc));
+    _in.category[filter].div.classList.remove('hvut-eq-loading');
+    _in.set_rangeselect();
+  };
 
-              const html = await $ajax.fetch('?s=Character&ss=in&filter=' + filter);
-              const doc = $doc(html);
-              Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
-              _in.get_list(filter, $id('eqinv_outer', doc));
-              _in.category[filter].div.classList.remove('hvut-eq-loading');
-              _in.set_rangeselect();
-            };
+  _in.get_list = function (filter, outer) {
+    const equiplist = $equip.list(outer, false);
+    const popup_reg = /(equips\.set\(\d+),'(?:inv_equip|inv_eqstor)',\d+,\d+\)/;
+    const popup_replace = ['acloth', 'alight', 'aheavy'].includes(filter) ? "$1,'inv_eqstor',300,200)" : "$1,'inv_equip',500,200)";
+    equiplist.forEach((eq) => {
+      eq.json = _in.equipdata[eq.info.eid] || {};
+      if (!eq.node.div.previousElementSibling) {
+        $element('div', [eq.node.wrapper, 'afterbegin'], ['.hvut-in-is']);
+      }
+      eq.node.lock = eq.node.wrapper.firstElementChild;
+      eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-in-sub' + (eq.info.tradeable ? '' : ' hvut-in-untrade')]);
+      eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-in-eid']);
+      eq.node.check = $input('checkbox', eq.node.sub, { className: 'hvut-in-check', checked: eq.json.checked });
+      eq.node.price = $input('text', eq.node.sub, { className: 'hvut-in-price', placeholder: '$price', value: eq.json.price || '' });
+      eq.node.note = $input('text', eq.node.sub, { className: 'hvut-in-note', placeholder: '$note', value: eq.json.note || '' });
+      eq.node.lpr = $input(['button', '<'], eq.node.sub, { className: 'hvut-in-lpr', dataset: { action: 'lpr', eid: eq.info.eid } });
+      eq.node.div.setAttribute('onmouseover', eq.node.div.getAttribute('onmouseover').replace(popup_reg, popup_replace));
+    });
+    if (equiplist.length) {
+      $equip.sort(equiplist, _in.category[filter].div);
+    }
+    _in.check_name(equiplist);
+    _in.category[filter].equiplist = equiplist;
+    _in.equiplist.push(...equiplist);
+  };
 
-            _in.get_list = function (filter, outer) {
-              const equiplist = $equip.list(outer, false);
-              const popup_reg = /(equips\.set\(\d+),'(?:inv_equip|inv_eqstor)',\d+,\d+\)/;
-              const popup_replace = ['acloth', 'alight', 'aheavy'].includes(filter) ? "$1,'inv_eqstor',300,200)" : "$1,'inv_equip',500,200)";
-              equiplist.forEach((eq) => {
-                eq.json = _in.equipdata[eq.info.eid] || {};
-                if (!eq.node.div.previousElementSibling) {
-                  $element('div', [eq.node.wrapper, 'afterbegin'], ['.hvut-in-is']);
-                }
-                eq.node.lock = eq.node.wrapper.firstElementChild;
-                eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-in-sub' + (eq.info.tradeable ? '' : ' hvut-in-untrade')]);
-                eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-in-eid']);
-                eq.node.check = $input('checkbox', eq.node.sub, { className: 'hvut-in-check', checked: eq.json.checked });
-                eq.node.price = $input('text', eq.node.sub, { className: 'hvut-in-price', placeholder: '$price', value: eq.json.price || '' });
-                eq.node.note = $input('text', eq.node.sub, { className: 'hvut-in-note', placeholder: '$note', value: eq.json.note || '' });
-                eq.node.lpr = $input(['button', '<'], eq.node.sub, { className: 'hvut-in-lpr', dataset: { action: 'lpr', eid: eq.info.eid } });
-                eq.node.div.setAttribute('onmouseover', eq.node.div.getAttribute('onmouseover').replace(popup_reg, popup_replace));
-              });
-              if (equiplist.length) {
-                $equip.sort(equiplist, _in.category[filter].div);
-              }
-              _in.check_name(equiplist);
-              _in.category[filter].equiplist = equiplist;
-              _in.equiplist = _in.equiplist.concat(equiplist);
-            };
+  _in.sort_list = function (key) {
+    if (key === 'category') {
+      Object.values(_in.category).forEach((c) => {
+        if (c.equiplist.length) {
+          $equip.sort(c.equiplist, c.div);
+        }
+      });
+      _in.set_rangeselect();
+      return;
+    }
+    function sort_by_name(a, b) {
+      return ($equip.index.quality[a.info.quality] - $equip.index.quality[b.info.quality]) || (a.info.name > b.info.name ? 1 : a.info.name < b.info.name ? -1 : b.info.eid - a.info.eid);
+    }
+    function sort_by_eid(a, b) {
+      return b.info.eid - a.info.eid;
+    }
+    const sort_fn = key === 'name' ? sort_by_name : key === 'eid' ? sort_by_eid : () => {};
+    Object.values(_in.category).forEach((c) => {
+      if (!c.equiplist.length) {
+        return;
+      }
+      const frag = $element();
+      frag.appendChild(c.div.firstElementChild);
+      c.equiplist.sort(sort_fn);
+      c.equiplist.forEach((eq) => {
+        frag.appendChild(eq.node.wrapper);
+        eq.node.wrapper.classList.remove('hvut-eq-border');
+      });
+      c.div.innerHTML = '';
+      c.div.appendChild(frag);
+    });
+    _in.set_rangeselect();
+  };
 
-            _in.sort_list = function (key) {
-              if (key === 'category') {
-                Object.values(_in.category).forEach((c) => {
-                  if (c.equiplist.length) {
-                    $equip.sort(c.equiplist, c.div);
-                  }
-                });
-                _in.set_rangeselect();
-                return;
-              }
-              function sort_by_name(a, b) {
-                return ($equip.index.quality[a.info.quality] - $equip.index.quality[b.info.quality]) || (a.info.name > b.info.name ? 1 : a.info.name < b.info.name ? -1 : b.info.eid - a.info.eid);
-              }
-              function sort_by_eid(a, b) {
-                return b.info.eid - a.info.eid;
-              }
-              const sort_fn = key === 'name' ? sort_by_name : key === 'eid' ? sort_by_eid : () => { };
-              Object.values(_in.category).forEach((c) => {
-                if (!c.equiplist.length) {
-                  return;
-                }
-                const frag = $element();
-                frag.appendChild(c.div.firstElementChild);
-                c.equiplist.sort(sort_fn);
-                c.equiplist.forEach((eq) => {
-                  frag.appendChild(eq.node.wrapper);
-                  eq.node.wrapper.classList.remove('hvut-eq-border');
-                });
-                c.div.innerHTML = '';
-                c.div.appendChild(frag);
-              });
-              _in.set_rangeselect();
-            };
+  _in.check_list = function (t, c) {
+    if (t === 'all') {
+      _in.equiplist.forEach((eq) => { eq.node.check.checked = c; });
+    } else if (t === 'tradeable') {
+      _in.equiplist.forEach((eq) => { if (eq.info.tradeable) { eq.node.check.checked = c; } });
+    } else if (t === 'invert') {
+      _in.equiplist.forEach((eq) => { eq.node.check.checked = !eq.node.check.checked; });
+    }
+  };
 
-            _in.check_list = function (t, c) {
-              if (t === 'all') {
-                _in.equiplist.forEach((eq) => { eq.node.check.checked = c; });
-              } else if (t === 'tradeable') {
-                _in.equiplist.forEach((eq) => { if (eq.info.tradeable) { eq.node.check.checked = c; } });
-              } else if (t === 'reverse') {
-                _in.equiplist.forEach((eq) => { eq.node.check.checked = !eq.node.check.checked; });
-              }
-            };
+  _in.scroll = function (filter) {
+    scrollIntoView(_in.category[filter].div);
+  };
 
-            _in.scroll = function (filter) {
-              scrollIntoView(_in.category[filter].div);
-            };
+  _in.get_lpr = function (eq) {
+    function load(e) {
+      const d = e.target.contentDocument;
+      if (!d.location.href.includes('/equip/')) {
+        return;
+      }
+      const value = eq.node.note.value;
+      let count = 0;
+      const tid = setInterval(() => {
+        const div = $id('summaryDiv', d);
+        if (div) {
+          const summary = div.textContent;
+          eq.node.note.value = summary;
+          if (/^(Soulbound|Unassigned|\d+)/.test(summary)) {
+            clearInterval(tid);
+            eq.node.lpr.value = '<';
+            ifr.remove();
+            return;
+          } else if (/Response Error|Request Error|No data available|Unknown equip type/.test(summary)) {
+            count = 9999;
+          } else if (/Getting ranges/.test(summary)) {
+            count++;
+          } else {
+            count++;
+          }
+        } else {
+          count++;
+        }
+        if (count > 100) {
+          clearInterval(tid);
+          eq.node.lpr.value = '<';
+          eq.node.note.style.width = '250px';
+          if (!div) {
+            eq.node.note.value = "Couldn't load Percentile Range script";
+          }
+          setTimeout(() => {
+            eq.node.note.value = value;
+            eq.node.note.style.width = '';
+            ifr.remove();
+          }, 3000);
+        }
+      }, 100);
+    }
 
-            _in.get_lpr = function (eq) {
-              function load(e) {
-                const d = e.target.contentDocument;
-                if (!d.location.href.includes('/equip/')) {
-                  return;
-                }
-                const value = eq.node.note.value;
-                let count = 0;
-                const tid = setInterval(() => {
-                  const div = $id('summaryDiv', d);
-                  if (div) {
-                    const summary = div.textContent;
-                    eq.node.note.value = summary;
-                    if (/^(Soulbound|Unassigned|\d+)/.test(summary)) {
-                      clearInterval(tid);
-                      eq.node.lpr.value = '<';
-                      ifr.remove();
-                      return;
-                    } else if (/Response Error|Request Error|No data available|Unknown equip type/.test(summary)) {
-                      count = 9999;
-                    } else if (/Getting ranges/.test(summary)) {
-                      count++;
-                    } else {
-                      count++;
-                    }
-                  } else {
-                    count++;
-                  }
-                  if (count > 100) {
-                    clearInterval(tid);
-                    eq.node.lpr.value = '<';
-                    eq.node.note.style.width = '250px';
-                    if (!div) {
-                      eq.node.note.value = "Couldn't load Percentile Range script";
-                    }
-                    setTimeout(() => {
-                      eq.node.note.value = value;
-                      eq.node.note.style.width = '';
-                      ifr.remove();
-                    }, 3000);
-                  }
-                }, 100);
-              }
+    eq.node.lpr.value = '...';
+    const ifr = $element('iframe', document.body, { style: 'display: none;' }, { load: (e) => { load(e); } });
+    ifr.src = `equip/${eq.info.eid}/${eq.info.key}`;
+  };
 
-              eq.node.lpr.value = '...';
-              const ifr = $element('iframe', document.body, { style: 'display: none;' }, { load: (e) => { load(e); } });
-              ifr.src = `equip/${eq.info.eid}/${eq.info.key}`;
-            };
+  _in.set_rangeselect = function () {
+    const inv_equip = [];
+    const inv_eqstor = [];
+    $qsa('#eqinv_outer .eqp').forEach((w) => {
+      if ((w.firstElementChild.getAttribute('onclick') || '').includes('equips.lock')) {
+        inv_equip.push(w.lastElementChild.dataset.eid);
+      } else {
+        inv_eqstor.push(w.lastElementChild.dataset.eid);
+      }
+    });
+    _window.rangeselect.inv_equip = inv_equip;
+    _window.rangeselect.inv_eqstor = inv_eqstor;
+  };
 
-            _in.set_rangeselect = function () {
-              const inv_equip = [];
-              const inv_eqstor = [];
-              $qsa('#eqinv_outer .eqp').forEach((w) => {
-                if ((w.firstElementChild.getAttribute('onclick') || '').includes('equips.lock')) {
-                  inv_equip.push(w.lastElementChild.dataset.eid);
-                } else {
-                  inv_eqstor.push(w.lastElementChild.dataset.eid);
-                }
-              });
-              _window.rangeselect.inv_equip = inv_equip;
-              _window.rangeselect.inv_eqstor = inv_eqstor;
-            };
+  _in.wts = function () {
+    const equiplist = _in.equiplist.filter((e) => e.node.check.checked);
+    const eid_maxlen = Math.max(...equiplist.map((e) => e.info.eid.toString().length));
+    let code = '';
+    let code_new = '';
+    let code_featured = '';
 
-            _in.wts = function () {
-              const equiplist = _in.equiplist.filter((e) => e.node.check.checked);
-              const eid_maxlen = Math.max(...equiplist.map((e) => e.info.eid.toString().length));
-              let code = '';
-              let code_new = '';
-              let code_featured = '';
+    equiplist.sort((a, b) => {
+      if (a.info.category !== b.info.category) {
+        return $equip.index.category[a.info.category] - $equip.index.category[b.info.category];
+      } else if (a.info.category === 'Unknown') {
+        return a.info.name > b.info.name ? 1 : a.info.name < b.info.name ? -1 : 0;
+      } else if (a.info.type !== b.info.type) {
+        return $equip.index.type[a.info.type] - $equip.index.type[b.info.type];
+      }
 
-              equiplist.sort((a, b) => {
-                if (a.info.category !== b.info.category) {
-                  return $equip.index.category[a.info.category] - $equip.index.category[b.info.category];
-                } else if (a.info.category === 'Unknown') {
-                  return a.info.name > b.info.name ? 1 : a.info.name < b.info.name ? -1 : 0;
-                } else if (a.info.type !== b.info.type) {
-                  return $equip.index.type[a.info.type] - $equip.index.type[b.info.type];
-                }
+      let r = 0;
+      const k = a.info.category === 'One-handed Weapon' || a.info.category === 'Two-handed Weapon' ? ['suffix', 'quality', 'prefix']
+        : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
+        : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
+        : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
+        : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
+        : ['slot', 'suffix', 'quality', 'prefix'];
 
-                let r = 0;
-                const k = a.info.category === 'One-handed Weapon' || a.info.category === 'Two-handed Weapon' ? ['suffix', 'quality', 'prefix']
-                : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
-                : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
-                : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
-                : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
-                : ['slot', 'suffix', 'quality', 'prefix'];
+      k.some((e) => {
+        if (e in $equip.index) {
+          r = ($equip.index[e][a.info[e]] || 99) - ($equip.index[e][b.info[e]] || 99);
+        } else {
+          r = a.info[e] > b.info[e] ? 1 : a.info[e] < b.info[e] ? -1 : 0;
+        }
+        return r;
+      });
 
-                k.some((e) => {
-                  if (e in $equip.index) {
-                    r = ($equip.index[e][a.info[e]] || 99) - ($equip.index[e][b.info[e]] || 99);
-                  } else {
-                    r = a.info[e] > b.info[e] ? 1 : a.info[e] < b.info[e] ? -1 : 0;
-                  }
-                  return r;
-                });
+      return r || (b.info.eid - a.info.eid);
+    });
 
-                return r || (b.info.eid - a.info.eid);
-              });
+    equiplist.forEach((eq, i, a) => {
+      const p = a[i - 1] || { info: {} };
+      if (eq.info.category !== p.info.category) {
+        const category = eq.info.category;
+        code += `\n\n\n[size=3][b][${category}][/b][/size]\n`;
+      }
 
-              equiplist.forEach((eq, i, a) => {
-                const p = a[i - 1] || { info: {} };
-                if (eq.info.category !== p.info.category) {
-                  const category = eq.info.category;
-                  code += `\n\n\n[size=3][b][${category}][/b][/size]\n`;
-                }
+      switch (eq.info.category) {
+        case 'One-handed Weapon':
+        case 'Two-handed Weapon':
+          if (eq.info.type !== p.info.type) {
+            const type = eq.info.type || 'Unknown';
+            code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+          } else if (eq.info.suffix !== p.info.suffix) {
+            code += '\n';
+          }
+          break;
+        case 'Staff':
+          if (eq.info.type !== p.info.type) {
+            const type = eq.info.type || 'Unknown';
+            code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+          } else if (eq.info.prefix !== p.info.prefix) {
+            code += '\n';
+          }
+          break;
+        case 'Shield':
+          if (eq.info.type !== p.info.type) {
+            const type = eq.info.type || 'Unknown';
+            code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+          }
+          break;
+        case 'Cloth Armor':
+          if (eq.info.type !== p.info.type || eq.info.suffix !== p.info.suffix) {
+            const type = eq.info.type ? eq.info.suffix || 'No Suffix' : 'Unknown';
+            code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+          } else if (eq.info.slot !== p.info.slot) {
+          //code += '\n';
+          }
+          break;
+        case 'Light Armor':
+        case 'Heavy Armor':
+          if (eq.info.type !== p.info.type) {
+            const type = eq.info.type || 'Unknown';
+            code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+          } else if (eq.info.slot !== p.info.slot) {
+            code += '\n';
+          }
+          break;
+      }
 
-                switch (eq.info.category) {
-                  case 'One-handed Weapon':
-                  case 'Two-handed Weapon':
-                    if (eq.info.type !== p.info.type) {
-                      const type = eq.info.type || 'Unknown';
-                      code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
-                    } else if (eq.info.suffix !== p.info.suffix) {
-                      code += '\n';
-                    }
-                    break;
-                  case 'Staff':
-                    if (eq.info.type !== p.info.type) {
-                      const type = eq.info.type || 'Unknown';
-                      code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
-                    } else if (eq.info.prefix !== p.info.prefix) {
-                      code += '\n';
-                    }
-                    break;
-                  case 'Shield':
-                    if (eq.info.type !== p.info.type) {
-                      const type = eq.info.type || 'Unknown';
-                      code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
-                    }
-                    break;
-                  case 'Cloth Armor':
-                    if (eq.info.type !== p.info.type || eq.info.suffix !== p.info.suffix) {
-                      const type = eq.info.type ? eq.info.suffix || 'No Suffix' : 'Unknown';
-                      code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
-                    } else if (eq.info.slot !== p.info.slot) {
-                      //code += '\n';
-                    }
-                    break;
-                  case 'Light Armor':
-                  case 'Heavy Armor':
-                    if (eq.info.type !== p.info.type) {
-                      const type = eq.info.type || 'Unknown';
-                      code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
-                    } else if (eq.info.slot !== p.info.slot) {
-                      code += '\n';
-                    }
-                    break;
-                }
+      eq.data._eid = eq.info.eid.toString();
+      const eid_len = eq.data._eid.length;
+      if (eid_maxlen > eid_len) {
+        eq.data._eid = '[color=transparent]' + '_'.repeat(eid_maxlen - eid_len) + '[/color]' + eq.data._eid;
+      }
+      if (!eq.data.url) {
+        eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
+      }
+      //if (!eq.data.namecode) {
+      $equip.namecode(eq);
+      //}
+      eq.data.price = eq.node.price.value;
+      eq.data.note = eq.node.note.value;
 
-                eq.data._eid = eq.info.eid.toString();
-                const eid_len = eq.data._eid.length;
-                if (eid_maxlen > eid_len) {
-                  eq.data._eid = '[color=transparent]' + '_'.repeat(eid_maxlen - eid_len) + '[/color]' + eq.data._eid;
-                }
-                if (!eq.data.url) {
-                  eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
-                }
-                //if (!eq.data.namecode) {
-                eq.data.namecode = $equip.namecode(eq);
-                //}
-                eq.data.price = eq.node.price.value;
-                eq.data.note = eq.node.note.value;
+      if (eq.data.note.includes('$featured;')) {
+        eq.data['featured'] = true;
+        eq.data.note = eq.data.note.replace('$featured;', '');
+      } else {
+        eq.data['featured'] = false;
+      }
+      if (eq.data.note.includes('$new;')) {
+        eq.data['new'] = true;
+        eq.data.note = eq.data.note.replace('$new;', '');
+      } else {
+        eq.data['new'] = false;
+      }
 
-                if (eq.data.note.includes('$featured;')) {
-                  eq.data['featured'] = true;
-                  eq.data.note = eq.data.note.replace('$featured;', '');
-                } else {
-                  eq.data['featured'] = false;
-                }
-                if (eq.data.note.includes('$new;')) {
-                  eq.data['new'] = true;
-                  eq.data.note = eq.data.note.replace('$new;', '');
-                } else {
-                  eq.data['new'] = false;
-                }
+      const equipcode = $config.settings.equipCode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
+        const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : '';
+        if (!e) {
+          return v ?? '';
+        } else {
+          const r = v ? t : f || '';
+          return r.replace(/\$(\w+)/g, (s, k) => { const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : ''; return v ?? ''; });
+        }
+      }).trim();
 
-                const equipcode = _in.equipcode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
-                  const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : '';
-                  if (!e) {
-                    return v ?? '';
-                  } else {
-                    const r = v ? t : f || '';
-                    return r.replace(/\$(\w+)/g, (s, k) => { const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : ''; return v ?? ''; });
-                  }
-                }).trim();
+      code += equipcode + '\n';
+      if (eq.data['new']) {
+        code_new += equipcode + '\n';
+      }
+      if (eq.data['featured']) {
+        code_featured += equipcode + '\n';
+      }
+    });
 
-                code += equipcode + '\n';
-                if (eq.data['new']) {
-                  code_new += equipcode + '\n';
-                }
-                if (eq.data['featured']) {
-                  code_featured += equipcode + '\n';
-                }
-              });
+    if (code_featured) {
+      code = '\n\n\n[size=3][b][Featured][/b][/size]\n\n' + code_featured + code;
+    }
+    if (code_new) {
+      code = '\n\n\n[size=3][b][Newly Added][/b][/size]\n\n' + code_new + code;
+    }
+    popup_text(code.trim() || 'No equipment selected.', 900, 500);
+  };
 
-              if (code_featured) {
-                code = '\n\n\n[size=3][b][Featured][/b][/size]\n\n' + code_featured + code;
-              }
-              if (code_new) {
-                code = '\n\n\n[size=3][b][Newly Added][/b][/size]\n\n' + code_new + code;
-              }
-              _in.node.wts = popup_text(code.trim() || '没有选中装备.', 'width: 900px; height: 500px; white-space: pre;', [
-                {
-                  value: '装备代码格式', click: () => {
-                    _in.edit_equipcode();
-                  }
-                },
-                {
-                  value: '命名规则', click: () => {
-                    _in.edit_namecode();
-                  }
-                },
-              ]);
-            };
+  _in.save_json = function () {
+    _in.equipdata = { version: _in.equipdata.version };
+    _in.equiplist.forEach((eq) => {
+      _in.equipdata[eq.info.eid] = { checked: eq.node.check.checked, price: eq.node.price.value, note: eq.node.note.value };
+    });
+    $config.set('equipdata', _in.equipdata);
+  };
 
-            _in.edit_equipcode = function () {
-              const comment = `
-      // {$name}       equipment name
-      // {$namecode}   equipment name in colors/bold
-      // {$url}        equipment url
-      // {$eid}        equipment id
-      // {$_eid}       $eid with a transparent underline for layout
-      // {$level}      equipment level
-      // {$pab}        equipment pab
-      // {$tier}       potency tier (iw level)
-      // {$price}      the value of the 'price' input field
-      // {$note}       the value of the 'note' input field
-      //               if it contains '$featured;', the equip code will be added to 'Featured' section
-      //               if it contains '$new;', the equip code will be added to 'Newly Added' section
-      // {$condition ? text_if_true : text_if_false}
-      //               if $condition is a valid value, it prints 'text_if_true', otherwise 'text_if_false'
-      //               for example {$level ? Lv.$level : Souldbound}
-      //               it prints 'Lv.500' if $level is 500,
-      //               or 'Soulbound' if no $level info
-    `.replace(/^\s+/gm, '').trim();
-              popup_text(comment + '\n\n' + _in.equipcode, 'width: 900px; height: 500px; white-space: pre;', [
-                {
-                  value: '保存', click: (w, t) => {
-                    _in.equipcode = (t.value || settings.equipCode).split('\n').filter((e) => !e.startsWith('//')).join('\n').trim();
-                    setValue('in_equipcode', _in.equipcode);
-                    w.remove();
-                    _in.node.wts.w.remove();
-                    _in.wts();
-                  }
-                },
-                {
-                  value: '恢复默认', click: (w, t) => {
-                    t.value = comment + '\n\n' + settings.equipCode;
-                  }
-                },
-              ]);
-            };
+  _in.load_json = function () {
+    _in.equiplist.forEach((eq) => {
+      const j = _in.equipdata[eq.info.eid] || {};
+      eq.node.check.checked = j.checked;
+      eq.node.price.value = j.price || '';
+      eq.node.note.value = j.note || '';
+    });
+  };
 
-            _in.edit_namecode = function () {
-              const comment = `
-      // base match : option=value, option=value, ...
-      // base match : option=value, option=value, ... ; sub match : option=value, option=value, ... ; sub match : option=value, option=value, ...
-      // options : name, quality, prefix, type, slot, suffix
-      // values : bold, rainbow, or any color such as 'red', '#f00'
-    `.replace(/^\s+/gm, '').trim();
-              popup_text(comment + '\n\n' + _in.namecode.join('\n'), 'width: 900px; height: 500px; white-space: pre;', [
-                {
-                  value: '保存', click: (w, t) => {
-                    const namecode = $equip.namecode_parse(t.value);
-                    if (!namecode) {
-                      return;
-                    }
-                    _in.namecode = namecode;
-                    setValue('in_namecode', _in.namecode);
-                    w.remove();
-                    _in.node.wts.w.remove();
-                    _in.wts();
-                  }
-                },
-                {
-                  value: '恢复默认', click: (w, t) => {
-                    t.value = comment + '\n\n' + settings.equipNameCode.join('\n');
-                  }
-                },
-              ]);
-            };
+  _in.check_name = function (equiplist) {
+    async function load(eq) {
+      const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
+      const doc = $doc(html);
+      const equipname = Array.from($id('equip_extended', doc).previousElementSibling.firstElementChild.children).map((d) => d.textContent.trim() || ' ').join('').replace(/\b(Of|The)\b/, (s) => s.toLowerCase());
+      if (equipname && equipname !== eq.info.name) {
+        eq.info.customname = eq.info.name;
+        eq.info.name = equipname;
+        $equip.parse.name(eq.info.name, eq);
+      }
+      $equip.names[eq.info.eid] = eq.info.name;
+      $config.set('equipnames', $equip.names);
+    }
+    equiplist.forEach((eq) => {
+      if (eq.info.tier === 10 && !$equip.names[eq.info.eid]) {
+        load(eq);
+      }
+    });
+  };
 
-            _in.save_json = function () {
-              _in.equipdata = { version: _in.equipdata.version };
-              _in.equiplist.forEach((eq) => {
-                _in.equipdata[eq.info.eid] = { checked: eq.node.check.checked, price: eq.node.price.value, note: eq.node.note.value };
-              });
-              setValue('in_equipdata', _in.equipdata);
-            };
-
-            _in.load_json = function () {
-              _in.equiplist.forEach((eq) => {
-                const j = _in.equipdata[eq.info.eid] || {};
-                eq.node.check.checked = j.checked;
-                eq.node.price.value = j.price || '';
-                eq.node.note.value = j.note || '';
-              });
-            };
-
-            _in.check_name = function (equiplist) {
-              async function load(eq) {
-                const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
-                const doc = $doc(html);
-                const equipname = Array.from($id('equip_extended', doc).previousElementSibling.firstElementChild.children).map((d) => d.textContent.trim() || ' ').join('').replace(/\b(Of|The)\b/, (s) => s.toLowerCase());
-                if (equipname && equipname !== eq.info.name) {
-                  eq.info.customname = eq.info.name;
-                  eq.info.name = equipname;
-                  $equip.parse.name(eq.info.name, eq);
-                }
-                $equip.names[eq.info.eid] = eq.info.name;
-                setValue('equipnames', $equip.names);
-              }
-              equiplist.forEach((eq) => {
-                if (eq.info.tier === 10 && !$equip.names[eq.info.eid]) {
-                  load(eq);
-                }
-              });
-            };
-
-            GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     #eqinv_outer { position: relative; width: 1100px; margin-left: 120px; }
-    .eqinv_pane > div:first-child { display: none; }
     .eqinv_pane > div:last-child { width: 540px; }
     .eqinv_pane .cspp { margin-top: 15px; overflow-y: scroll; }
 
-    .hvut-in-side { position: absolute; top: 44px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-in-side > input { margin: 3px 0; white-space: normal; }
-    .hvut-in-side > input:nth-child(3) { margin-bottom: 10px; }
-    .hvut-in-side label { margin: 2px 0; line-height: 16px; white-space: nowrap; text-align: left; }
+    .hvut-in-side { top: 44px; left: -110px; }
+    .hvut-in-side label { margin: 3px 0; line-height: 16px; white-space: nowrap; text-align: left; }
 
     .hvut-in-header { position: absolute; top: 5px; left: 0; width: 100%; text-align: center; font-size: 10pt; line-height: 16px; font-weight: bold; }
     .hvut-in-header > span { display: inline-block; margin: 0 10px; padding: 2px 5px; border: 1px solid; }
@@ -6535,620 +5568,640 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-in-sub:hover > .hvut-in-lpr { display: inline-block; }
   `);
 
-            if (settings.equipInventoryIntegration) {
-              const filterbar = $id('filterbar');
-              $element('a', [filterbar, 'afterbegin'], { href: '?s=Character&ss=in', innerHTML: '<div>All</div>' });
-              if (_query.filter) {
-                filterbar.children[0].children[0].classList.add('cfb');
-              } else {
-                filterbar.children[0].children[0].classList.add('cfbs');
-                filterbar.children[1].children[0].classList.remove('cfbs');
-                filterbar.children[1].children[0].classList.add('cfb');
-              }
-            }
+  if ($config.settings.equipInventoryIntegration) {
+    const filterbar = $id('filterbar');
+    $element('a', [filterbar, 'afterbegin'], { href: '?s=Character&ss=in', innerHTML: '<div>All</div>' });
+    if (_query.filter) {
+      filterbar.children[0].children[0].classList.add('cfb');
+    } else {
+      filterbar.children[0].children[0].classList.add('cfbs');
+      filterbar.children[1].children[0].classList.remove('cfbs');
+      filterbar.children[1].children[0].classList.add('cfb');
+    }
+  }
 
-            if (_query.filter || !settings.equipInventoryIntegration) {
-              $equip.list($qs('#inv_equip .equiplist'));
-              $equip.list($qs('#inv_eqstor .equiplist'));
-              _in.set_rangeselect();
-            } else {
-              $id('eqinv_bot').firstElementChild.firstElementChild.firstElementChild.prepend(
-                $element('div', null, ['.hvut-in-ii', '/<div class="il"></div>']),
-                $element('div', null, ['.hvut-in-ii', '/<div class="iu"></div>'])
-              );
-              $id('eqinv_bot').lastElementChild.firstElementChild.firstElementChild.prepend(
-                $element('div', null, ['.hvut-in-ii', '/<div class="hvut-in-is"></div>'])
-              );
+  if (_query.filter || !$config.settings.equipInventoryIntegration) {
+    $equip.list($qs('#inv_equip .equiplist'));
+    $equip.list($qs('#inv_eqstor .equiplist'));
+    _in.set_rangeselect();
+  } else {
+    GM_addStyle(/*css*/`
+      .eqinv_pane > div:first-child { display: none; }
+    `);
+    $id('eqinv_bot').firstElementChild.firstElementChild.firstElementChild.prepend(
+      $element('div', null, ['.hvut-in-ii', '/<div class="il"></div>']),
+      $element('div', null, ['.hvut-in-ii', '/<div class="iu"></div>'])
+    );
+    $id('eqinv_bot').lastElementChild.firstElementChild.firstElementChild.prepend(
+      $element('div', null, ['.hvut-in-ii', '/<div class="hvut-in-is"></div>'])
+    );
 
-              $id('eqinv_outer').addEventListener('click', _in.click);
-              _in.node.side = $element('div', $id('eqinv_outer'), ['.hvut-in-side']);
-              $input(['button', '排序：类别'], _in.node.side, null, () => { _in.sort_list('category'); });
-              $input(['button', '排序：名称'], _in.node.side, null, () => { _in.sort_list('name'); });
-              $input(['button', '排序：装备id'], _in.node.side, null, () => { _in.sort_list('eid'); });
-              $input(['button', '生成装备代码'], _in.node.side, null, () => { _in.wts(); });
-              $input(['checkbox', '全选'], _in.node.side, null, (e) => { _in.check_list('all', e.target.checked); });
-              $input(['checkbox', '可交易'], _in.node.side, null, (e) => { _in.check_list('tradeable', e.target.checked); });
-              $input(['checkbox', '反向选择'], _in.node.side, null, () => { _in.check_list('reverse'); });
-              $input(['button', '保存'], _in.node.side, null, () => { _in.save_json(); });
-              $input(['button', '恢复'], _in.node.side, null, () => { _in.load_json(); });
+    $id('eqinv_outer').addEventListener('click', _in.click);
+    _in.node.side = $element('div', $id('eqinv_outer'), ['.hvut-side hvut-in-side']);
+    $input(['button', 'sort: category'], _in.node.side, null, () => { _in.sort_list('category'); });
+    $input(['button', 'sort: name'], _in.node.side, null, () => { _in.sort_list('name'); });
+    $input(['button', 'sort: eid'], _in.node.side, { className: 'hvut-side-margin' }, () => { _in.sort_list('eid'); });
+    $input(['button', 'Equip Code'], _in.node.side, null, () => { _in.wts(); });
+    $input(['checkbox', 'Select All'], _in.node.side, null, (e) => { _in.check_list('all', e.target.checked); });
+    $input(['checkbox', 'Tradeables'], _in.node.side, null, (e) => { _in.check_list('tradeable', e.target.checked); });
+    $input(['checkbox', 'Invert'], _in.node.side, null, () => { _in.check_list('invert'); });
+    $input(['button', 'Save'], _in.node.side, null, () => { _in.save_json(); });
+    $input(['button', 'Revert'], _in.node.side, null, () => { _in.load_json(); });
+    $input(['button', 'Edit Code'], _in.node.side, null, () => { $config.open('equipCode'); });
 
-              $element('div', [$id('inv_equip'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
-              $element('div', [$id('inv_eqstor'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
+    $element('div', [$id('inv_equip'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
+    $element('div', [$id('inv_eqstor'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
 
-              _in.init_list('1handed');
-              _in.get_list('1handed', $id('eqinv_outer'));
-              $qs('#inv_equip .equiplist').remove();
-              $qs('#inv_eqstor .equiplist').remove();
+    _in.init_list('1handed');
+    _in.get_list('1handed', $id('eqinv_outer'));
+    $qs('#inv_equip .equiplist').remove();
+    $qs('#inv_eqstor .equiplist').remove();
 
-              const requests = ['2handed', 'staff', 'shield', 'acloth', 'alight', 'aheavy'].map((filter) => _in.load_list(filter));
-              Promise.all(requests).then(() => {
-                //
-              });
+    const requests = ['2handed', 'staff', 'shield', 'acloth', 'alight', 'aheavy'].map((filter) => _in.load_list(filter));
+    Promise.all(requests).then(() => {
+    //
+    });
+  }
+} else
+// [END 6] Character - Equip Inventory */
 
-            }
-          } else
-            // [END 6] Character - Equip Inventory */
 
+//* [7] Character - Settings
+if (_query.s === 'Character' && _query.ss === 'se') {
+  _se.form = $qs('#settings_outer form');
+  _se.elements = Array.from(_se.form.elements);
+  _se.json = $config.get('se_settings', {});
+  _se.node = {};
 
-            //* [7] Character - Settings
-            if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
-              _se.form = $qs('#settings_outer form');
-              _se.elements = Array.from(_se.form.elements);
-              _se.json = getValue('se_settings', {});
-              _se.node = {};
+  _se.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, key } = target.dataset;
+    if (action === 'load') {
+      _se.load(key);
+    } else if (action === 'remove') {
+      _se.remove(key);
+    } else if (action === 'save') {
+      _se.save();
+    }
+  };
+  _se.add = function (name) {
+    _se.node[name] = $input(['button', name], _se.div, { dataset: { action: 'load', key: name }, className: 'hvut-se-button' });
+    $input(['button', 'x'], _se.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
+  };
+  _se.save = function () {
+    const name = prompt('Enter the name of the settings')?.trim();
+    if (!name) {
+      return;
+    }
+    if (!_se.json[name]) {
+      _se.add(name);
+    }
+    const form = new FormData(_se.form);
+    const json = Object.fromEntries(form.entries());
+    _se.json[name] = json;
+    $config.set('se_settings', _se.json);
+  };
+  _se.load = function (name) {
+    const json = _se.json[name];
+    _se.elements.forEach((e) => {
+      if (e.type === 'button' || e.type === 'reset' || e.type === 'image' || e.type === 'submit') {
+        return;
+      }
+      if (e.type === 'checkbox') {
+        e.checked = json[e.name];
+      } else if (e.type === 'radio') {
+        e.checked = json[e.name] === e.value;
+      } else {
+        e.value = json[e.name];
+      }
+    });
+  };
+  _se.remove = function (name) {
+    delete _se.json[name];
+    $config.set('se_settings', _se.json);
+    _se.node[name].nextElementSibling.remove();
+    _se.node[name].remove();
+  };
 
-              _se.click = function (e) {
-                const target = e.target.closest('[data-action]');
-                if (!target) {
-                  return;
-                }
-                const { action, key } = target.dataset;
-                if (action === 'load') {
-                  _se.load(key);
-                } else if (action === 'remove') {
-                  _se.remove(key);
-                } else if (action === 'save') {
-                  _se.save();
-                }
-              };
-              _se.add = function (name) {
-                _se.node[name] = $input(['button', name], _se.div, { dataset: { action: 'load', key: name }, className: 'hvut-se-button' });
-                $input(['button', 'x'], _se.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
-              };
-              _se.save = function () {
-                let name = prompt('Enter the title of settings');
-                if (!name || !name.trim()) {
-                  return;
-                }
-                name = name.trim();
-                if (!_se.json[name]) {
-                  _se.add(name);
-                }
-                const form = new FormData(_se.form);
-                const json = Object.fromEntries(form.entries());
-                _se.json[name] = json;
-                setValue('se_settings', _se.json);
-              };
-              _se.load = function (name) {
-                const json = _se.json[name];
-                _se.elements.forEach((e) => {
-                  if (e.type === 'button' || e.type === 'reset' || e.type === 'image' || e.type === 'submit') {
-                    return;
-                  }
-                  if (e.type === 'checkbox') {
-                    e.checked = json[e.name];
-                  } else if (e.type === 'radio') {
-                    e.checked = json[e.name] === e.value;
-                  } else {
-                    e.value = json[e.name];
-                  }
-                });
-              };
-              _se.remove = function (name) {
-                delete _se.json[name];
-                setValue('se_settings', _se.json);
-                _se.node[name].nextElementSibling.remove();
-                _se.node[name].remove();
-              };
-
-              GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     .hvut-se-div { margin-top: 20px; padding: 20px 0; border-top: 3px double; text-align: left; }
     .hvut-se-div .hvut-se-button { min-width: 50px; margin: 0 30px 10px 10px; }
     .hvut-se-div .hvut-se-remove { visibility: hidden; width: 22px; margin-left: -30px; }
     .hvut-se-button:hover + .hvut-se-remove, .hvut-se-remove:hover { visibility: visible; }
   `);
 
-              _se.div = $element('div', _se.form, ['.hvut-se-div'], (e) => { _se.click(e); });
-              $input(['button', '存储当前设置'], _se.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
-              $element('br', _se.div);
+  _se.div = $element('div', _se.form, ['.hvut-se-div'], (e) => { _se.click(e); });
+  $input(['button', 'Save Current Settings'], _se.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
+  $element('br', _se.div);
 
-              Object.keys(_se.json).forEach((p) => { _se.add(p); });
+  Object.keys(_se.json).forEach((p) => { _se.add(p); });
 
-              _se.elements.forEach((e) => {
-                if (e.nodeName === 'SELECT') {
-                  const value = e.value;
-                  const options = Array.from(e.options);
-                  options.sort((a, b) => { let av = a.value; let bv = b.value; if (av && !isNaN(av) && bv && !isNaN(bv)) { av = Number(av); bv = Number(bv); } return (av > bv ? 1 : -1); });
-                  e.append(...options);
-                  e.value = value;
-                }
-              });
+  _se.elements.forEach((e) => {
+    if (e.nodeName === 'SELECT') {
+      const value = e.value;
+      const options = Array.from(e.options);
+      options.sort((a, b) => { let av = a.value; let bv = b.value; if (av && !isNaN(av) && bv && !isNaN(bv)) { av = Number(av); bv = Number(bv); } return (av > bv ? 1 : -1); });
+      e.append(...options);
+      e.value = value;
+    }
+  });
 
-              _se.form.fontlocal.required = true;
-              _se.form.fontface.required = true;
-              _se.form.fontsize.required = true;
-              _se.form.fontface.placeholder = 'Tahoma, Arial';
-              _se.form.fontsize.placeholder = '10';
-              _se.form.fontoff.placeholder = '0';
-
-            } else
-
-              // [END 7] Character - Settings */
+  _se.form.fontlocal.required = true;
+  _se.form.fontface.required = true;
+  _se.form.fontsize.required = true;
+  _se.form.fontface.placeholder = 'Tahoma, Arial';
+  _se.form.fontsize.placeholder = '10';
+  _se.form.fontoff.placeholder = '0';
+} else
+// [END 7] Character - Settings */
 
 
-              //* [8] Bazaar - Equipment Shop
-              if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
-                _es.filter = _query.filter || '1handed';
-                _es.rare_type = { 'Force Shield': true, 'Phase': true, 'Shade': true, 'Power': true };
-                _es.mat_type = { '1handed': 'Metals', '2handed': 'Metals', 'staff': 'Wood', 'shield': 'Wood', 'acloth': 'Cloth', 'alight': 'Leather', 'aheavy': 'Metals' };
-                _es.core_type = { '1handed': 'Weapon', '2handed': 'Weapon', 'staff': 'Staff', 'shield': 'Armor', 'acloth': 'Armor', 'alight': 'Armor', 'aheavy': 'Armor' };
-                _es.quality = { 'Flimsy': 1, 'Crude': 2, 'Fair': 3, 'Average': 4, 'Fine': 5, 'Superior': 6, 'Exquisite': 7, 'Magnificent': 8, 'Legendary': 9, 'Peerless': 10 };
-                _es.category = { 'valuable': {}, '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
-                _es.storetoken = $id('shopform').elements.storetoken.value;
-                _es.item_pane = [];
-                _es.shop_pane = [];
-                _es.node = {};
+//* [8] Bazaar - Equipment Shop
+if (_query.s === 'Bazaar' && _query.ss === 'es') {
+  _es.filter = _query.filter || '1handed';
+  _es.rare_type = { 'Force Shield': true, 'Phase': true, 'Shade': true, 'Power': true };
+  _es.mat_type = { '1handed': 'Metals', '2handed': 'Metals', 'staff': 'Wood', 'shield': 'Wood', 'acloth': 'Cloth', 'alight': 'Leather', 'aheavy': 'Metals' };
+  _es.core_type = { '1handed': 'Weapon', '2handed': 'Weapon', 'staff': 'Staff', 'shield': 'Armor', 'acloth': 'Armor', 'alight': 'Armor', 'aheavy': 'Armor' };
+  _es.quality = { 'Flimsy': 1, 'Crude': 2, 'Fair': 3, 'Average': 4, 'Fine': 5, 'Superior': 6, 'Exquisite': 7, 'Magnificent': 8, 'Legendary': 9, 'Peerless': 10 };
+  _es.category = { 'valuable': {}, '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
+  _es.storetoken = $id('shopform').elements.storetoken.value;
+  _es.prices = $price.get('Materials');
+  _es.item_pane_equips = [];
+  _es.shop_pane_equips = [];
+  _es.node = {};
 
-                _es.click = function (e) {
-                  const target = e.target.closest('[data-action]');
-                  if (!target) {
-                    return;
-                  }
-                  const { action, eid, pane } = target.dataset;
-                  if (pane === 'item') {
-                    const eq = eid && _es.item_pane.find((eq) => eq.info.eid == eid);
-                    if (action === 'sell') {
-                      _es.sell(eq);
-                    } else if (action === 'salvage') {
-                      _es.salvage(eq);
-                    } else if (action === 'transfer') {
-                      _es.transfer(eq);
-                    } else if (action === 'popup') {
-                      _es.showequip(eq, pane);
-                    }
-                  } else if (pane === 'shop') {
-                    const eq = eid && _es.shop_pane.find((eq) => eq.info.eid == eid);
-                    if (action === 'buy') {
-                      _es.shop_buy(eq);
-                    } else if (action === 'salvage') {
-                      _es.shop_salvage(eq);
-                    } else if (action === 'popup') {
-                      _es.showequip(eq, pane);
-                    }
-                  }
-                };
+  _es.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, eid, pane } = target.dataset;
+    if (pane === 'item') {
+      const eq = eid && _es.item_pane_equips.find((eq) => eq.info.eid == eid);
+      if (action === 'sell') {
+        _es.sell(eq);
+      } else if (action === 'salvage') {
+        _es.salvage(eq);
+      } else if (action === 'transfer') {
+        _es.transfer(eq);
+      } else if (action === 'popup') {
+        _es.showequip(eq, pane);
+      }
+    } else if (pane === 'shop') {
+      const eq = eid && _es.shop_pane_equips.find((eq) => eq.info.eid == eid);
+      if (action === 'buy') {
+        _es.shop_buy(eq);
+      } else if (action === 'salvage') {
+        _es.shop_salvage(eq);
+      } else if (action === 'popup') {
+        _es.showequip(eq, pane);
+      }
+    }
+  };
 
-                _es.sell = async function (eq, ask = true) {
-                  if (eq.data.sold) {
-                    return;
-                  }
-                  if (eq.node.div.dataset.locked != '0') {
-                    alert('这件道具上锁了.');
-                    return;
-                  }
-                  if (ask && (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || settings.equipmentShopConfirm > 0 && eq.data.valuable) && !confirm(`[${eq.info.name}]\n你确定要出售这件装备并获得 ${eq.data.value.toLocaleString()} credits?` + (eq.data.salvage_recommended ? '\n根据你设定的材料估值,分解这件装备会更值得.' : ''))) {
-                    return;
-                  }
-                  eq.data.sold = true;
-                  eq.node.wrapper.classList.add('hvut-es-disabled');
+  _es.sell = async function (eq, ask = true) {
+    if (eq.data.sold) {
+      return;
+    }
+    if (eq.node.div.dataset.locked != '0') {
+      alert('This equipment is locked.');
+      return;
+    }
+    if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
+      let msg = `Are you sure that you wish to SELL\n[${eq.info.name}]\nfor ${eq.data.value.toLocaleString()} credits?`;
+      if (eq.data.salvage_recommended) {
+        msg += '\nThe value of SALVAGEd materials is higher.';
+      }
+      if (!confirm(msg)) {
+        return;
+      }
+    }
+    eq.data.sold = true;
+    eq.node.wrapper.classList.add('hvut-es-disabled');
 
-                  const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=item_pane&select_eids=${eq.info.eid}`);
-                  _es.update_credits(html);
-                  eq.node.wrapper.remove();
-                };
+    const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=item_pane&select_eids=${eq.info.eid}`);
+    _es.update_credits(html);
+    eq.node.wrapper.remove();
+  };
 
-                _es.salvage = async function (eq, ask = true) {
-                  if (eq.data.sold) {
-                    return;
-                  }
-                  if (eq.node.div.dataset.locked != '0') {
-                    alert('这件道具上锁了.');
-                    return;
-                  }
-                  if (ask && (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || settings.equipmentShopConfirm > 0 && eq.data.valuable) && !confirm(`[${eq.info.name}]\n你确定要分解这件装备吗?` + (!eq.data.salvage_recommended ? '\n根据售价,出售它会更加划算.' : ''))) {
-                    return;
-                  }
-                  eq.data.sold = true;
-                  eq.node.wrapper.classList.add('hvut-es-disabled');
+  _es.salvage = async function (eq, ask = true) {
+    if (eq.data.sold) {
+      return;
+    }
+    if (eq.node.div.dataset.locked != '0') {
+      alert('This equipment is locked.');
+      return;
+    }
+    if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
+      let msg = `Are you sure that you wish to SALVAGE\n[${eq.info.name}]\n?`;
+      if (!eq.data.salvage_recommended) {
+        msg += '\nSELLing would give you more credits.';
+      }
+      if (!confirm(msg)) {
+        return;
+      }
+    }
+    eq.data.sold = true;
+    eq.node.wrapper.classList.add('hvut-es-disabled');
 
-                  await $ajax.fetch('?s=Forge&ss=sa&filter=' + eq.data.filter, 'select_item=' + eq.info.eid);
-                  eq.node.wrapper.remove();
-                };
+    await $ajax.fetch('?s=Forge&ss=sa&filter=' + eq.data.filter, 'select_item=' + eq.info.eid);
+    eq.node.wrapper.remove();
+  };
 
-                _es.transfer = async function (eq, equipgroup = 'inv_equip') {
-                  if (eq.data.sold) {
-                    return;
-                  }
-                  eq.data.sold = true;
-                  eq.node.wrapper.classList.add('hvut-es-disabled');
+  _es.transfer = async function (eq, equipgroup = 'inv_equip') {
+    if (eq.data.sold) {
+      return;
+    }
+    eq.data.sold = true;
+    eq.node.wrapper.classList.add('hvut-es-disabled');
 
-                  // 'inv_equip': to storage, 'inv_eqstor': to inventory
-                  await $ajax.fetch('?s=Character&ss=in', `equiplist=${eq.info.eid}&equipgroup=${equipgroup}`);
-                  eq.node.wrapper.remove();
-                };
+    // 'inv_equip': to storage, 'inv_eqstor': to inventory
+    await $ajax.fetch('?s=Character&ss=in', `equiplist=${eq.info.eid}&equipgroup=${equipgroup}`);
+    eq.node.wrapper.remove();
+  };
 
-                _es.shop_buy = async function (eq, ask = true) {
-                  if (eq.data.sold) {
-                    return;
-                  }
-                  if (ask && !confirm(`[${eq.info.name}]\n你确定要购买这件装备并花费 ${eq.data.value.toLocaleString()} credits吗?`)) {
-                    return;
-                  }
-                  eq.data.sold = true;
-                  eq.node.wrapper.classList.add('hvut-es-disabled');
+  _es.shop_buy = async function (eq, ask = true) {
+    if (eq.data.sold) {
+      return;
+    }
+    if (ask && !confirm(`Are you sure that you wish to buy\n[${eq.info.name}]\nfor ${eq.data.value.toLocaleString()} credits?`)) {
+      return;
+    }
+    eq.data.sold = true;
+    eq.node.wrapper.classList.add('hvut-es-disabled');
 
-                  const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=shop_pane&select_eids=${eq.info.eid}`);
-                  _es.update_credits(html);
-                  eq.node.wrapper.remove();
-                };
+    const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=shop_pane&select_eids=${eq.info.eid}`);
+    _es.update_credits(html);
+    eq.node.wrapper.remove();
+  };
 
-                _es.shop_salvage = async function (eq, ask = true) {
-                  if (eq.data.sold || ask && !confirm(`[${eq.info.name}]\n你确定要购买并分解这件装备吗?`)) {
-                    return;
-                  }
-                  eq.data.sold = true;
-                  eq.node.wrapper.classList.add('hvut-es-disabled');
+  _es.shop_salvage = async function (eq, ask = true) {
+    if (eq.data.sold || ask && !confirm(`Are you sure that you wish to buy\n[${eq.info.name}]\nand then salvage it?`)) {
+      return;
+    }
+    eq.data.sold = true;
+    eq.node.wrapper.classList.add('hvut-es-disabled');
 
-                  const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=shop_pane&select_eids=${eq.info.eid}`);
-                  const uid = /var uid = (\d+);/.test(html) && RegExp.$1;
-                  const simple_token = /var simple_token = "(\w+)";/.test(html) && RegExp.$1;
-                  _es.update_credits(html);
+    const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=shop_pane&select_eids=${eq.info.eid}`);
+    const uid = /var uid = (\d+);/.exec(html)[1];
+    const simple_token = /var simple_token = "(\w+)";/.exec(html)[1];
+    _es.update_credits(html);
 
-                  await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid: uid, token: simple_token, eid: eq.info.eid, lock: 0 }, 'JSON');
-                  await $ajax.fetch('?s=Forge&ss=sa&filter=' + eq.data.filter, 'select_item=' + eq.info.eid);
-                  eq.node.wrapper.remove();
-                };
+    await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid: uid, token: simple_token, eid: eq.info.eid, lock: 0 }, 'JSON');
+    await $ajax.fetch('?s=Forge&ss=sa&filter=' + eq.data.filter, 'select_item=' + eq.info.eid);
+    eq.node.wrapper.remove();
+  };
 
-                _es.showequip = function (eq) {
-                  window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
-                };
+  _es.showequip = function (eq) {
+    window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
+  };
 
-                _es.is_selected = function (eq) {
-                  return /rgb\(0,\s*48,\s*203\)|#0030CB/i.test(eq.node.div.style.color); // later, may need hex2rgb
-                };
+  _es.is_selected = function (eq) {
+    return /rgb\(0,\s*48,\s*203\)|#0030CB/i.test(eq.node.div.style.color); // later, may need hex2rgb
+  };
 
-                _es.select_all = function (v) {
-                  const s = v === 'salvage' ? true : v === 'sell' ? false : 'all';
-                  const ctrlclick = new MouseEvent('click', { ctrlKey: true });
-                  _es.item_pane.forEach((eq) => {
-                    if (eq.node.div.dataset.locked != '0') {
-                      return;
-                    }
-                    if (eq.data.valuable) {
-                      if (_es.is_selected(eq)) {
-                        eq.node.div.dispatchEvent(ctrlclick);
-                      }
-                      return;
-                    }
-                    if (_es.is_selected(eq) !== (eq.data.salvage_recommended === s || s === 'all')) {
-                      eq.node.div.dispatchEvent(ctrlclick);
-                    }
-                  });
-                };
+  _es.select_all = function (v) {
+    const s = v === 'salvage' ? true : v === 'sell' ? false : 'all';
+    const ctrlclick = new MouseEvent('click', { ctrlKey: true });
+    _es.item_pane_equips.forEach((eq) => {
+      if (eq.node.div.dataset.locked != '0') {
+        return;
+      }
+      if (eq.data.valuable) {
+        if (_es.is_selected(eq)) {
+          eq.node.div.dispatchEvent(ctrlclick);
+        }
+        return;
+      }
+      if (_es.is_selected(eq) !== (eq.data.salvage_recommended === s || s === 'all')) {
+        eq.node.div.dispatchEvent(ctrlclick);
+      }
+    });
+  };
 
-                _es.sell_all = async function () {
-                  const selected = [];
-                  const valuable = [];
-                  const salvage = [];
-                  let sum = 0;
+  _es.sell_all = async function () {
+    const selected = [];
+    const valuable = [];
+    const salvage = [];
+    let sum = 0;
 
-                  _es.item_pane.forEach((eq) => {
-                    if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
-                      return;
-                    }
-                    selected.push(eq);
-                    if (eq.data.valuable) {
-                      valuable.push(eq.info.name);
-                    } else if (eq.data.salvage_recommended) {
-                      salvage.push(eq.info.name);
-                    }
-                    sum += eq.data.value;
-                  });
+    _es.item_pane_equips.forEach((eq) => {
+      if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
+        return;
+      }
+      selected.push(eq);
+      if (eq.data.valuable) {
+        valuable.push(eq.info.name);
+      } else if (eq.data.salvage_recommended) {
+        salvage.push(eq.info.name);
+      }
+      sum += eq.data.value;
+    });
 
-                  if (!selected.length || (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && salvage.length || valuable.length) && !confirm(`你确定要出售这 ${selected.length} 件装备获取 ${sum.toLocaleString()} credits吗?` + (valuable.length ? '\n\n[存在贵重装备]\n' + valuable.join('\n') : '') + (salvage.length ? '\n\n[以下装备分解更划算]\n' + salvage.join('\n') : ''))) {
-                    return;
-                  }
-                  selected.forEach((eq) => {
-                    eq.data.sold = true;
-                    eq.node.wrapper.classList.add('hvut-es-disabled');
-                  });
+    if (!selected.length) {
+      return;
+    }
+    if ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && salvage.length || valuable.length) {
+      let msg = `Are you sure that you wish to sell ${selected.length} equipment pieces for ${sum.toLocaleString()} credits?`;
+      if (salvage.length) {
+        msg += `\n${salvage.length} of them would be more profitable to salvage.`;
+      }
+      if (valuable.length) {
+        msg += `\n\n${valuable.length} of them have valuable names. Are you sure?\n${valuable.join('\n')}`;
+      }
+      if (!confirm(msg)) {
+        return;
+      }
+    }
+    selected.forEach((eq) => {
+      eq.data.sold = true;
+      eq.node.wrapper.classList.add('hvut-es-disabled');
+    });
 
-                  const select_eids = selected.map((eq) => eq.info.eid).join(',');
-                  const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=item_pane&select_eids=${select_eids}`);
-                  _es.update_credits(html);
-                  selected.forEach((eq) => { eq.node.wrapper.remove(); });
-                };
+    const select_eids = selected.map((eq) => eq.info.eid).join(',');
+    const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=item_pane&select_eids=${select_eids}`);
+    _es.update_credits(html);
+    selected.forEach((eq) => { eq.node.wrapper.remove(); });
+  };
 
-                _es.salvage_all = function () {
-                  const selected = [];
-                  const valuable = [];
-                  const sell = [];
+  _es.salvage_all = function () {
+    const selected = [];
+    const valuable = [];
+    const sell = [];
 
-                  _es.item_pane.forEach((eq) => {
-                    if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
-                      return;
-                    }
-                    selected.push(eq);
-                    if (eq.data.valuable) {
-                      valuable.push(eq.info.name);
-                    } else if (!eq.data.salvage_recommended) {
-                      sell.push(eq.info.name);
-                    }
-                  });
+    _es.item_pane_equips.forEach((eq) => {
+      if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
+        return;
+      }
+      selected.push(eq);
+      if (eq.data.valuable) {
+        valuable.push(eq.info.name);
+      } else if (!eq.data.salvage_recommended) {
+        sell.push(eq.info.name);
+      }
+    });
 
-                  if (!selected.length || (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && sell.length || valuable.length) && !confirm(`你确定要分解这 ${selected.length} 件装备吗?` + (valuable.length ? '\n\n[存在贵重装备]\n' + valuable.join('\n') : '') + (sell.length ? '\n\n[以下装备出售更划算]\n' + sell.join('\n') : ''))) {
-                    return;
-                  }
-                  selected.forEach((eq) => { _es.salvage(eq, false); });
-                };
+    if (!selected.length) {
+      return;
+    }
+    if ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && sell.length || valuable.length) {
+      let msg = `Are you sure that you wish to salvage ${selected.length} the selected equipment pieces?`;
+      if (sell.length) {
+        msg += `\n${sell.length} of them would be more profitable to sell.`;
+      }
+      if (valuable.length) {
+        msg += `\n\n${valuable.length} of them have valuable names. Are you sure?\n${valuable.join('\n')}`;
+      }
+      if (!confirm(msg)) {
+        return;
+      }
+    }
+    selected.forEach((eq) => { _es.salvage(eq, false); });
+  };
 
-                _es.salvage_calc = function (eq, d) {
-                  const q = _es.quality[eq.info.quality];
-                  const t = _es.mat_type[eq.data.filter];
-                  const s = ['', 0, 0];
-                  const g = ['', 0, 0];
-                  const e = ['', 0, 0];
-                  const c = ['', 0, 0];
-                  let value = eq.data.value;
-                  const prices = $price.get('Materials');
+  _es.salvage_mats = function (eq, d) {
+    if (eq.data.salvage_mats) {
+      return;
+    }
+    eq.data.salvage_mats = {};
+    if (!eq.info.tradeable) {
+      //return;
+    }
+    const q = _es.quality[eq.info.quality];
+    const t = _es.mat_type[eq.data.filter];
+    let value = eq.data.value;
 
-                  if (d) {
-                    value = Math.ceil(value / d);
-                  }
-                  if (!q) { // obsolete or unknown
-                  } else if (q < 6) {
-                    s[0] = 'Scrap ' + (t === 'Metals' ? 'Metal' : t);
-                    s[1] = Math.min(10, Math.ceil(value / 100));
-                    s[2] = prices[s[0]] || 0;
-                  } else {
-                    g[0] = (q === 6 ? 'Low-Grade ' : q === 7 ? 'Mid-Grade ' : 'High-Grade ') + t;
-                    g[1] = !_isekai ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
-                    g[2] = prices[g[0]] || 0;
-                  }
-                  if (q >= 9) {
-                    c[0] = (q === 9 ? 'Legendary ' : 'Peerless ') + _es.core_type[eq.data.filter] + ' Core';
-                    c[1] = _es.rare_type[eq.info.type] ? 5 : 1;
-                    c[2] = prices[c[0]] || 0;
-                  }
-                  if (_es.rare_type[eq.info.type]) {
-                    e[0] = 'Energy Cell';
-                    e[1] = 1; //Math.max(1, s[1] / 2);
-                    e[2] = prices[e[0]] || 0;
-                  }
-                  eq.data.salvage = s[1] * s[2] + g[1] * g[2] + e[1] * e[2] + c[1] * c[2];
-                };
+    if (d) {
+      value = Math.ceil(value / d);
+    }
+    if (!q) { // obsolete or unknown
+    } else if (q < 6) {
+      const scrap = 'Scrap ' + (t === 'Metals' ? 'Metal' : t);
+      eq.data.salvage_mats[scrap] = Math.min(10, Math.ceil(value / 100));
+    } else {
+      const mat = (q === 6 ? 'Low-Grade ' : q === 7 ? 'Mid-Grade ' : 'High-Grade ') + t;
+      eq.data.salvage_mats[mat] = !$config.isekai ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
+    }
+    if (q >= 9) {
+      const core = (q === 9 ? 'Legendary ' : 'Peerless ') + _es.core_type[eq.data.filter] + ' Core';
+      eq.data.salvage_mats[core] = _es.rare_type[eq.info.type] ? 5 : 1;
+    }
+    if (_es.rare_type[eq.info.type]) {
+      const cell = 'Energy Cell';
+      eq.data.salvage_mats[cell] = 1; //Math.max(1, s[1] / 2);
+    }
+  };
 
-                _es.update_credits = function (html) {
-                  const doc = $doc(html);
-                  const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-                  if($id('networth')) {
-                    $id('networth').textContent = 'Credits: ' + networth.toLocaleString();
-                  }
-                };
+  _es.salvage_calc = function (eq) {
+    eq.data.salvage_value = Object.entries(eq.data.salvage_mats).reduce((s, [k, v]) => (s + (_es.prices[k] || 0) * v), 0);
+  };
 
-                _es.edit_filter = function (n) {
-                  const filter = {
-                    protect: { key: 'es_protect', default: settings.equipmentShopProtectFilter, comment: '//#tip 防止你的贵重装备被全选，需要修改过滤器请使用英文' },
-                    bazaar: { key: 'es_bazaar', default: settings.equipmentShopBazaarFilter, comment: '//#tip 在商店页面隐藏垃圾装备，需要修改过滤器请使用英文' },
-                  }[n];
-                  const cnDict = {
-                    'Axe': '斧', 'Club': '棍', 'Rapier': '西洋剑', 'Shortsword': '短剑', 'Wakizashi': '脇差',
-                    'Longsword': '长剑', 'Mace': '重锤', 'Katana': '太刀', 'Estoc': '刺剑',
-                    'Katalox': '铁木杖', 'Redwood': '红杉木杖', 'Oak': '橡木杖', 'Willow': '柳木杖',
-                    'Buckler': '小圆盾', 'Kite': '鸢盾', 'Force Shield': '力场盾',
-                    'Cotton': '棉制', 'Phase': '相位', 'Leather': '皮革', 'Shade': '暗影', 'Plate': '板甲', 'Power': '动力',
-                    'Crude': '劣等', 'Fair': '一般', 'Average': '中等', 'Superior': '上等', 'Exquisite': '✧精良✧', 'Magnificent': '☆史诗☆', 'Legendary': '✪传奇✪', 'Peerless': '☯无双☯',
-                    'Ethereal': '虚空', 'Fiery': '红莲(火)', 'Arctic': '北极(冰)', 'Shocking': '雷鸣(雷)', 'Tempestuous': '风暴(风)', 'Hallowed': '圣光(圣)', 'Demonic': '魔性(暗)',
-                    'Reinforced': '坚固的(减伤)', 'Radiant': '魔光的(魔伤)', 'Mystic': '神秘的(暴击)', 'Charged': '充能的(加速)', 'Amber': '琥珀的(雷抗)', 'Mithril': '秘银的(低重)', 'Agile': '俊敏的(加速)', 'Zircon': '锆石的(圣抗)', 'Frugal': '节约的(省魔)', 'Jade': '翡翠的(风抗)', 'Cobalt': '钴石的(冰抗)', 'Ruby': '红宝石(火抗)', 'Onyx': '缟玛瑙(暗抗)',
-                    'Savage': '残暴的(暴伤)', 'Shielding': '盾化的(格挡)',
-                    'Slaughter': '杀戮(物伤)', 'Balance': '平衡(物命/物暴)', 'Swiftness': '迅捷(物速)', 'Vampire': '吸血鬼(吸血)', 'Illithid': '夺心魔(吸魔)', 'Banshee': '报丧女妖(吸灵)', 'Battlecaster': '战法师(魔命/魔耗/干涉)', 'Focus': '专注(魔命/魔耗/魔暴)', 'Destruction': '毁灭(魔伤)', 'Surtr': '苏尔特(火伤)', 'Niflheim': '尼芙菲姆(冰伤)', 'Mjolnir': '姆乔尔尼尔(雷伤)', 'Freyr': '弗瑞尔(风伤)', 'Heimdall': '海姆达(圣伤)', 'Fenrir': '芬里尔(暗伤)', 'Elementalist': '元素使(元素熟练)', 'Heaven-sent': '天堂(神圣熟练)', 'Demon-fiend': '恶魔(黑暗熟练)', 'Earth-walker': '地行者(增益熟练)', 'Curse-weaver': '咒术师(减益熟练)', 'Barrier': '屏障(格挡)', 'Negation': '否定(抵抗)', 'Nimble': '灵活(招架)', 'Fleet': '快速(回避)', 'Warding': '保卫(魔防)', 'Protection': '保护(物防)', 'Dampening': '抑制(免敲)', 'Stoneskin': '石肤(免斩)', 'Deflection': '偏转(免刺)', 'Shadowdancer': '影舞者(物暴/回避)', 'Arcanist': '奥术师(魔命/双智)',
-                    'Eth': '虚空', 'Fie': '红莲(火)', 'Arc': '北极(冰)', 'Shoc': '雷鸣(雷)', 'Tem': '风暴(风)', 'Hal': '圣光(圣)', 'Dem': '魔性(暗)'
-                  }
-                  filter.current = getValue(filter.key, filter.default);
-                  popup_text(filter.comment + '\n\n' + filter.current.join('\n'), 'width: 600px; height: 500px; white-space: pre;', [
-                    {
-                      value: '保存过滤器', click: (w, t) => {
-                        const edited = t.value.split('\n').filter((f) => f && f !== '' && !f.startsWith('//#'));
-                        const error = [];
-                        const commented = [];
-                        edited.forEach((f, i) => {
-                          let isCommented = false;
-                          let isTranslated = false;
-                          if (f.startsWith('//')) {
-                            commented.push(f);
-                            return;
-                          }
-                          let t = f;
-                          for (let cn in cnDict) {
-                            t = t.replace(cn, cnDict[cn]);
-                          }
-                          commented.push('//#cn' + t);
-                          commented.push(f);
-                          try {
-                            eval(f.toLowerCase().replace(/[-a-z ]+/g, (s) => { s = s.trim(); return !s ? '' : 'true'; }));
-                          } catch (e) {
-                            error.push(`#${i + 1}: ${f}`);
-                          }
-                        });
-                        if (error.length) {
-                          alert(error.join('\n'));
-                          return;
-                        }
-                        setValue(filter.key, commented);
-                        w.remove();
-                      }
-                    },
-                    {
-                      value: '恢复默认设置', click: (w, t) => {
-                        t.value = filter.comment + '\n\n' + filter.default.join('\n');
-                      }
-                    },
-                  ]);
-                };
+  _es.update_credits = function (html) {
+    const doc = $doc(html);
+    const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
+    $id('networth').textContent = 'Credits: ' + networth.toLocaleString();
+  };
 
-                _es.init_list = function (filter) {
-                  _es.category[filter].item_div = $element('div', $id('item_pane'), ['.equiplist nosel']);
-                  _es.category[filter].shop_div = $element('div', $id('shop_pane'), ['.equiplist nosel']);
-                  $element('p', _es.category[filter].item_div, [$equip.alias[filter], '.hvut-eq-category']);
-                  $element('p', _es.category[filter].shop_div, [$equip.alias[filter], '.hvut-eq-category']);
-                };
+  _es.init_list = function (filter) {
+    _es.category[filter].item_div = $element('div', $id('item_pane'), ['.equiplist nosel']);
+    _es.category[filter].shop_div = $element('div', $id('shop_pane'), ['.equiplist nosel']);
+    $element('p', _es.category[filter].item_div, [$equip.alias[filter], '.hvut-eq-category']);
+    $element('p', _es.category[filter].shop_div, [$equip.alias[filter], '.hvut-eq-category']);
+  };
 
-                _es.load_list = async function (filter) {
-                  _es.init_list(filter);
-                  _es.category[filter].item_div.classList.add('hvut-eq-loading');
-                  _es.category[filter].shop_div.classList.add('hvut-eq-loading');
+  _es.load_list = async function (filter) {
+    _es.init_list(filter);
+    _es.category[filter].item_div.classList.add('hvut-eq-loading');
+    _es.category[filter].shop_div.classList.add('hvut-eq-loading');
 
-                  const html = await $ajax.fetch('?s=Bazaar&ss=es&filter=' + filter);
-                  const doc = $doc(html);
-                  Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
-                  Object.assign($equip.eqvalue, JSON.parse(/var eqvalue = (\{.*\});/.test(html) && RegExp.$1));
-                  _es.get_item_pane(filter, $qs('#item_pane .equiplist', doc));
-                  _es.get_shop_pane(filter, $qs('#shop_pane .equiplist', doc));
-                  _es.category[filter].item_div.classList.remove('hvut-eq-loading');
-                  _es.category[filter].shop_div.classList.remove('hvut-eq-loading');
-                  _es.set_rangeselect();
-                };
+    const html = await $ajax.fetch('?s=Bazaar&ss=es&filter=' + filter);
+    const doc = $doc(html);
+    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+    Object.assign($equip.eqvalue, JSON.parse(/var eqvalue = (\{.*\});/.exec(html)?.[1] || null));
+    _es.item_pane_init(filter, $qs('#item_pane .equiplist', doc));
+    _es.shop_pane_init(filter, $qs('#shop_pane .equiplist', doc));
+    _es.category[filter].item_div.classList.remove('hvut-eq-loading');
+    _es.category[filter].shop_div.classList.remove('hvut-eq-loading');
+    _es.set_rangeselect();
+  };
 
-                _es.get_item_pane = function (filter, outer) {
-                  const equiplist = $equip.list(outer, false);
-                  const protect_filter = getValue('es_protect', settings.equipmentShopProtectFilter);
+  _es.item_pane_init = function (filter, outer) {
+    const equiplist = $equip.list(outer, false);
+    const protect_filter = $config.settings.equipmentShopProtectFilters;
 
-                  equiplist.forEach((eq) => {
-                    eq.data.filter = filter;
-                    eq.data.valuable = $equip.filter(eq.info.name, protect_filter);
-                    _es.salvage_calc(eq);
+    equiplist.forEach((eq) => {
+      eq.data.filter = filter;
+      eq.data.valuable = $equip.filter(protect_filter, eq.info.name);
+      _es.salvage_mats(eq);
 
-                    eq.node.wrapper.classList.add('hvut-es-expand');
-                    if (settings.equipmentShopShowLevel && eq.info.level) {
-                      $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
-                    }
-                    if (settings.equipmentShopShowPAB && eq.info.pab) {
-                      $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
-                    }
-                    $element('span', eq.node.div, ['.hvut-es-check']);
+      eq.node.wrapper.classList.add('hvut-es-expand');
+      if ($config.settings.equipmentShopShowLevel && eq.info.level) {
+        $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
+      }
+      if ($config.settings.equipmentShopShowPAB && eq.info.pab) {
+        $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
+      }
+      $element('span', eq.node.div, ['.hvut-es-check']);
 
-                    eq.node.lock = eq.node.wrapper.firstElementChild;
-                    eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-es-sub hvut-cphu-sub']);
-                    eq.node.sell = $element('span', eq.node.sub, ['出售价 ' + eq.data.value, { dataset: { action: 'sell', eid: eq.info.eid, pane: 'item' } }]);
-                    eq.node.salvage = $element('span', eq.node.sub, ['分解估值 ' + eq.data.salvage, { dataset: { action: 'salvage', eid: eq.info.eid, pane: 'item' } }]);
-                    if (eq.info.tier) {
-                      eq.data.valuable = true;
-                      $element('span', eq.node.sub, ['潜能等级 ' + eq.info.tier, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'item' } }]);
-                    }
-                    eq.node.transfer = $element('span', eq.node.sub, ['移动到仓库', { dataset: { action: 'transfer', eid: eq.info.eid, pane: 'item' } }]);
+      eq.node.lock = eq.node.wrapper.firstElementChild;
+      eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-es-sub hvut-cphu-sub']);
+      eq.node.sell = $element('span', eq.node.sub, [`Sell ${eq.data.value}`, { dataset: { action: 'sell', eid: eq.info.eid, pane: 'item' } }]);
+      eq.node.salvage = $element('span', eq.node.sub, [{ dataset: { action: 'salvage', eid: eq.info.eid, pane: 'item' } }]);
+      if (eq.info.tier) {
+        $element('span', eq.node.sub, [`IW ${eq.info.tier}`, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'item' } }]);
+      }
+      eq.node.transfer = $element('span', eq.node.sub, ['Transfer to Storage', { dataset: { action: 'transfer', eid: eq.info.eid, pane: 'item' } }]);
 
-                    if (eq.data.valuable) {
-                      eq.node.transfer.classList.add('hvut-es-bold');
-                    }
-                    if (eq.data.salvage > eq.data.value) {
-                      eq.data.salvage_recommended = true;
-                      eq.node.salvage.classList.add('hvut-es-bold');
-                    } else {
-                      eq.data.salvage_recommended = false;
-                      eq.node.sell.classList.add('hvut-es-bold');
-                    }
-                  });
-                  _es.item_pane = _es.item_pane.concat(equiplist);
+      if (eq.data.valuable) {
+        eq.node.transfer.classList.add('hvut-es-bold');
+      }
+      _es.item_pane_calc(eq);
+    });
+    _es.item_pane_equips.push(...equiplist);
 
-                  const valuable = equiplist.filter((eq) => eq.data.valuable);
-                  if (valuable.length) {
-                    _es.category['valuable'].item_div.append(...valuable.map((eq) => eq.node.wrapper));
-                    valuable.forEach((eq) => {
-                      if (settings.equipmentShopAutoLock && eq.node.div.dataset.locked == '0') {
-                        eq.node.lock.click();
-                      }
-                    });
-                  }
+    const valuable = equiplist.filter((eq) => eq.data.valuable);
+    if (valuable.length) {
+      _es.category['valuable'].item_div.append(...valuable.map((eq) => eq.node.wrapper));
+      valuable.forEach((eq) => {
+        if ($config.settings.equipmentShopAutoLock && eq.node.div.dataset.locked == '0') {
+          eq.node.lock.click();
+        }
+      });
+    }
 
-                  const sell = equiplist.filter((eq) => !eq.data.valuable);
-                  if (sell.length) {
-                    _es.category[filter].item_div.append(...sell.map((eq) => eq.node.wrapper));
-                  }
-                };
+    const sell = equiplist.filter((eq) => !eq.data.valuable);
+    if (sell.length) {
+      _es.category[filter].item_div.append(...sell.map((eq) => eq.node.wrapper));
+    }
+  };
 
-                _es.get_shop_pane = function (filter, outer) {
-                  const equiplist = $equip.list(outer, false);
-                  const bazaar_filter = getValue('es_bazaar', settings.equipmentShopBazaarFilter);
+  _es.item_pane_calc = function (eq) {
+    _es.salvage_calc(eq);
+    eq.node.salvage.textContent = `Salvage ${eq.data.salvage_value}`;
 
-                  equiplist.forEach((eq) => {
-                    eq.data.filter = filter;
-                    eq.data.visible = $equip.filter(eq.info.name, bazaar_filter);
-                    _es.salvage_calc(eq, 5);
+    if (eq.data.salvage_value > eq.data.value) {
+      eq.data.salvage_recommended = true;
+      eq.node.salvage.classList.add('hvut-es-bold');
+      eq.node.sell.classList.remove('hvut-es-bold');
+    } else {
+      eq.data.salvage_recommended = false;
+      eq.node.salvage.classList.remove('hvut-es-bold');
+      eq.node.sell.classList.add('hvut-es-bold');
+    }
+  };
 
-                    if (settings.equipmentShopShowLevel && eq.info.level) {
-                      $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
-                    }
-                    if (settings.equipmentShopShowPAB && eq.info.pab) {
-                      $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
-                    }
+  _es.shop_pane_init = function (filter, outer) {
+    const equiplist = $equip.list(outer, false);
+    const bazaar_filter = $config.settings.equipmentShopBazaarFilters;
 
-                    eq.node.sub = $element('div', null, ['.hvut-es-sub hvut-cphu-sub']);
-                    $element('span', eq.node.sub, ['购买价 ' + eq.data.value, { dataset: { action: 'buy', eid: eq.info.eid, pane: 'shop' } }]);
-                    if (eq.data.salvage > eq.data.value) {
-                      eq.data.visible = true;
-                      $element('span', eq.node.sub, ['分解估值 ' + eq.data.salvage, '.hvut-es-bold', { dataset: { action: 'salvage', eid: eq.info.eid, pane: 'shop' } }]);
-                    }
-                    if (settings.equipmentShopBazaarCheckIW && eq.info.tier) {
-                      eq.data.visible = true;
-                      $element('span', eq.node.sub, ['潜能等级 ' + eq.info.tier, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'shop' } }]);
-                    }
-                    if (!eq.info.tradeable) {
-                      eq.data.visible = false;
-                    }
-                    if (eq.data.visible) {
-                      $element('span', eq.node.div, ['.hvut-es-check']);
-                      eq.node.div.insertAdjacentElement('beforebegin', eq.node.sub);
-                      eq.node.wrapper.classList.add('hvut-es-expand');
-                    } else {
-                      eq.node.wrapper.classList.add('hvut-none-item');
-                    }
-                  });
-                  _es.shop_pane = _es.shop_pane.concat(equiplist);
-                  $equip.sort(equiplist, _es.category[filter].shop_div);
+    equiplist.forEach((eq) => {
+      eq.data.filter = filter;
+      eq.data.valuable = bazaar_filter.length && $equip.filter(bazaar_filter, eq.info.name, eq);
+      _es.salvage_mats(eq, 5);
 
-                  $qsa('.hvut-eq-type', _es.category[filter].shop_div).forEach((div) => {
-                    let next = div;
-                    let eqp;
-                    while ((next = next.nextElementSibling)) {
-                      if (!next.classList.contains('eqp')) {
-                        break;
-                      }
-                      if (!next.classList.contains('hvut-none-item')) {
-                        eqp = true;
-                        break;
-                      }
-                    }
-                    if (!eqp) {
-                      div.classList.add('hvut-none-item');
-                    }
-                  });
-                };
+      if ($config.settings.equipmentShopShowLevel && eq.info.level) {
+        $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
+      }
+      if ($config.settings.equipmentShopShowPAB && eq.info.pab) {
+        $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
+      }
+      eq.node.check = $element('span', null, ['.hvut-es-check']);
 
-                _es.set_rangeselect = function () {
-                  _window.rangeselect.item_pane = $qsa('#item_pane .eqp').map((w) => w.lastElementChild.dataset.eid);
-                  _window.rangeselect.shop_pane = $qsa('#shop_pane .eqp').map((w) => w.lastElementChild.dataset.eid);
-                };
+      eq.node.sub = $element('div', null, ['.hvut-es-sub hvut-cphu-sub']);
+      eq.node.buy = $element('span', eq.node.sub, [`Buy ${eq.data.value}`, { dataset: { action: 'buy', eid: eq.info.eid, pane: 'shop' } }]);
+      eq.node.salvage = $element('span', eq.node.sub, [{ dataset: { action: 'salvage', eid: eq.info.eid, pane: 'shop' } }]);
+      if (eq.info.tier) {
+        $element('span', eq.node.sub, [`IW ${eq.info.tier}`, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'shop' } }]);
+      }
 
-                GM_addStyle(/*css*/`
+      _es.shop_pane_calc(eq);
+    });
+    _es.shop_pane_equips.push(...equiplist);
+    $equip.sort(equiplist, _es.category[filter].shop_div);
+    _es.shop_pane_list(_es.category[filter].shop_div);
+  };
+
+  _es.shop_pane_calc = function (eq) {
+    _es.salvage_calc(eq);
+    eq.node.salvage.textContent = `Salvage ${eq.data.salvage_value}`;
+
+    let visible = false;
+    if (eq.data.valuable) {
+      visible = true;
+    }
+    if (eq.data.salvage_value > eq.data.value) {
+      visible = true;
+      eq.node.salvage.classList.add('hvut-es-bold');
+      eq.node.salvage.classList.remove('hvut-none');
+    } else {
+      eq.node.salvage.classList.remove('hvut-es-bold');
+      eq.node.salvage.classList.add('hvut-none');
+    }
+    if (!eq.info.tradeable) {
+      visible = false;
+    }
+    if (visible) {
+      eq.node.div.append(eq.node.check);
+      eq.node.div.before(eq.node.sub);
+      eq.node.wrapper.classList.add('hvut-es-expand');
+      eq.node.wrapper.classList.remove('hvut-none-item');
+    } else {
+      eq.node.check.remove();
+      eq.node.sub.remove();
+      eq.node.wrapper.classList.remove('hvut-es-expand');
+      eq.node.wrapper.classList.add('hvut-none-item');
+    }
+  };
+
+  _es.shop_pane_list = function (div = document) {
+    $qsa('.hvut-eq-type', div).forEach((div) => {
+      let next = div;
+      let eqp;
+      while ((next = next.nextElementSibling)) {
+        if (!next.classList.contains('eqp')) {
+          break;
+        }
+        if (!next.classList.contains('hvut-none-item')) {
+          eqp = true;
+          break;
+        }
+      }
+      if (eqp) {
+        div.classList.remove('hvut-none-item');
+      } else {
+        div.classList.add('hvut-none-item');
+      }
+    });
+  };
+
+  _es.edit_price = function () {
+    _es.prices = $price.get('Materials');
+    _es.item_pane_equips.forEach((eq) => {
+      _es.item_pane_calc(eq);
+    });
+    _es.shop_pane_equips.forEach((eq) => {
+      _es.shop_pane_calc(eq);
+    });
+    _es.shop_pane_list();
+  };
+
+  _es.set_rangeselect = function () {
+    _window.rangeselect.item_pane = $qsa('#item_pane .eqp').map((w) => w.lastElementChild.dataset.eid);
+    _window.rangeselect.shop_pane = $qsa('#shop_pane .eqp').map((w) => w.lastElementChild.dataset.eid);
+  };
+
+  GM_addStyle(/*css*/`
     #eqshop_outer { position: relative; width: 1100px; margin-left: 120px; }
     .eqshop_pane > div:first-child { display: none; }
     .eqshop_pane > div:last-child { width: 540px; }
     .eqshop_pane .cspp { overflow-y: scroll; }
     #eqshop_sellall { display: none; }
 
-    .hvut-es-side { position: absolute; top: 44px; left: -110px; width: 100px; display: flex; flex-direction: column; }
+    .hvut-es-side { top: 44px; left: -110px; }
     .hvut-es-side input { margin: 3px 0; white-space: normal; }
-    .hvut-es-side input:nth-child(1), .hvut-es-side input:nth-child(3), .hvut-es-side input:nth-child(5) { margin-bottom: 10px; }
 
     .hvut-es-valuable { background-color: #fff; }
     .eqp.hvut-es-expand { height: 44px; }
@@ -7162,382 +6215,372 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-es-disabled > div { text-decoration: line-through; }
   `);
 
-                _es.node.side = $element('div', $id('eqshop_outer'), ['.hvut-es-side']);
-                toggle_button($input('button', _es.node.side), '显示所有装备', '使用过滤器', $id('shop_pane'), 'hvut-none-cont', true);
-                $input(['button', '全选'], _es.node.side, null, () => { _es.select_all('sell'); });
-                $input(['button', '出售选定装备'], _es.node.side, null, () => { _es.sell_all(); });
-                $input(['button', '分解选定装备'], _es.node.side, null, () => { _es.salvage_all(); });
-                $input(['button', '材料价格'], _es.node.side, null, () => { $price.edit('Materials', () => { if (confirm('你需要刷新页面.')) { location.href = location.href; } }); });
-                $input(['button', '装备保护器'], _es.node.side, null, () => { _es.edit_filter('protect'); });
-                $input(['button', '商店过滤器'], _es.node.side, null, () => { _es.edit_filter('bazaar'); });
+  _es.node.side = $element('div', $id('eqshop_outer'), ['.hvut-side hvut-es-side']);
+  toggle_button($input('button', _es.node.side, { className: 'hvut-side-margin' }), 'Show All Equipment', 'Show Only Filtered', $id('shop_pane'), 'hvut-none-cont', $config.settings.equipmentShopBazaarFilters.length);
+  $input(['button', 'Select:'], _es.node.side, null, () => { _es.select_all('sell'); });
+  $input(['button', 'Sell'], _es.node.side, { className: 'hvut-side-margin' }, () => { _es.sell_all(); });
+  $input(['button', 'Select:'], _es.node.side, null, () => { _es.select_all('salvage'); });
+  $input(['button', 'Salvage'], _es.node.side, { className: 'hvut-side-margin' }, () => { _es.salvage_all(); });
+  $input(['button', 'Edit Filter'], _es.node.side, null, () => { $config.open('equipmentShopProtectFilters'); });
+  $input(['button', 'Item Prices'], _es.node.side, null, () => { $price.edit('Materials', 'ma', _es.edit_price); });
 
-                $id('item_pane').addEventListener('click', _es.click);
-                $id('shop_pane').addEventListener('click', _es.click);
+  $id('item_pane').addEventListener('click', _es.click);
+  $id('shop_pane').addEventListener('click', _es.click);
 
-                _es.category['valuable'].item_div = $element('div', $id('item_pane'), ['.equiplist nosel hvut-es-valuable']);
-                $element('p', _es.category['valuable'].item_div, ['[已加锁装备]', '.hvut-eq-category']);
+  _es.category['valuable'].item_div = $element('div', $id('item_pane'), ['.equiplist nosel hvut-es-valuable']);
+  $element('p', _es.category['valuable'].item_div, ['[Protected: Valuable Equipment]', '.hvut-eq-category']);
 
-                if (settings.equipmentShopIntegration) {
-                  const filterbar = $id('filterbar');
-                  $element('a', [filterbar, 'afterbegin'], { href: '?s=Bazaar&ss=es', innerHTML: '<div>All</div>' });
-                  if (_query.filter) {
-                    filterbar.children[0].children[0].classList.add('cfb');
-                  } else {
-                    filterbar.children[0].children[0].classList.add('cfbs');
-                    filterbar.children[1].children[0].classList.remove('cfbs');
-                    filterbar.children[1].children[0].classList.add('cfb');
-                  }
-                }
+  if ($config.settings.equipmentShopIntegration) {
+    const filterbar = $id('filterbar');
+    $element('a', [filterbar, 'afterbegin'], { href: '?s=Bazaar&ss=es', innerHTML: '<div>All</div>' });
+    if (_query.filter) {
+      filterbar.children[0].children[0].classList.add('cfb');
+    } else {
+      filterbar.children[0].children[0].classList.add('cfbs');
+      filterbar.children[1].children[0].classList.remove('cfbs');
+      filterbar.children[1].children[0].classList.add('cfb');
+    }
+  }
 
-                if (_query.filter || !settings.equipmentShopIntegration) {
-                  _es.init_list(_es.filter);
-                  const item_equiplist = $qs('#item_pane .equiplist');
-                  const shop_equiplist = $qs('#shop_pane .equiplist');
-                  _es.get_item_pane(_es.filter, $qs('#item_pane .equiplist'));
-                  _es.get_shop_pane(_es.filter, $qs('#shop_pane .equiplist'));
-                  item_equiplist.remove();
-                  shop_equiplist.remove();
-                  _es.set_rangeselect();
-                } else {
-                  _es.category['valuable'].item_div.classList.add('hvut-eq-loading');
+  if (_query.filter || !$config.settings.equipmentShopIntegration) {
+    _es.init_list(_es.filter);
+    const item_equiplist = $qs('#item_pane .equiplist');
+    const shop_equiplist = $qs('#shop_pane .equiplist');
+    _es.item_pane_init(_es.filter, $qs('#item_pane .equiplist'));
+    _es.shop_pane_init(_es.filter, $qs('#shop_pane .equiplist'));
+    item_equiplist.remove();
+    shop_equiplist.remove();
+    _es.set_rangeselect();
+  } else {
+    _es.category['valuable'].item_div.classList.add('hvut-eq-loading');
 
-                  _es.init_list('1handed');
-                  const item_equiplist = $qs('#item_pane .equiplist');
-                  const shop_equiplist = $qs('#shop_pane .equiplist');
-                  _es.get_item_pane('1handed', item_equiplist);
-                  _es.get_shop_pane('1handed', shop_equiplist);
-                  item_equiplist.remove();
-                  shop_equiplist.remove();
+    _es.init_list('1handed');
+    const item_equiplist = $qs('#item_pane .equiplist');
+    const shop_equiplist = $qs('#shop_pane .equiplist');
+    _es.item_pane_init('1handed', item_equiplist);
+    _es.shop_pane_init('1handed', shop_equiplist);
+    item_equiplist.remove();
+    shop_equiplist.remove();
 
-                  const requests = ['2handed', 'staff', 'shield', 'acloth', 'alight', 'aheavy'].map((filter) => _es.load_list(filter));
-                  Promise.all(requests).then(() => {
-                    _es.category['valuable'].item_div.classList.remove('hvut-eq-loading');
-                  });
-                }
-              } else
-                // [END 8] Bazaar - Equipment Shop */
+    const requests = ['2handed', 'staff', 'shield', 'acloth', 'alight', 'aheavy'].map((filter) => _es.load_list(filter));
+    Promise.all(requests).then(() => {
+      _es.category['valuable'].item_div.classList.remove('hvut-eq-loading');
+    });
+  }
+} else
+// [END 8] Bazaar - Equipment Shop */
 
 
-                //* [9] Bazaar - Item Shop
-                if (settings.itemShop && _query.s === 'Bazaar' && _query.ss === 'is') {
-                  Array.from($qs('#item_pane .itemlist').rows).forEach((tr) => {
-                    const div = tr.cells[0].firstElementChild;
-                    const type = $item.type(div.getAttribute('onmouseover'));
-                    tr.classList.add('hvut-it-' + type);
-                  });
-                  Array.from($qs('#shop_pane .itemlist').rows).forEach((tr) => {
-                    const div = tr.cells[0].firstElementChild;
-                    const type = $item.type(div.getAttribute('onmouseover'));
-                    tr.classList.add('hvut-it-' + type);
-                  });
+//* [9] Bazaar - Item Shop
+if (_query.s === 'Bazaar' && _query.ss === 'is') {
+  $qsa('#item_pane .itemlist tr').forEach((tr) => {
+    const div = tr.cells[0].firstElementChild;
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    tr.classList.add('hvut-it-' + type);
+  });
+  $qsa('#shop_pane .itemlist tr').forEach((tr) => {
+    const div = tr.cells[0].firstElementChild;
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    tr.classList.add('hvut-it-' + type);
+  });
 
-                  GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     .itshop_pane .cspp { margin-top: 15px; overflow-y: scroll; }
     #itshop_outer .itemlist td:nth-child(1) { width: 285px !important; }
     #itshop_outer .itemlist td:nth-child(2) { width: 75px !important; }
   `);
-                  $supply.display_inventory('is');
-                } else
-                  // [END 9] Bazaar - Item Shop */
+} else
+// [END 9] Bazaar - Item Shop */
 
 
-                  //* [10] Bazaar - The Shrine
-                  if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
-                    _ss.log = getValue('ss_log', {});
-                    _ss.node = {};
-                    _ss.equip = { capacity: 0, current: 0, requests: 0, received: 0, sold: 0, salvaged: 0, total: 0 };
-                    _ss.items = {};
-                    _ss.trophy = {
-                      'ManBearPig Tail': { tier: 2, value: 1000 },
-                      'Holy Hand Grenade of Antioch': { tier: 2, value: 1000 },
-                      "Mithra's Flower": { tier: 2, value: 1000 },
-                      'Dalek Voicebox': { tier: 2, value: 1000 },
-                      'Lock of Blue Hair': { tier: 2, value: 1000 },
-                      'Bunny-Girl Costume': { tier: 3, value: 2000 },
-                      'Hinamatsuri Doll': { tier: 3, value: 2000 },
-                      'Broken Glasses': { tier: 3, value: 2000 },
-                      'Black T-Shirt': { tier: 4, value: 4000 },
-                      'Sapling': { tier: 4, value: 4000 },
-                      'Unicorn Horn': { tier: 5, value: 5000 },
-                      'Noodly Appendage': { value: 5000 },
-                    };
-                    _ss.item_index = [
-                      'Precursor Artifact',
-                      'Trophy Tier 2', 'Trophy Tier 3', 'Trophy Tier 4', 'Trophy Tier 5',
-                      'ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage', 'Stocking Stuffers', "Tenbora's Box", 'Peerless Voucher',
-                      'Mysterious Box', 'Solstice Gift', 'Shimmering Present', 'Potato Battery', 'RealPervert Badge', 'Raptor Jesus', 'Rainbow Egg', 'Colored Egg', 'Gift Pony', 'Faux Rainbow Mane Cap', 'Pegasopolis Emblem', 'Fire Keeper Soul', 'Crystalline Galanthus', 'Sense of Self-Satisfaction', 'Six-Lock Box', 'Golden One-Bit Coin', 'USB ASIC Miner', 'Reindeer Antlers', 'Ancient Porn Stash', 'VPS Hosting Coupon', 'Heart Locket', 'Holographic Rainbow Projector', 'Pot of Gold', 'Dinosaur Egg', 'Precursor Smoothie Blender', 'Rainbow Smoothie', 'Mysterious Tooth', 'Grammar Nazi Armband', 'Abstract Wire Sculpture', 'Delicate Flower', 'Assorted Coins', "Coin Collector's Guide", 'Iron Heart', 'Shrine Fortune', 'Plague Mask', 'Festival Coupon', 'Annoying Gun',
-                      'Platinum Coupon', 'Golden Coupon', 'Silver Coupon', 'Bronze Coupon',
-                    ];
-                    _ss.item_group = {
-                      'Artifact': ['Energy Drink', '2 Hath', '1 Hath', 'Flower Vase', 'Bubble-Gum', 'Chaos Token', 'Last Elixir', '3x Last Elixir', { group: '1000x 水晶', items: ['1000x Crystal of Vigor', '1000x Crystal of Finesse', '1000x Crystal of Swiftness', '1000x Crystal of Fortitude', '1000x Crystal of Cunning', '1000x Crystal of Knowledge', '1000x Crystal of Flames', '1000x Crystal of Frost', '1000x Crystal of Lightning', '1000x Crystal of Tempest', '1000x Crystal of Devotion', '1000x Crystal of Corruption'] }, { group: '3000x 水晶', items: ['3000x Crystal of Vigor', '3000x Crystal of Finesse', '3000x Crystal of Swiftness', '3000x Crystal of Fortitude', '3000x Crystal of Cunning', '3000x Crystal of Knowledge', '3000x Crystal of Flames', '3000x Crystal of Frost', '3000x Crystal of Lightning', '3000x Crystal of Tempest', '3000x Crystal of Devotion', '3000x Crystal of Corruption'] }, { group: '5000x 水晶', items: ['5000x Crystal of Vigor', '5000x Crystal of Finesse', '5000x Crystal of Swiftness', '5000x Crystal of Fortitude', '5000x Crystal of Cunning', '5000x Crystal of Knowledge', '5000x Crystal of Flames', '5000x Crystal of Frost', '5000x Crystal of Lightning', '5000x Crystal of Tempest', '5000x Crystal of Devotion', '5000x Crystal of Corruption'] }, { group: '主属性加成', items: ['Your strength has increased by one', 'Your dexterity has increased by one', 'Your agility has increased by one', 'Your endurance has increased by one', 'Your intelligence has increased by one', 'Your wisdom has increased by one', 'Strength was increased by 1', 'Dexterity was increased by 1', 'Agility was increased by 1', 'Endurance was increased by 1', 'Intelligence was increased by 1', 'Wisdom was increased by 1'] }],
-                      'Trophy': ['Peerless', 'Legendary', 'Magnificent', 'Exquisite', 'Superior', 'Average'],
-                      'Collectable': [{ group: '3x High-Grade Material', items: ['3x High-Grade Cloth', '3x High-Grade Leather', '3x High-Grade Metals', '3x High-Grade Wood'] }, { group: '2x High-Grade Material', items: ['2x High-Grade Cloth', '2x High-Grade Leather', '2x High-Grade Metals', '2x High-Grade Wood'] }, { group: '1x High-Grade Material', items: ['1x High-Grade Cloth', '1x High-Grade Leather', '1x High-Grade Metals', '1x High-Grade Wood'] }, { group: 'Binding', items: ['Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'] }],
-                    };
+//* [10] Bazaar - The Shrine
+if (_query.s === 'Bazaar' && _query.ss === 'ss') {
+  _ss.log = $config.get('ss_log', {});
+  _ss.node = {};
+  _ss.equip = { capacity: 0, current: 0, requests: 0, received: 0, sold: 0, salvaged: 0, total: 0 };
+  _ss.items = {};
+  _ss.trophy = {
+    'ManBearPig Tail': { tier: 2, value: 1000 },
+    'Holy Hand Grenade of Antioch': { tier: 2, value: 1000 },
+    "Mithra's Flower": { tier: 2, value: 1000 },
+    'Dalek Voicebox': { tier: 2, value: 1000 },
+    'Lock of Blue Hair': { tier: 2, value: 1000 },
+    'Bunny-Girl Costume': { tier: 3, value: 2000 },
+    'Hinamatsuri Doll': { tier: 3, value: 2000 },
+    'Broken Glasses': { tier: 3, value: 2000 },
+    'Black T-Shirt': { tier: 4, value: 4000 },
+    'Sapling': { tier: 4, value: 4000 },
+    'Unicorn Horn': { tier: 5, value: 5000 },
+    'Noodly Appendage': { value: 5000 },
+  };
+  _ss.item_index = [
+    'Precursor Artifact',
+    'Trophy Tier 2', 'Trophy Tier 3', 'Trophy Tier 4', 'Trophy Tier 5',
+    'ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage', 'Stocking Stuffers', "Tenbora's Box", 'Peerless Voucher',
+    'Mysterious Box', 'Solstice Gift', 'Shimmering Present', 'Potato Battery', 'RealPervert Badge', 'Raptor Jesus', 'Rainbow Egg', 'Colored Egg', 'Gift Pony', 'Faux Rainbow Mane Cap', 'Pegasopolis Emblem', 'Fire Keeper Soul', 'Crystalline Galanthus', 'Sense of Self-Satisfaction', 'Six-Lock Box', 'Golden One-Bit Coin', 'USB ASIC Miner', 'Reindeer Antlers', 'Ancient Porn Stash', 'VPS Hosting Coupon', 'Heart Locket', 'Holographic Rainbow Projector', 'Pot of Gold', 'Dinosaur Egg', 'Precursor Smoothie Blender', 'Rainbow Smoothie', 'Mysterious Tooth', 'Grammar Nazi Armband', 'Abstract Wire Sculpture', 'Delicate Flower', 'Assorted Coins', "Coin Collector's Guide", 'Iron Heart', 'Shrine Fortune', 'Plague Mask', 'Festival Coupon', 'Annoying Gun',
+    'Platinum Coupon', 'Golden Coupon', 'Silver Coupon', 'Bronze Coupon',
+  ];
+  _ss.item_group = {
+    'Artifact': ['Energy Drink', '2 Hath', '1 Hath', 'Flower Vase', 'Bubble-Gum', 'Chaos Token', 'Last Elixir', '3x Last Elixir', { group: '1000x Crystal', items: ['1000x Crystal of Vigor', '1000x Crystal of Finesse', '1000x Crystal of Swiftness', '1000x Crystal of Fortitude', '1000x Crystal of Cunning', '1000x Crystal of Knowledge', '1000x Crystal of Flames', '1000x Crystal of Frost', '1000x Crystal of Lightning', '1000x Crystal of Tempest', '1000x Crystal of Devotion', '1000x Crystal of Corruption'] }, { group: '3000x Crystal', items: ['3000x Crystal of Vigor', '3000x Crystal of Finesse', '3000x Crystal of Swiftness', '3000x Crystal of Fortitude', '3000x Crystal of Cunning', '3000x Crystal of Knowledge', '3000x Crystal of Flames', '3000x Crystal of Frost', '3000x Crystal of Lightning', '3000x Crystal of Tempest', '3000x Crystal of Devotion', '3000x Crystal of Corruption'] }, { group: '5000x Crystal', items: ['5000x Crystal of Vigor', '5000x Crystal of Finesse', '5000x Crystal of Swiftness', '5000x Crystal of Fortitude', '5000x Crystal of Cunning', '5000x Crystal of Knowledge', '5000x Crystal of Flames', '5000x Crystal of Frost', '5000x Crystal of Lightning', '5000x Crystal of Tempest', '5000x Crystal of Devotion', '5000x Crystal of Corruption'] }, { group: 'Primary Attributes Bonus', items: ['Your strength has increased by one', 'Your dexterity has increased by one', 'Your agility has increased by one', 'Your endurance has increased by one', 'Your intelligence has increased by one', 'Your wisdom has increased by one', 'Strength was increased by 1', 'Dexterity was increased by 1', 'Agility was increased by 1', 'Endurance was increased by 1', 'Intelligence was increased by 1', 'Wisdom was increased by 1'] }],
+    'Trophy': ['Peerless', 'Legendary', 'Magnificent', 'Exquisite', 'Superior', 'Average'],
+    'Collectable': [{ group: '3x High-Grade Material', items: ['3x High-Grade Cloth', '3x High-Grade Leather', '3x High-Grade Metals', '3x High-Grade Wood'] }, { group: '2x High-Grade Material', items: ['2x High-Grade Cloth', '2x High-Grade Leather', '2x High-Grade Metals', '2x High-Grade Wood'] }, { group: '1x High-Grade Material', items: ['1x High-Grade Cloth', '1x High-Grade Leather', '1x High-Grade Metals', '1x High-Grade Wood'] }, { group: 'Binding', items: ['Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'] }],
+  };
 
-                    _ss.click = function (e) {
-                      const target = e.target.closest('[data-action]');
-                      if (!target) {
-                        return;
-                      }
-                      const { action, iid, count, type, slot } = target.dataset;
-                      if (action === 'offer') {
-                        _ss.offer(iid, count);
-                      } else if (action === 'select') {
-                        e.preventDefault();
-                        _ss.select(type, slot);
-                      }
-                    };
+  _ss.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, iid, count, type, slot } = target.dataset;
+    if (action === 'offer') {
+      _ss.offer(iid, count);
+    } else if (action === 'select') {
+      e.preventDefault();
+      _ss.select(type, slot);
+    }
+  };
 
-                    _ss.select = function (type, slot) {
-                      const target = _ss.node.select[type + (slot ? ' ' + slot : '')];
-                      if (_ss.node.selected === target) {
-                        target.classList.remove('hvut-ss-selected');
-                        _ss.node.selected = null;
-                      } else {
-                        _ss.node.selected?.classList.remove('hvut-ss-selected');
-                        target.classList.add('hvut-ss-selected');
-                        _ss.node.selected = target;
-                      }
-                    };
+  _ss.select = function (type, slot) {
+    const target = _ss.node.select[type + (slot ? ' ' + slot : '')];
+    if (_ss.node.selected === target) {
+      target.classList.remove('hvut-ss-selected');
+      _ss.node.selected = null;
+    } else {
+      _ss.node.selected?.classList.remove('hvut-ss-selected');
+      target.classList.add('hvut-ss-selected');
+      _ss.node.selected = target;
+    }
+  };
 
-                    _ss.offer = function (iid, count) {
-                      if (_ss.error) {
-                        popup(_ss.error);
-                        return;
-                      }
-                      const item = _ss.items[iid];
-                      if (count === 'max') {
-                        count = item.max;
-                      } else if (count === 'input') {
-                        count = parseInt(item.node.count.value);
-                      } else {
-                        count = parseInt(count);
-                      }
-                      if (count > item.max) {
-                        count = item.max;
-                      }
-                      if (!count || count < 0) {
-                        return;
-                      }
+  _ss.offer = function (iid, count) {
+    if (_ss.error) {
+      popup(_ss.error);
+      return;
+    }
+    const item = _ss.items[iid];
+    if (count === 'max') {
+      count = item.max;
+    } else if (count === 'input') {
+      count = parseInt(item.node.count.value);
+    } else {
+      count = parseInt(count);
+    }
+    if (count > item.max) {
+      count = item.max;
+    }
+    if (!count || count < 0) {
+      return;
+    }
 
-                      let select_reward_type;
-                      let select_reward_slot;
-                      if (item.type === 'Trophy') {
-                        if (_ss.node.selected && !_ss.node.selected.disabled) {
-                          select_reward_type = _ss.node.selected.dataset.type;
-                          select_reward_slot = _ss.node.selected.dataset.slot;
-                        } else {
-                          alert('选择要获得的装备类型.');
-                          return;
-                        }
-                        _ss.equip.requests += count;
-                      } else { // Artifact, Collectable
-                        select_reward_type = '';
-                        select_reward_slot = '';
-                      }
+    let select_reward_type;
+    let select_reward_slot;
+    if (item.type === 'Trophy') {
+      if (_ss.node.selected && !_ss.node.selected.disabled) {
+        select_reward_type = _ss.node.selected.dataset.type;
+        select_reward_slot = _ss.node.selected.dataset.slot;
+      } else {
+        alert('Select the major class of the equipment.');
+        return;
+      }
+      _ss.equip.requests += count;
+    } else { // Artifact, Collectable
+      select_reward_type = '';
+      select_reward_slot = '';
+    }
 
-                      if (!_ss.log[item.log]) {
-                        _ss.log[item.log] = {};
-                      }
-                      if (!item.results) {
-                        item.results = _ss.create_list(item.type);
-                        item.node.span = $element('p', _ss.node.results, [item.name + (item.upgrade ? ' => Tier ' + item.upgrade : '') + ' ', '.hvut-ss-p']).appendChild($element('span'));
-                        item.node.ul = $element('ul', _ss.node.results, ['.hvut-ss-ul']);
-                        Object.values(item.results).forEach((r) => { item.node.ul.appendChild(r.li).classList.add('hvut-none'); });
-                        scrollIntoView(item.node.ul);
-                      }
-                      _ss.node.results.classList.remove('hvut-none');
+    if (!_ss.log[item.log]) {
+      _ss.log[item.log] = {};
+    }
+    if (!item.results) {
+      item.results = _ss.create_list(item.type);
+      item.node.span = $element('p', _ss.node.results, [item.name + (item.upgrade ? ' => Tier ' + item.upgrade : '') + ' ', '.hvut-ss-p']).appendChild($element('span'));
+      item.node.ul = $element('ul', _ss.node.results, ['.hvut-ss-ul']);
+      Object.values(item.results).forEach((r) => { item.node.ul.appendChild(r.li).classList.add('hvut-none'); });
+      scrollIntoView(item.node.ul);
+    }
+    _ss.node.results.classList.remove('hvut-none');
 
-                      item.requests += count;
-                      item.stock -= count * item.bulk;
-                      item.max -= count;
-                      item.node.stock.textContent = item.stock;
-                      item.node.max.textContent = item.max;
+    item.requests += count;
+    item.stock -= count * item.bulk;
+    item.max -= count;
+    item.node.stock.textContent = item.stock;
+    item.node.max.textContent = item.max;
 
-                      for (let i = 0; i < count; i++) {
-                        _ss.request(iid, select_reward_type, select_reward_slot);
-                      }
-                    };
+    for (let i = 0; i < count; i++) {
+      _ss.request(iid, select_reward_type, select_reward_slot);
+    }
+  };
 
-                    _ss.request = async function (iid, select_reward_type, select_reward_slot) {
-                      const item = _ss.items[iid];
-                      const html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${select_reward_type}&select_reward_slot=${select_reward_slot}`);
-                      const doc = $doc(html);
-                      const results = item.results;
-                      const rewards = [];
-                      const reg = /Received (.+)|(Your .+ has increased by one|.+ was increased by 1)|((?:Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+)/;
+  _ss.request = async function (iid, select_reward_type, select_reward_slot) {
+    const item = _ss.items[iid];
+    const html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${select_reward_type}&select_reward_slot=${select_reward_slot}`);
+    const doc = $doc(html);
+    const results = item.results;
+    const rewards = [];
+    const reg = /Received (.+)|(Your .+ has increased by one|.+ was increased by 1)|((?:Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+)/;
 
-                      get_message(doc, true).forEach((msg) => {
-                        if (!msg || ['Snowflake has blessed you with some of her power!', 'Snowflake has blessed you with an item!', 'Received:', 'Hit Space Bar to offer another item like this.'].includes(msg)) {
-                          return;
-                        } else if (msg.includes('Peerless Voucher')) { // 'Received 1x Peerless Voucher!'
-                          popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
-                        } else if (msg.includes('Sold it for')) {
-                          _ss.equip.sold++;
-                        } else if (msg.includes('Salvaged it for')) { // Salvaged it for .+ (Peerless|Legendary) .+ Core
-                          _ss.equip.salvaged++;
-                        } else if (reg.test(msg)) {
-                          rewards.push(RegExp.$1 || RegExp.$2 || RegExp.$3);
-                        } else {
-                          _ss.error = msg;
-                          popup(msg);
-                        }
-                      });
+    get_message(doc, true).forEach((msg) => {
+      if (!msg || ['Snowflake has blessed you with some of her power!', 'Snowflake has blessed you with an item!', 'Received:', 'Hit Space Bar to offer another item like this.'].includes(msg)) {
+        return;
+      } else if (msg.includes('Peerless Voucher')) { // 'Received 1x Peerless Voucher!'
+        popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
+      } else if (msg.includes('Sold it for')) {
+        _ss.equip.sold++;
+      } else if (msg.includes('Salvaged it for')) { // Salvaged it for .+ (Peerless|Legendary) .+ Core
+        _ss.equip.salvaged++;
+      } else if (reg.test(msg)) {
+        rewards.push(RegExp.$1 || RegExp.$2 || RegExp.$3);
+      } else {
+        _ss.error = msg;
+        popup(msg);
+      }
+    });
 
-                      item.recieved++;
-                      item.node.span.textContent = `(${item.recieved}/${item.requests})`;
+    item.recieved++;
+    item.node.span.textContent = `(${item.recieved}/${item.requests})`;
 
-                      rewards.forEach((n) => {
-                        let r = item.type === 'Trophy' ? n.split(' ')[0] : n;
-                        if (!_ss.log[item.log][r]) {
-                          _ss.log[item.log][r] = 0;
-                        }
-                        _ss.log[item.log][r]++;
-                        if (!results[r]) {
-                          results[r] = _ss.create_listitem(r);
-                          item.node.ul.appendChild(results[r].li);
-                        }
-                        if(item.type === 'Trophy' ){
-                          results[r].li.appendChild(_ss.create_listitem(n).li);
-                        }
-                        if (!results[r].count) {
-                          results[r].li.classList.remove('hvut-none');
-                          if (results[r].group) {
-                            results[results[r].group].li.classList.remove('hvut-none');
-                          }
-                        }
-                        results[r].count++;
-                        if (results[r].group) {
-                          results[results[r].group].count++;
-                        }
-                        Object.keys(results).forEach((k) => {
-                          results[k].sp.textContent = (results[k].count * 100 / item.recieved).toFixed(1) + ' %';
-                          results[k].sc.textContent = ` [${results[k].count}] `;
-                        });
+    rewards.forEach((n) => {
+      const r = item.type === 'Trophy' ? n.split(' ')[0] : n;
+      if (!_ss.log[item.log][r]) {
+        _ss.log[item.log][r] = 0;
+      }
+      _ss.log[item.log][r]++;
 
-                        if (item.type === 'Trophy') {
-                          if ($equip.filter(n, settings.shrineTrackEquip)) {
-                            $element('li', [results[r].li, 'afterend'], [n, '.hvut-ss-equip']);
-                          }
-                          _ss.equip.received++;
-                          _ss.equip.total = _ss.equip.current + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
-                          _ss.node.results_equip.value = `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
-                          if (_ss.equip.total >= _ss.equip.capacity) {
-                            if (!_ss.error) {
-                              _ss.error = '你的装备库存已满';
-                              popup(_ss.error);
-                            }
-                          }
-                        }
-                      });
+      if (!results[r]) {
+        results[r] = _ss.create_listitem(r);
+        item.node.ul.appendChild(results[r].li);
+      }
+      if(item.type === 'Trophy' ){
+        results[r].li.appendChild(_ss.create_listitem(n).li);
+      }
+      if (!results[r].count) {
+        results[r].li.classList.remove('hvut-none');
+        if (results[r].group) {
+          results[results[r].group].li.classList.remove('hvut-none');
+        }
+      }
 
-                      if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
-                        setValue('ss_log', _ss.log);
-                      }
-                    };
+      results[r].count++;
+      if (results[r].group) {
+        results[results[r].group].count++;
+      }
+      Object.keys(results).forEach((k) => {
+        results[k].sp.textContent = (results[k].count * 100 / item.recieved).toFixed(1) + ' %';
+        results[k].sc.textContent = ` [${results[k].count}] `;
+      });
 
-                    _ss.toggle_results = function () {
-                      _ss.node.results.classList.toggle('hvut-none');
-                    };
+      if (item.type === 'Trophy') {
+        if ($equip.filter($config.settings.shrineFilters, n)) {
+          $element('li', [results[r].li, 'afterend'], [n, '.hvut-ss-equip']);
+        }
+        _ss.equip.received++;
+        _ss.equip.total = _ss.equip.current + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
+        _ss.node.results_equip.value = `Equip Slots: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
+        if (_ss.equip.total >= _ss.equip.capacity) {
+          if (!_ss.error) {
+            _ss.error = 'Your equipment inventory is full';
+            popup(_ss.error);
+          }
+        }
+      }
+    });
 
-                    _ss.view_log = function () {
-                      const div = _ss.node.log;
-                      div.innerHTML = '';
+    if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
+      $config.set('ss_log', _ss.log);
+    }
+  };
 
-                      const reg_artifact = /Energy Drink|Flower Vase|Bubble-Gum|Chaos Token|Hath|Last Elixir|\d+x Crystal of|has increased by one|was increased by 1/;
-                      const reg_trophy = /Peerless|Legendary|Magnificent|Exquisite|Superior|Average/;
-                      const reg_collectable = /High-Grade|Binding of/;
+  _ss.toggle_results = function () {
+    _ss.node.results.classList.toggle('hvut-none');
+  };
 
-                      object_sort(_ss.log, _ss.item_index);
-                      Object.entries(_ss.log).forEach(([n, log]) => {
-                        const keys = Object.keys(log);
-                        const type = keys.some((k) => reg_artifact.test(k)) ? 'Artifact' : keys.some((k) => reg_trophy.test(k)) ? 'Trophy' : keys.some((k) => reg_collectable.test(k)) ? 'Collectable' : null;
-                        const list = _ss.create_list(type);
-                        let total = Object.values(log).reduce((s, e) => s + e, 0);
-                        if (type === 'Collectable') {
-                          total /= 2;
-                        }
+  _ss.view_log = function () {
+    const div = _ss.node.log;
+    div.innerHTML = '';
 
-                        $element('p', div, [`${n} (${total})`, '.hvut-ss-p']);
-                        const ul = $element('ul', div, ['.hvut-ss-ul']);
+    const reg_artifact = /Energy Drink|Flower Vase|Bubble-Gum|Chaos Token|Hath|Last Elixir|\d+x Crystal of|has increased by one|was increased by 1/;
+    const reg_trophy = /Peerless|Legendary|Magnificent|Exquisite|Superior|Average/;
+    const reg_collectable = /High-Grade|Binding of/;
 
-                        Object.entries(log).forEach(([r, c]) => {
-                          if (!list[r]) {
-                            list[r] = _ss.create_listitem(r);
-                          }
-                          list[r].count = c;
-                          if (list[r].group) {
-                            list[list[r].group].count += c;
-                          }
-                        });
+    object_sort(_ss.log, _ss.item_index);
+    Object.entries(_ss.log).forEach(([n, log]) => {
+      const keys = Object.keys(log);
+      const type = keys.some((k) => reg_artifact.test(k)) ? 'Artifact' : keys.some((k) => reg_trophy.test(k)) ? 'Trophy' : keys.some((k) => reg_collectable.test(k)) ? 'Collectable' : null;
+      const list = _ss.create_list(type);
+      let total = Object.values(log).reduce((s, e) => (s + e), 0);
+      if (type === 'Collectable') {
+        total /= 2;
+      }
 
-                        Object.keys(list).forEach((r) => {
-                          if (!list[r].count) {
-                            return;
-                          }
-                          list[r].sp.textContent = (list[r].count * 100 / total).toFixed(1) + ' %';
-                          list[r].sc.textContent = ` [${list[r].count}] `;
-                          ul.appendChild(list[r].li);
-                        });
-                      });
+      $element('p', div, [`${n} (${total})`, '.hvut-ss-p']);
+      const ul = $element('ul', div, ['.hvut-ss-ul']);
 
-                      const buttons = $element('div', div, ['!margin-top: 20px; padding-top: 10px; border-top: 1px solid; text-align: center;']);
-                      $input(['button', '重置日志'], buttons, null, () => { _ss.reset_log(); });
-                      $input(['button', '关闭'], buttons, null, () => { _ss.toggle_log(); });
-                    };
+      Object.entries(log).forEach(([r, c]) => {
+        if (!list[r]) {
+          list[r] = _ss.create_listitem(r);
+        }
+        list[r].count = c;
+        if (list[r].group) {
+          list[list[r].group].count += c;
+        }
+      });
 
-                    _ss.reset_log = function () {
-                      if (confirm('祭坛日志将被重置.\n继续吗?')) {
-                        deleteValue('ss_log');
-                        location.href = location.href;
-                      }
-                    };
+      Object.keys(list).forEach((r) => {
+        if (!list[r].count) {
+          return;
+        }
+        list[r].sp.textContent = (list[r].count * 100 / total).toFixed(1) + ' %';
+        list[r].sc.textContent = ` [${list[r].count}] `;
+        ul.appendChild(list[r].li);
+      });
+    });
+  };
 
-                    _ss.toggle_log = function () {
-                      if (_ss.node.log.classList.contains('hvut-none')) {
-                        _ss.view_log();
-                        _ss.node.log.classList.remove('hvut-none');
-                      } else {
-                        _ss.node.log.classList.add('hvut-none');
-                        _ss.node.log.innerHTML = '';
-                      }
-                    };
+  _ss.toggle_log = function () {
+    if (_ss.node.log.classList.contains('hvut-none')) {
+      _ss.view_log();
+      _ss.node.log.classList.remove('hvut-none');
+    } else {
+      _ss.node.log.classList.add('hvut-none');
+      _ss.node.log.innerHTML = '';
+    }
+  };
 
-                    _ss.create_list = function (type) {
-                      const list = {};
-                      const array = _ss.item_group[type] || [];
-                      array.forEach((r) => {
-                        if (typeof r === 'string') {
-                          list[r] = _ss.create_listitem(r);
-                        } else {
-                          const g = r.group;
-                          list[g] = _ss.create_listitem(g);
-                          r.items.forEach((m) => {
-                            list[m] = _ss.create_listitem(m, g);
-                          });
-                        }
-                      });
-                      return list;
-                    };
+  _ss.create_list = function (type) {
+    const list = {};
+    const array = _ss.item_group[type] || [];
+    array.forEach((r) => {
+      if (typeof r === 'string') {
+        list[r] = _ss.create_listitem(r);
+      } else {
+        const g = r.group;
+        list[g] = _ss.create_listitem(g);
+        r.items.forEach((m) => {
+          list[m] = _ss.create_listitem(m, g);
+        });
+      }
+    });
+    return list;
+  };
 
-                    _ss.create_listitem = function (r, g) {
-                      const item = { count: 0 };
-                      item.li = $element('li');
-                      item.sp = $element('span', item.li);
-                      item.sc = $element('span', item.li);
-                      $element('span', item.li, r);
-                      if (g) {
-                        item.group = g;
-                        item.li.classList.add('hvut-ss-group');
-                      }
-                      return item;
-                    };
+  _ss.create_listitem = function (r, g) {
+    const item = { count: 0 };
+    item.li = $element('li');
+    item.sp = $element('span', item.li);
+    item.sc = $element('span', item.li);
+    $element('span', item.li, r);
+    if (g) {
+      item.group = g;
+      item.li.classList.add('hvut-ss-group');
+    }
+    return item;
+  };
 
-                    _ss.show_trophies = function () {
-                      popup_text(_ss.trophies_text, 'width: 600px; height: 250px; white-space: pre;');
-                    };
+  _ss.show_trophies = function () {
+    popup_text(_ss.trophies_text, 600, 250);
+  };
 
-                    GM_addStyle(/*css*/`
+  GM_addStyle(/*css*/`
     #shrine_outer { position: relative; width: 1066px; margin-left: 130px; }
     #shrine_left { width: 562px; }
     #shrine_left .cspp { overflow-y: scroll; }
@@ -7552,8 +6595,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     #shrine_left .itemlist input:nth-child(2) { width: 50px; }
     #shrine_left .itemlist input:nth-child(3) { width: 40px; }
 
-    .hvut-ss-side { position: absolute; top: 33px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-ss-side input { margin: 3px 0; white-space: normal; }
+    .hvut-ss-side { top: 33px; left: -110px; }
     .hvut-ss-log { position: absolute; top: 33px; left: 0; width: 540px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
     .hvut-ss-results { position: absolute; top: 33px; left: 572px; width: 472px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
     .hvut-ss-p { margin: 5px; font-size: 10pt; font-weight: bold; }
@@ -7567,286 +6609,205 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ss-selected:not([disabled]) { color: #c00 !important; border-color: #c00 !important; outline: 1px solid; }
   `);
 
-                    $id('inv_item').addEventListener('click', _ss.click);
-                    $id('accept_equip').addEventListener('click', _ss.click);
+  $id('inv_item').addEventListener('click', _ss.click);
+  $id('accept_equip').addEventListener('click', _ss.click);
 
-                    _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-ss-side']);
-                    toggle_button($input('button', _ss.node.side), '显示所有奖杯', '使用过滤器', $id('inv_item'), 'hvut-none-cont', true);
-                    $input(['button', '祭坛收获'], _ss.node.side, null, () => { _ss.toggle_results(); });
-                    $input(['button', '祭坛日志'], _ss.node.side, null, () => { _ss.toggle_log(); });
+  _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-side hvut-ss-side']);
+  toggle_button($input('button', _ss.node.side), 'Show All Items', 'Show Only Filtered', $id('inv_item'), 'hvut-none-cont', true);
+  $input(['button', 'Offering Results'], _ss.node.side, null, () => { _ss.toggle_results(); });
+  $input(['button', 'The Shrine Log'], _ss.node.side, null, () => { _ss.toggle_log(); });
+  $input(['button', 'Edit Filter'], _ss.node.side, null, () => { $config.open('shrineHideItems'); });
 
-                    _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
-                    _ss.node.results = $element('div', $id('shrine_outer'), ['.hvut-ss-results hvut-none']);
-                    _ss.node.results_buttons = $element('div', _ss.node.results, ['!margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid; text-align: center;']);
-                    _ss.node.results_equip = $input(['button', '装备库存量'], _ss.node.results_buttons, { style: 'width: 380px;' });
-                    $input(['button', '关闭'], _ss.node.results_buttons, null, () => { _ss.toggle_results(); });
+  _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
+  _ss.node.results = $element('div', $id('shrine_outer'), ['.hvut-ss-results hvut-none']);
+  _ss.node.results_buttons = $element('div', _ss.node.results, ['!margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid; text-align: center;']);
+  _ss.node.results_equip = $input(['button', 'Equip Slots'], _ss.node.results_buttons, { style: 'width: 450px;' });
 
-                    $ajax.fetch('?s=Character&ss=in').then((html) => {
-                      const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
-                      if (!exec) return;
-                      _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
-                      _ss.equip.capacity = parseInt(exec[3]);
-                      _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;
-                    });
+  $ajax.fetch('?s=Character&ss=in').then((html) => {
+    const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
+    _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
+    _ss.equip.capacity = parseInt(exec[3]);
+    _ss.node.results_equip.value = `Equip Slots: ${_ss.equip.current} / ${_ss.equip.capacity}`;
+  });
 
-                    _ss.trophies_value = 0;
-                    _ss.trophies_text = [];
+  _ss.trophies_value = 0;
+  _ss.trophies_text = [];
 
-                    Array.from($qs('.itemlist').rows).forEach((tr) => {
-                      const div = tr.cells[0].firstElementChild;
-                      const name = div.textContent;
-                      const type = $item.type(div.getAttribute('onmouseover'));
-                      const exec = $item.reg.shrine.exec(div.getAttribute('onclick'));
-                      const iid = exec[1];
-                      const stock = parseInt(exec[2]);
-                      const bulk = parseInt(exec[3]);
-                      const max = Math.floor(stock / bulk);
-                      const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
-                      _ss.items[iid] = item;
+  $qsa('.itemlist tr').forEach((tr) => {
+    const div = tr.cells[0].firstElementChild;
+    const name = div.textContent;
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    const { iid, stock, bulk } = $item.get_data(div.getAttribute('onclick'));
+    const max = Math.floor(stock / bulk);
+    const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
+    _ss.items[iid] = item;
 
-                      div.classList.add('hvut-it-' + type);
-                      item.node.stock = tr.cells[1];
-                      item.node.bulk = $element('td', tr);
-                      item.node.max = $element('td', tr);
-                      const td = $element('td', tr);
-                      item.node.count = $input('text', td);
-                      item.node.button = $input(['button', '献祭'], td, { dataset: { action: 'offer', iid: iid, count: 'input' } });
+    div.classList.add('hvut-it-' + type);
+    item.node.stock = tr.cells[1];
+    item.node.bulk = $element('td', tr);
+    item.node.max = $element('td', tr);
+    const td = $element('td', tr);
+    item.node.count = $input('text', td);
+    item.node.button = $input(['button', 'Offer'], td, { dataset: { action: 'offer', iid: iid, count: 'input' } });
 
-                      if (item.type === 'Trophy') {
-                        if (_ss.trophy[name]) {
-                          item.tier = _ss.trophy[name].tier;
-                          item.value = _ss.trophy[name].value;
-                          if (item.tier) {
-                            let t = item.tier;
-                            let b = item.bulk;
-                            while (b > 1) {
-                              b /= t === 2 ? 4 : t === 3 ? 2 : t === 4 ? 4 : 1;
-                              t++;
-                            }
-                            item.value *= t === item.tier ? 1 : t === 3 ? 1.1 : t === 4 ? 1.2 : t === 5 ? 1.3 : 1;
-                            item.upgrade = t;
-                            item.log = 'Trophy Tier ' + t;
-                          }
-                          if (item.value) {
-                            const a = item.stock - item.stock % item.bulk;
-                            if (a) {
-                              _ss.trophies_value += a * item.value;
-                              _ss.trophies_text.push(`${a.toLocaleString()} x ${name} @ ${item.value.toLocaleString()} = ${(a * item.value).toLocaleString()}`);
-                            }
-                          }
-                        }
-                        item.node.bulk.textContent = '/ ' + item.bulk;
-                        item.node.max.textContent = item.max;
-                      }
-                      $input(['button', '所有'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
-                      if (settings.shrineHideItems.some((h) => name.includes(h))) {
-                        tr.classList.add('hvut-none-item');
-                      }
-                    });
+    if (item.type === 'Trophy') {
+      if (_ss.trophy[name]) {
+        item.tier = _ss.trophy[name].tier;
+        item.value = _ss.trophy[name].value;
+        if (item.tier) {
+          let t = item.tier;
+          let b = item.bulk;
+          while (b > 1) {
+            b /= t === 2 ? 4 : t === 3 ? 2 : t === 4 ? 4 : 1;
+            t++;
+          }
+          item.value *= t === item.tier ? 1 : t === 3 ? 1.1 : t === 4 ? 1.2 : t === 5 ? 1.3 : 1;
+          item.upgrade = t;
+          item.log = 'Trophy Tier ' + t;
+        }
+        if (item.value) {
+          const a = item.stock - item.stock % item.bulk;
+          if (a) {
+            _ss.trophies_value += a * item.value;
+            _ss.trophies_text.push(`${a.toLocaleString()} x ${name} @ ${item.value.toLocaleString()} = ${(a * item.value).toLocaleString()}`);
+          }
+        }
+      }
+      item.node.bulk.textContent = '/ ' + item.bulk;
+      item.node.max.textContent = item.max;
+      $input(['button', 'All'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
+    }
+    if ($config.settings.shrineHideItems.some((h) => name.includes(h))) {
+      tr.classList.add('hvut-none-item');
+    }
+  });
 
-                    $input(['button', `你库存中的奖杯总价值为 ${_ss.trophies_value.toLocaleString()} credits.`], $id('shrine_trophy'), { style: 'margin: 5px;' }, () => { _ss.show_trophies(); });
+  $input(['button', `You have ${_ss.trophies_value.toLocaleString()} credits worth of trophies in the inventory.`], $id('shrine_trophy'), { style: 'margin: 5px;' }, () => { _ss.show_trophies(); });
 
-                    _ss.node.select = {};
-                    $qsa('#accept_equip input[type="submit"]').forEach((s) => {
-                      s.dataset.action = 'select';
-                      const [, type, slot] = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
-                      s.dataset.type = type;
-                      s.dataset.slot = slot;
-                      _ss.node.select[type + (slot ? ' ' + slot : '')] = s;
-                      s.removeAttribute('onclick');
-                    });
-                  } else
-                    // [END 10] Bazaar - The Shrine */
+  _ss.node.select = {};
+  $qsa('#accept_equip input[type="submit"]').forEach((s) => {
+    s.dataset.action = 'select';
+    const exec = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
+    const type = exec[1];
+    const slot = exec[2];
+    const select = slot ? `${type} ${slot}` : type;
+    s.dataset.type = type;
+    s.dataset.slot = slot;
+    _ss.node.select[select] = s;
+    s.removeAttribute('onclick');
+  });
+} else
+// [END 10] Bazaar - The Shrine */
 
 
-                    //* [11] Bazaar - The Market
-                    if (settings.market && _query.s === 'Bazaar' && _query.ss === 'mk') {
-                      _mk.prices = getValue('mk_prices', {});
-                      _mk.items = {};
+//* [11] Bazaar - The Market
+if (_query.s === 'Bazaar' && _query.ss === 'mk') {
+  if (!_query.screen) {
+    _query.screen = 'browseitems';
+  }
+  if (!_query.filter) {
+    _query.filter = 'co';
+  }
 
-                      _mk.click = function (e) {
-                        const target = e.target.closest('[data-action]');
-                        if (!target) {
-                          return;
-                        }
-                        const { action } = target.dataset;
-                        if (action === 'stop') {
-                          e.stopPropagation();
-                        }
-                      };
+  _mk.init_list = function () {
+    if (!$qs('#market_itemlist table')) {
+      return;
+    }
+    $price.parse_market(_query.filter);
+    _mk.items = Object.keys($price.market);
+    Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
+      if (i === 0) {
+        $element('th', tr, 'HVUT Price');
+        return;
+      }
+      const name = tr.cells[0].textContent;
+      const td = $element('td', tr);
+      $price.market[name].td = td;
+    });
+    _mk.modify();
 
-                      _mk.get_list = function () {
-                        if (!$qs('#market_itemlist table')) {
-                          return;
-                        }
-                        Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
-                          if (i === 0) {
-                            return;
-                          }
-                          const name = tr.cells[0].textContent;
-                          const itemid = tr.getAttribute('onclick').match(/itemid=(\d+)/) && RegExp.$1;
-                          const yourstock = parseInt(tr.cells[1].textContent);
-                          const bid = parseFloat(tr.cells[2].textContent.slice(0, -2));
-                          const ask = parseFloat(tr.cells[3].textContent.slice(0, -2));
-                          const stock = parseInt(tr.cells[4].textContent.slice(0, -2));
-                          _mk.items[name] = { itemid, yourstock, bid, ask, stock };
-                        });
-                      };
+    if (!$id('market_itemfilter')) {
+      $element('div', $id('market_right'), ['#market_itemfilter']);
+    }
+    const side = $element('div', $id('market_left').lastElementChild, ['.hvut-side hvut-mk-side']);
+    $input(['button', 'Set as Bid'], side, null, () => { _mk.save('bid'); });
+    $input(['button', 'Set as Ask'], side, null, () => { _mk.save('ask'); });
+    $input(['button', 'Edit Prices'], side, null, () => { _mk.edit(); });
+  };
 
-                      _mk.init = function (p) {
-                        if (!$qs('#market_itemlist table')) {
-                          return;
-                        }
-                        _mk.tag = p;
-                        Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
-                          if (i === 0) {
-                            $element('th', tr, '插件参考价');
-                            return;
-                          }
-                          const name = tr.cells[0].textContent;
-                          const td = $element('td', tr, { dataset: { action: 'stop' } });
-                          _mk.items[name].input = $input('text', td, { pattern: '\\d+(\\.\\d+)?' });
-                        });
-                        _mk.load_prices();
-                        if (!$id('market_itemfilter')) {
-                          $element('div', $id('market_right'), ['#market_itemfilter']);
-                        }
-                        const div = $element('div', $id('market_itemfilter'));
-                        _mk.select = $element('select', div, ['/<option value="">设置价格...</option><option value="bid">设定市场出价为参考价格</option><option value="ask">设定市场要价为参考价格</option><option value="day">设定日平均价格为参考价格</option><option value="week">设定周平均价格为参考价格</option><option value="update">更新交易数据库-暂不可用 [最后更新时间: ' + new Date(_mk.prices.lastupdate).toLocaleString() + ']</option>', '!width: 135px;'], { change: () => { _mk.set_prices(_mk.select.value); } });
-                        $input(['button', '保存'], div, null, () => { _mk.save_prices(); });
-                        $input(['button', '加载'], div, null, () => { _mk.load_prices(); });
-                        $input(['button', '编辑'], div, null, () => { $price.edit(_mk.tag, _mk.load_prices); });
-                      };
+  _mk.edit = function () {
+    $price.edit(_mk.items, _query.filter, _mk.modify);
+  };
 
-                      _mk.set_prices = async function (type) {
-                        switch (type) {
-                          case 'day':
-                          case 'week':
-                          case 'month':
-                          case 'year':
-                            if (!_mk.prices.lastupdate) {
-                              await _mk.get_prices();
-                            }
-                          case 'bid':
-                          case 'ask':
-                            Object.entries(_mk.items).forEach(([n, v]) => {
-                              if(v === undefined){
-                                return;
-                              }
-                              let mkp = _mk.prices[n];
-                              mkp = mkp ? mkp[type] : ''
-                              v.input.value = v[type] || mkp || '';
-                            });
-                            break;
-                          case 'update':
-                            _mk.get_prices();
-                            break;
-                        }
-                      };
+  _mk.save = function (key) {
+    $price.set_market(_mk.items, key);
+    _mk.modify();
+  };
 
-                      _mk.get_prices = async function () {
-                        if (_query.screen !== 'browseitems') {
-                          alert('请在 [Browse Items]中尝试');
-                          return;
-                        }
-                        const select = _mk.select;
-                        const value = select.value;
-                        select.disabled = true;
-                        select.value = 'update';
-                        select.selectedOptions[0].text = 'Updating...';
-                        Object.values(_mk.items).forEach((v) => {
-                          v.input.disabled = true;
-                        });
-                        await _mk.update_prices();
-                        Object.values(_mk.items).forEach((v) => {
-                          v.input.disabled = false;
-                        });
-                        select.selectedOptions[0].text = 'Update Transaction Data [Last Update: ' + new Date(_mk.prices.lastupdate).toLocaleString() + ']';
-                        select.value = value;
-                        select.disabled = false;
-                      };
+  _mk.modify = function () {
+    const prices = $price.get();
+    _mk.items.forEach((name) => {
+      $price.market[name].td.textContent = prices[name] || '';
+    });
+  };
 
-                      _mk.update_prices = async function () {
-                        const lastupdate = Date.now();
-                        async function update(itemid) {
-                          const html = await $ajax.fetch(`?s=Bazaar&ss=mk&itemid=${itemid}`);
-                          const doc = $doc(html);
-                          const name = $id('market_itemheader', doc).children[1].textContent;
-                          const unit = Number($qs('.market_placeorder', doc).rows[0].cells[2].textContent.slice(1)) || 1;
-                          const history = $id('market_price', doc).rows;
-                          const day = history[1].cells[3].textContent.replace(/\D/g, '') / unit;
-                          const week = history[2].cells[3].textContent.replace(/\D/g, '') / unit;
-                          const month = history[3].cells[3].textContent.replace(/\D/g, '') / unit;
-                          const year = history[4].cells[3].textContent.replace(/\D/g, '') / unit;
-                          _mk.prices[name] = { itemid, day, week, month, year };
-                        }
-                        const requests = Object.values(_mk.items).map((c) => update(c.itemid));
-                        await Promise.all(requests);
-                        _mk.prices.lastupdate = lastupdate;
-                        setValue('mk_prices', _mk.prices);
-                      };
+  _mk.get_crystals = function () {
+    if (!$qs('#market_itemlist table')) {
+      return;
+    }
+    const [bid, ask] = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].reduce((s, e) => [s[0] + $price.market[e].bid * 1000, s[1] + $price.market[e].ask * 1000], [0, 0]);
+    $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>Crystal Pack</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td>`]);
+  };
 
-                      _mk.save_prices = function () {
-                        const prices = {};
-                        Object.entries(_mk.items).forEach(([n, v]) => {
-                          prices[n] = parseFloat(v.input.value) || 0;
-                        });
-                        $price.set(_mk.tag, prices, false);
-                      };
+  _mk.click2link = function () {
+    if (!$qs('#market_itemlist table')) {
+      return;
+    }
+    Array.from($qs('#market_itemlist table').rows).forEach((tr) => {
+      const onclick = tr.getAttribute('onclick');
+      if (!onclick) {
+        return;
+      }
+      const href = /document\.location='([^']+)'/.exec(onclick)[1];
+      $element('a', tr.cells[0], { href });
+      tr.removeAttribute('onclick');
+    });
+  };
 
-                      _mk.load_prices = function () {
-                        const prices = $price.get(_mk.tag);
-                        Object.entries(_mk.items).forEach(([n, v]) => {
-                          v.input.value = prices[n] || '';
-                        });
-                      };
+  GM_addStyle(/*css*/`
+    #market_itemlist th { z-index: 1; }
+    #market_itemlist tr { position: relative; }
+    #market_itemlist td a { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-                      _mk.get_cp = function () {
-                        if (!$qs('#market_itemlist table')) {
-                          return;
-                        }
-                        const [bid, ask] = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].reduce((s, e) => [s[0] + _mk.items[e].bid * 1000, s[1] + _mk.items[e].ask * 1000], [0, 0]);
-                        $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>水晶包参考价(各类水晶1000个)</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td>`]);
-                      };
-
-                      GM_addStyle(/*css*/`
-    #market_itemlist td[data-action='stop'] { cursor: default; }
-    #market_itemlist td[data-action='stop'] input { width: 60px; text-align: right; }
-    #market_itemlist td[data-action='stop'] input:invalid { color: #e00; }
+    .hvut-mk-side { bottom: 20px; left: 32px; }
   `);
 
-                      _mk.get_list();
-
-                      if (_query.filter === 'ma') {
-                        $id('market_itemlist')?.addEventListener('click', _mk.click, true);
-                        _mk.init('Materials');
-                      }
-                      if (_query.filter === 'mo' && _query.screen === 'browseitems') {
-                        _mk.get_cp();
-                      }
-                      $supply.display_inventory('mk');
-                    } else
-                      // [END 11] Bazaar - The Market */
+  _mk.init_list();
+  _mk.click2link();
+  if (_query.screen === 'browseitems' && _query.filter === 'mo') {
+    _mk.get_crystals();
+  }
+  $id('account_amount').autocomplete = 'off';
+} else
+// [END 11] Bazaar - The Market */
 
 
-                      //* [12] Bazaar - Monster Lab
-                      if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
-                        if (_query.create) {
-                        } else if (_query.slot) {
-                          if (_query.pane === 'skills') {
-                            const prev_button = $qs('img[src$="/monster/prev.png"]');
-                            prev_button.setAttribute('onclick', prev_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
-                            const next_button = $qs('img[src$="/monster/next.png"]');
-                            next_button.setAttribute('onclick', next_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
-                          }
-                        } else {
-                          GM_addStyle(/*css*/`
+//* [12] Bazaar - Monster Lab
+if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
+  if (_query.create) {
+  } else if (_query.slot) {
+    if (_query.pane === 'skills') {
+      const prev_button = $qs('img[src$="/monster/prev.png"]');
+      prev_button.setAttribute('onclick', prev_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
+      const next_button = $qs('img[src$="/monster/next.png"]');
+      next_button.setAttribute('onclick', next_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
+    }
+  } else {
+    GM_addStyle(/*css*/`
       #monster_outer { margin-left: 130px; font-weight: normal; }
       #monster_list .cspp { margin-top: 15px; overflow-y: scroll; }
 
-      .hvut-ml-side { position: absolute; top: 38px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-      .hvut-ml-side input { margin: 3px 0; white-space: normal; }
-      .hvut-ml-side input:nth-child(3) { margin-bottom: 10px; }
+      .hvut-ml-side { top: 38px; left: -110px; }
       .hvut-ml-sort { position: absolute; display: flex; top: 10px; left: 22px; font-size: 10pt; line-height: 16px; }
       .hvut-ml-sort > span { display: inline-block; margin: 0 5px; padding: 2px 0; border: 1px solid; box-sizing: border-box; }
       .hvut-ml-sort > .hvut-ml-sort-current { font-weight: bold; outline: 1px solid; }
@@ -7888,7 +6849,6 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-ml-log > li:nth-child(3) { margin-bottom: 16px; }
       .hvut-ml-margin { margin-top: 16px !important; }
       .hvut-ml-break { break-after: column; }
-      .hvut-ml-reset { position: absolute; left: -1px; bottom: -44px; width: 100%; height: 22px; border: 1px solid; padding: 10px 0; line-height: 30px; text-align: center; background-color: inherit; }
 
       .hvut-ml-up { position: absolute; top: 27px; left: 0; width: 100%; height: 675px; z-index: 9; background-color: #EDEBDF; font-size: 10pt; text-align: left; }
       .hvut-ml-up-list { height: 493px; margin: 20px 10px 10px; overflow-y: scroll; }
@@ -7902,12 +6862,12 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-ml-up-table td:nth-child(3) { width: 90px; text-align: left; padding-left: 5px; }
       .hvut-ml-up-table td:nth-child(4) { width: 40px; }
       .hvut-ml-up-table td:nth-child(5) { width: 40px; }
-      .hvut-ml-up-table td:nth-child(1),
+      .hvut-ml-up-table td:nth-child(1) { border-left-width: 1px; }
+      .hvut-ml-up-table td:nth-child(5),
       .hvut-ml-up-table td:nth-child(6),
-      .hvut-ml-up-table td:nth-child(7),
       .hvut-ml-up-table td:nth-child(15),
-      .hvut-ml-up-table td:nth-child(23) { border-left-width: 1px; }
-      .hvut-ml-up-table td:last-child { border-right-width: 1px; }
+      .hvut-ml-up-table td:nth-child(22),
+      .hvut-ml-up-table td:nth-child(35) { border-right-width: 1px; }
       .hvut-ml-up-change { color: #c00; }
       .hvut-ml-up-table td[data-desc]::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 24px; right: -1px; white-space: nowrap; padding: 2px 10px; background-color: #fff; border: 1px solid; z-index: 1; }
       .hvut-ml-up-table td[data-desc]:hover::after { visibility: visible; }
@@ -7922,7 +6882,7 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-ml-up-crystal span:nth-child(2) { width: 90px; }
       .hvut-ml-up-crystal span:nth-child(3) { width: 100px; }
       .hvut-ml-up-crystal span:nth-child(4) { width: 90px; }
-      .hvut-ml-up-token span:nth-child(1) { width: 110px; }
+      .hvut-ml-up-token span:nth-child(1) { width: 130px; }
       .hvut-ml-up-token span:nth-child(2) { width: 70px; }
       .hvut-ml-up-buttons { float: right; width: 100px; display: flex; flex-direction: column; }
       .hvut-ml-up-buttons input { margin: 3px 0; }
@@ -7952,1529 +6912,1422 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-ml-plc-crystal { display: inline-block; width: 95px; text-align: right; }
     `);
 
-                          _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
-                          _ml.mobs = [];
-                          _ml.now = Date.now();
-                          _ml.log = getValue('ml_log', [{ version: 1 }]);
-                          _ml.json_migration = function () {
-                            if (!_ml.log[0]) { // check json format version
-                              _ml.log[0] = { version: 1 };
-                              _ml.log.forEach((log, i) => {
-                                if (!log || i === 0) {
-                                  return;
-                                }
-                                log.pa = log.pa.map((e) => [e.value, e.to]);
-                                log.er = log.er.map((e) => [e.value, e.to]);
-                                log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
-                                log.gifts = log.gift;
-                                log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
-                                delete log.gift;
-                                delete log.selected;
-                              });
-                              setValue('ml_log', _ml.log);
-                            }
-                          };
-                          _ml.json_migration();
-
-                          _ml.parse = function (mob, doc) {
-                            mob.pl = parseInt($qs('.msl > div:nth-child(3)', doc).textContent.slice(4));
-                            mob.hunger = parseInt($qs('.msl > div:nth-child(5) img', doc).style.width) * 200;
-                            mob.morale = parseInt($qs('.msl > div:nth-child(6) img', doc).style.width) * 200;
-                            mob.wins = parseInt($qs('#monsterstats_right > div:nth-child(2) > div:nth-child(2)', doc).textContent);
-                            mob.kills = parseInt($qs('#monsterstats_right > div:nth-child(3) > div:nth-child(2)', doc).textContent);
-                            mob.log.pl = mob.pl;
-                            mob.log.wins = mob.wins;
-                            mob.log.kills = mob.kills;
-                            mob.log.update = Date.now();
-
-                            const stats = $qsa('#monsterstats_top td:nth-child(2)', doc).map((td) => parseInt(td.textContent));
-                            const pa = stats.slice(0, 6);
-                            const er = stats.slice(6, 12);
-                            mob.pa.forEach((e, i) => {
-                              e.value = pa[i];
-                              mob.log.pa[i][0] = pa[i];
-                            });
-                            mob.er.forEach((e, i) => {
-                              e.value = er[i];
-                              mob.log.er[i][0] = er[i];
-                            });
-
-                            $qsa('#chaosupg td:nth-child(2)', doc).forEach((td, i) => {
-                              mob.ct[i].value = $qsa('.mcu2', td).length;
-                              mob.log.ct[i][0] = mob.ct[i].value;
-                              mob.ct[i].max = 20 - $qsa('.mcu0', td).length;
-                              mob.log.ct[i][2] = mob.ct[i].max;
-                            });
-
-                            setValue('ml_log', _ml.log);
-                          };
-
-                          _ml.price2str = function (price) {
-                            if (price > 1000000) {
-                              price = (Math.round(price / 10000) / 100) + 'm';
-                            } else if (price > 1000) {
-                              price = (Math.round(price / 10) / 100) + 'k';
-                            } else {
-                              price = Math.round(price);
-                            }
-                            return price;
-                          };
-
-                          // Monster List
-                          _ml.main = {
-
-                            node: {},
-                            gains: {},
-
-                            click: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index, key } = target.dataset;
-                              if (action === 'sort') {
-                                _ml.main.sort(key);
-                              } else if (action === 'morale') {
-                                e.stopPropagation();
-                                _ml.main.feed(index, 'drugs');
-                              } else if (action === 'hunger') {
-                                e.stopPropagation();
-                                _ml.main.feed(index, 'food');
-                              } else if (action === 'update') {
-                                e.stopPropagation();
-                                _ml.main.feed(index);
-                              }
-                            },
-                            mouseover: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index } = target.dataset;
-                              if (action === 'log') {
-                                _ml.main.show_log(index);
-                              }
-                            },
-                            mouseout: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index } = target.dataset;
-                              if (action === 'log') {
-                                _ml.main.hide_log(index);
-                              }
-                            },
-                            sort: function (key) {
-                              if (!['#', 'index', 'name', 'class', 'pl', 'wins', 'kills', '+', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
-                                return;
-                              }
-                              if (key === '#') {
-                                key = 'index';
-                              }
-                              if (key === '+') {
-                                key = 'gains';
-                              }
-                              let order = ['pl', 'wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
-                              if (key === _ml.main.sort.key) {
-                                order = _ml.main.sort.order * -1;
-                              }
-                              if (_ml.main.sort.key) {
-                                _ml.main.node.sort[_ml.main.sort.key].classList.remove('hvut-ml-sort-current');
-                              }
-                              _ml.main.node.sort[key].classList.add('hvut-ml-sort-current');
-                              _ml.main.sort.key = key;
-                              _ml.main.sort.order = order;
-                              if (!_ml.main.sort.list) {
-                                const empty = $qsa('#slot_pane > div[onclick*="&create=new"]').map((div) => ({ node: { div }, index: parseInt(div.firstElementChild.textContent) }));
-                                _ml.main.sort.list = _ml.mobs.filter((mob) => mob).concat(empty);
-                              }
-                              _ml.main.sort.list.sort((a, b) => (a[key] == b[key] ? 0 : a[key] == undefined ? 1 : b[key] == undefined ? -1 : (a[key] > b[key] ? 1 : -1) * order));
-                              $id('slot_pane').prepend(..._ml.main.sort.list.map((mob) => mob.node.div));
-                            },
-                            feed: async function (index, food) {
-                              const mob = _ml.mobs[index];
-                              if (!mob.status) {
-                                return;
-                              }
-                              mob.status = 0;
-                              mob.node.wins.textContent = '...';
-                              const html = await $ajax.fetch('?s=Bazaar&ss=ml&slot=' + mob.index, food ? 'food_action=' + food : '');
-                              const doc = $doc(html);
-                              _ml.main.onsuccess(index, doc);
-                              //_ml.main.onerror(index);
-                            },
-                            feedall: function (stat, value, food) {
-                              _ml.mobs.forEach((mob) => { _ml.main.feed(mob.index, !value || value >= mob[stat] ? food : null); });
-                            },
-                            onsuccess: function (index, doc) {
-                              const mob = _ml.mobs[index];
-                              _ml.parse(mob, doc);
-                              mob.status = 1;
-                              mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
-                              mob.node.wins.classList.remove('hvut-ml-outdated');
-                              mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
-                              mob.node.hunger.textContent = mob.hunger;
-                              mob.node.hungerbar.style.width = (mob.hunger / 200) + 'px';
-                              mob.node.morale.textContent = mob.morale;
-                              mob.node.moralebar.style.width = (mob.morale / 200) + 'px';
-                            },
-                            onerror: function (index) {
-                              const mob = _ml.mobs[index];
-                              mob.status = -1;
-                              mob.node.wins.classList.add('hvut-ml-outdated');
-                              mob.node.wins.textContent = '失败';
-                            },
-                            change_price: function () {
-                              _ml.main.make_summary();
-                              if (_ml.mobs[-1].node.log) {
-                                _ml.main.make_log(-1);
-                              }
-                              _ml.mobs.forEach((mob) => {
-                                if (mob.node.log) {
-                                  _ml.main.make_log(mob.index);
-                                }
-                              });
-                            },
-                            toggle_summary: function () {
-                              _ml.main.node.summary?.classList.toggle('hvut-none');
-                            },
-                            make_summary: function () {
-                              const mobs = Object.values(_ml.main.gains);
-                              if (!mobs.length) {
-                                return;
-                              }
-                              const summary = {};
-                              const gains = mobs.flat();
-                              const prices = $price.get('Materials');
-                              let profit = 0;
-                              gains.forEach((g) => {
-                                if (!summary[g]) {
-                                  summary[g] = 0;
-                                }
-                                summary[g]++;
-                                profit += (prices[g] || 0);
-                              });
-                              if (!_ml.main.node.summary) {
-                                _ml.main.node.summary = $element('ul', $id('monster_outer'), ['.hvut-ml-summary']);
-                              }
-                              _ml.main.node.summary.innerHTML = '';
-                              $element('li', _ml.main.node.summary, `${mobs.length} 个怪物给予了你 ${gains.length} 件礼物,价值 ${_ml.price2str(profit)} credits`);
-                              _ml.materials.forEach((g) => {
-                                if (summary[g]) {
-                                  $element('li', _ml.main.node.summary, `${summary[g]} x ${g}`);
-                                }
-                              });
-                            },
-                            toggle_log: function (index) {
-                              const mob = _ml.mobs[index];
-                              if (mob.node.log?.parentNode) {
-                                _ml.main.hide_log(index);
-                              } else {
-                                _ml.main.show_log(index);
-                              }
-                            },
-                            show_log: function (index) {
-                              const mob = _ml.mobs[index];
-                              if (!mob.node.log) {
-                                _ml.main.make_log(index);
-                              }
-                              $id('monster_outer').appendChild(mob.node.log);
-                            },
-                            hide_log: function (index) {
-                              const mob = _ml.mobs[index];
-                              mob.node.log?.remove();
-                            },
-
-                            make_log: function (index) {
-                              const mob = _ml.mobs[index];
-                              if (!mob.node.log) {
-                                mob.node.log = $element('ul', null, ['.hvut-ml-log']);
-                              }
-                              mob.node.log.innerHTML = '';
-                              const date = mob.log.date;
-                              const hours = (_ml.now - date) / (1000 * 60 * 60);
-                              const daily = Math.max(24, hours);
-                              const round = Math.round(hours);
-                              const prices = $price.get('Materials');
-                              let count = 0;
-                              let sum = 0;
-                              // 映射表
-                              const materialMap = {
-                                'Low-Grade Cloth': '低级布料',
-                                'Mid-Grade Cloth': '中级布料',
-                                'High-Grade Cloth': '高级布料',
-                                'Low-Grade Leather': '低级皮革',
-                                'Mid-Grade Leather': '中级皮革',
-                                'High-Grade Leather': '高级皮革',
-                                'Low-Grade Metals': '低级金属',
-                                'Mid-Grade Metals': '中级金属',
-                                'High-Grade Metals': '高级金属',
-                                'Low-Grade Wood': '低级木材',
-                                'Mid-Grade Wood': '中级木材',
-                                'High-Grade Wood': '高级木材',
-                                'Binding of Slaughter': '粘合剂 基础攻击伤害',
-                                'Binding of Balance': '粘合剂 物理命中率',
-                                'Binding of Isaac': '粘合剂 物理暴击率',
-                                'Binding of Destruction': '粘合剂 基础魔法伤害',
-                                'Binding of Focus': '粘合剂 魔法命中率',
-                                'Binding of Friendship': '粘合剂 魔法暴击率',
-                                'Binding of Protection': '粘合剂 物理减伤',
-                                'Binding of Warding': '粘合剂 魔法减伤',
-                                'Binding of the Fleet': '粘合剂 回避率',
-                                'Binding of the Barrier': '粘合剂 格挡率',
-                                'Binding of the Nimble': '粘合剂 招架率',
-                                'Binding of Negation': '粘合剂 抵抗率',
-                                'Binding of the Ox': '粘合剂 力量',
-                                'Binding of the Raccoon': '粘合剂 灵巧',
-                                'Binding of the Cheetah': '粘合剂 敏捷',
-                                'Binding of the Turtle': '粘合剂 体质',
-                                'Binding of the Fox': '粘合剂 智力',
-                                'Binding of the Owl': '粘合剂 智慧',
-                                'Binding of the Elementalist': '粘合剂 元素魔法熟练度',
-                                'Binding of the Heaven-sent': '粘合剂 神圣魔法熟练度',
-                                'Binding of the Demon-fiend': '粘合剂 黑暗魔法熟练度',
-                                'Binding of the Curse-weaver': '粘合剂 减益魔法熟练度',
-                                'Binding of the Earth-walker': '粘合剂 增益魔法熟练度',
-                                'Binding of Surtr': '粘合剂 火焰魔法伤害',
-                                'Binding of Niflheim': '粘合剂 冰冷魔法伤害',
-                                'Binding of Mjolnir': '粘合剂 闪电魔法伤害',
-                                'Binding of Freyr': '粘合剂 疾风魔法伤害',
-                                'Binding of Heimdall': '粘合剂 神圣魔法伤害',
-                                'Binding of Fenrir': '粘合剂 黑暗魔法伤害',
-                                'Binding of Dampening': '粘合剂 打击减伤',
-                                'Binding of Stoneskin': '粘合剂 斩击减伤',
-                                'Binding of Deflection': '粘合剂 刺击减伤',
-                                'Binding of the Fire-eater': '粘合剂 火焰减伤',
-                                'Binding of the Frost-born': '粘合剂 冰冷减伤',
-                                'Binding of the Thunder-child': '粘合剂 闪电减伤',
-                                'Binding of the Wind-waker': '粘合剂 疾风减伤',
-                                'Binding of the Thrice-blessed': '粘合剂 神圣减伤',
-                                'Binding of the Spirit-ward': '粘合剂 黑暗减伤',
-                                'Defense Matrix Modulator': '力场碎片(盾)',
-                                'Repurposed Actuator': '动力碎片(重)',
-                                'Shade Fragment': '暗影碎片(轻)',
-                                'Crystallized Phazon': '相位碎片(布)',
-                                // 添加其余材料的映射
-                              };
-                              _ml.materials.forEach((mat, i) => {
-                                const chineseName = materialMap[mat] || mat; // 如果在映射表中找不到对应的中文名称，则使用原始英文名称
-                                const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + chineseName);
-                                if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
-                                  li.classList.add('hvut-ml-margin');
-                                }
-                                if (i === 27) {
-                                  li.classList.add('hvut-ml-break');
-                                }
-                                count += mob.log.gifts[i];
-                                sum += mob.log.gifts[i] * (prices[mat] || 0);
-                              });
-                              mob.node.log.prepend(
-                                $element('li', null, '已经过 ' + Math.floor(round / 24) + ' 天 ' + (round % 24) + ' 小时 / 自 ' + (new Date(date)).toLocaleString()),
-                                $element('li', null, '- 总计: ' + count + ' 份礼物,估价 ' + _ml.price2str(sum) + ' Credits'),
-                                $element('li', null, '- 日平均: ' + (Math.round(count / daily * 24 * 10) / 10) + ' 份礼物,估价 ' + _ml.price2str(sum / daily * 24) + ' Credits')
-                              );
-                              if (index == -1) { // 摘要
-                                $element('li', mob.node.log, ['.hvut-ml-reset']).appendChild(
-                                  $input(['button', '重置日志'], null, null, () => { _ml.main.reset_log(); })
-                                );
-                              }
-                            },
-                            reset_log: function () {
-                              if (confirm('怪物礼物日志将被重置。\n继续吗？')) {
-                                deleteValue('ml_log');
-                                location.href = location.href;
-                              }
-                            },
-
-                          };
-
-                          // Initializing List
-                          if ($id('messagebox_outer')) {
-                            let monster;
-                            let gift;
-                            get_message(null, true).forEach((msg) => {
-                              if (!msg) {
-                                return;
-                              } else if (/^(.+) brought you (?:a gift|some gifts)!$/.test(msg)) {
-                                monster = RegExp.$1.toLowerCase();
-                                _ml.main.gains[monster] = [];
-                              } else if (/^Received (?:a|some) (.+)$/.test(msg)) {
-                                gift = RegExp.$1;
-                                _ml.main.gains[monster].push(gift);
-                              } else {
-                                popup(msg);
-                              }
-                            });
-                            if (settings.monsterLabCloseDefaultPopup) {
-                              $id('messagebox_outer').remove();
-                            }
-                          }
-
-                          _ml.mobs[-1] = { log: { date: _ml.now, gifts: (new Array(54)).fill(0) }, node: {} };
-
-                          $qsa('#slot_pane > div').forEach((div, i) => {
-                            const index = i + 1;
-                            if (div.getAttribute('onclick').includes('&create=new')) {
-                              _ml.log[index] = null;
-                              return;
-                            }
-
-                            let log = _ml.log[index];
-                            if (!log) {
-                              log = { date: _ml.now, update: 0, pl: null, wins: 0, kills: 0, pa: [], er: [], ct: [], gifts: [] };
-                              _ml.log[index] = log;
-                              for (let i = 0; i < 6; i++) {
-                                log.pa[i] = [0, 0];
-                                log.er[i] = [0, 0];
-                              }
-                              for (let i = 0; i < 12; i++) {
-                                log.ct[i] = [0, 0, 0];
-                              }
-                              for (let i = 0; i < 54; i++) {
-                                log.gifts[i] = 0;
-                              }
-                            }
-                            if (_ml.mobs[-1].log.date > log.date) {
-                              _ml.mobs[-1].log.date = log.date;
-                            }
-
-                            const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
-                            _ml.mobs[mob.index] = mob;
-
-                            mob.name = div.children[1].textContent;
-                            mob.class = div.children[3].textContent;
-                            mob.pl = parseInt(div.children[2].textContent.slice(4));
-                            div.children[2].textContent = mob.pl;
-                            if (mob.pl !== mob.log.pl) {
-                              mob.update_needed = true;
-                            }
-                            mob.wins = mob.log.wins;
-                            mob.kills = mob.log.kills;
-                            for (let i = 0; i < 6; i++) {
-                              mob.pa[i] = { value: log.pa[i][0], to: 0 };
-                              mob.er[i] = { value: log.er[i][0], to: 0 };
-                            }
-                            for (let i = 0; i < 12; i++) {
-                              mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
-                            }
-
-                            const hungerdiv = div.children[4];
-                            const moralediv = div.children[5];
-                            hungerdiv.dataset.action = 'hunger';
-                            hungerdiv.dataset.index = index;
-                            moralediv.dataset.action = 'morale';
-                            moralediv.dataset.index = index;
-
-                            mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
-                            mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
-                            mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
-                            mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
-                            mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
-                            mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
-                            mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
-                            mob.node.gains = $element('div', div, ['.hvut-ml-gains']);
-                            mob.node.gifts = $element('div', div, { dataset: { action: 'log', index } });
-
-                            if (mob.log.update) {
-                              mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
-                              mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
-                              if (mob.log.update < Date.now() - 7 * 24 * 60 * 60 * 1000) {
-                                mob.node.wins.classList.add('hvut-ml-outdated');
-                              }
-                            } else {
-                              mob.node.wins.textContent = '-';
-                            }
-
-                            const gains = _ml.main.gains[mob.name.toLowerCase()];
-                            if (gains) {
-                              mob.gains = gains.length;
-                              div.classList.add('hvut-ml-new');
-                              $element('span', mob.node.gains, gains.length);
-                              const ul = $element('ul', mob.node.gains);
-                              gains.forEach((g) => {
-                                $element('li', ul, g);
-                                mob.log.gifts[_ml.materials.indexOf(g)]++;
-                              });
-                            }
-
-                            for (let i = 0; i < 54; i++) {
-                              _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
-                            }
-                            mob.gifts = mob.log.gifts.reduce((s, e) => s + e, 0);
-                            mob.node.gifts.textContent = mob.gifts;
-                          });
-
-                          setValue('ml_log', _ml.log);
-
-                          $id('monster_list').addEventListener('click', _ml.main.click, true);
-                          $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
-                          $id('monster_list').addEventListener('mouseout', _ml.main.mouseout);
-
-                          const sort_div = $element('div', [$id('slot_pane'), 'beforebegin'], ['.hvut-ml-sort hvut-cphu-sub']);
-                          _ml.main.node.sort = {
-                            index: $element('span', sort_div, [{ textContent: '编号' }, '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'index' } }]),
-                            name: $element('span', sort_div, ['名称', '!width: 200px; max-height: 20px;', { dataset: { action: 'sort', key: 'name' } }]),
-                            class: $element('span', sort_div, ['类型', '!width: 90px; max-height: 20px;', { dataset: { action: 'sort', key: 'class' } }]),
-                            pl: $element('span', sort_div, ['战力', '!width: 40px; max-height: 20px;', { dataset: { action: 'sort', key: 'pl' } }]),
-                            wins: $element('span', sort_div, ['胜场', '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'wins' } }]),
-                            kills: $element('span', sort_div, ['击杀', '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'kills' } }]),
-                            gains: $element('span', sort_div, ['礼物', '!width: 30px; max-height: 40px;', { dataset: { action: 'sort', key: 'gains' } }]),
-                            gifts: $element('span', sort_div, ['合计礼物', '!width: 60px; max-height: 20px;', { dataset: { action: 'sort', key: 'gifts' } }]),
-                            morale: $element('span', sort_div, ['士气', '!width: 200px; max-height: 20px; ', { dataset: { action: 'sort', key: 'morale' } }]),
-                            hunger: $element('span', sort_div, ['饥饿度', '!width: 200px; max-height: 20px; ', { dataset: { action: 'sort', key: 'hunger' } }]),
-                          };
-
-                          if (settings.monsterLabDefaultSort === '#') {
-                            _ml.main.sort.key = 'index';
-                            _ml.main.sort.order = 1;
-                            _ml.main.node.sort.index.classList.add('hvut-ml-sort-current');
-                          } else {
-                            _ml.main.sort(settings.monsterLabDefaultSort);
-                          }
-
-                          const side_div = $element('div', $id('monster_outer'), ['.hvut-ml-side']);
-                          $input(['button', '礼物清单'], side_div, null, () => { _ml.main.toggle_summary(); });
-                          $input(['button', '日志'], side_div, null, () => { _ml.main.toggle_log(-1); });
-                          $input(['button', '材料价格'], side_div, null, () => { $price.edit('Materials', _ml.main.change_price); });
-                          $input(['button', '更新击杀与胜场'], side_div, null, () => { _ml.main.feedall(); });
-                          $input(['button', '怪物升级器'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
-                          $input(['button', '战力计算器'], side_div, null, () => { _ml.plc.toggle(); });
-
-                          _ml.main.make_summary();
-
-                          // Monster Upgrader
-                          _ml.upgrade = {
-
-                            pa: [
-                              { query: 'pa_str', text: '力量', crystal: 'Crystal of Vigor' },
-                              { query: 'pa_dex', text: '灵巧', crystal: 'Crystal of Finesse' },
-                              { query: 'pa_agi', text: '敏捷', crystal: 'Crystal of Swiftness' },
-                              { query: 'pa_end', text: '体质', crystal: 'Crystal of Fortitude' },
-                              { query: 'pa_int', text: '智力', crystal: 'Crystal of Cunning' },
-                              { query: 'pa_wis', text: '智慧', crystal: 'Crystal of Knowledge' },
-                            ],
-                            er: [
-                              { query: 'er_fire', text: '火焰', crystal: 'Crystal of Flames' },
-                              { query: 'er_cold', text: '冰冷', crystal: 'Crystal of Frost' },
-                              { query: 'er_elec', text: '闪电', crystal: 'Crystal of Lightning' },
-                              { query: 'er_wind', text: '疾风', crystal: 'Crystal of Tempest' },
-                              { query: 'er_holy', text: '神圣', crystal: 'Crystal of Devotion' },
-                              { query: 'er_dark', text: '黑暗', crystal: 'Crystal of Corruption' },
-                            ],
-                            ct: [
-                              { query: 'affect', text: '寻宝', desc: '增加送礼概率倍率 2.5%' },
-                              { query: 'health', text: '刚毅', desc: '增加怪物生命值 5%' },
-                              { query: 'damage', text: '蛮横', desc: '增加怪物伤害力 2.5%' },
-                              { query: 'accur', text: '命中', desc: '增加怪物命中率 5%' },
-                              { query: 'cevbl', text: '精密', desc: '减少目标有效闪避/格挡率 1%' },
-                              { query: 'cpare', text: '压制', desc: '减少目标有效招架/抵抗率 1%' },
-                              { query: 'parry', text: '拦截', desc: '增加怪物拦截率 0.5%' },
-                              { query: 'resist', text: '弥散', desc: '增加怪物抵抗率 0.5%' },
-                              { query: 'evade', text: '闪避', desc: '增加怪物闪避率 0.5%' },
-                              { query: 'phymit', text: '防御', desc: '增加怪物物理减伤 1%' },
-                              { query: 'magmit', text: '魔防', desc: '增加怪物魔法减伤 1%' },
-                              { query: 'atkspd', text: '迅捷', desc: '增加怪物攻击速度 2.5%' },
-                            ],
-
-                            pa_pl: [0],
-                            er_pl: [0],
-                            pa_crystal: [0],
-                            er_crystal: [0],
-                            pa_morale: [0],
-                            er_morale: [0],
-
-                            node: {
-                              button: $id('hvut-ml-up-button'),
-                            },
-
-                            mousedown: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index, type, item, key } = target.dataset;
-                              if (action === 'sort') {
-                                _ml.upgrade.sort(key);
-                              } else if (action === 'reset') {
-                                _ml.upgrade.reset(index);
-                              } else if (action === 'upgrade') {
-                                const which = e.which === 1 ? 1 : e.which === 3 ? -1 : 0;
-                                _ml.upgrade.exec(index, type, item, which);
-                              }
-                            },
-                            contextmenu: function (e) {
-                              e.preventDefault();
-                            },
-
-                            init: async function () {
-                              if (_ml.upgrade.inited) {
-                                return;
-                              }
-                              _ml.upgrade.inited = true;
-
-                              if (!$item.list) {
-                                _ml.upgrade.node.button.disabled = true;
-                                await $item.once();
-                                _ml.upgrade.pa.forEach((e) => {
-                                  e.stock = $item.count(e.crystal);
-                                });
-                                _ml.upgrade.er.forEach((e) => {
-                                  e.stock = $item.count(e.crystal);
-                                });
-                                _ml.upgrade.ct.stock = $item.count('Chaos Token');
-                                _ml.upgrade.node.button.disabled = false;
-                              }
-                              await _ml.upgrade.update();
-
-                              _ml.upgrade.node.div = $element('div', $id('mainpane'), ['.hvut-ml-up']);
-                              const list = $element('div', _ml.upgrade.node.div, ['.hvut-ml-up-list'], { mousedown: (e) => { _ml.upgrade.mousedown(e); }, contextmenu: (e) => { _ml.upgrade.contextmenu(e); } });
-                              const bottom = $element('div', _ml.upgrade.node.div, ['.hvut-ml-up-bottom']);
-
-                              _ml.upgrade.sort.key = 'index';
-                              _ml.upgrade.sort.order = 1;
-
-                              _ml.upgrade.node.table = $element('table', list, ['.hvut-ml-up-table']);
-                              const thead = $element('tr', _ml.upgrade.node.table);
-                              $element('td', thead, { textContent: '编号', dataset: { action: 'sort', key: 'index' } });
-                              $element('td', thead, ['姓名', { dataset: { action: 'sort', key: 'name' } }]);
-                              $element('td', thead, ['类型', { dataset: { action: 'sort', key: 'class' } }]);
-                              $element('td', thead, ['战力', { dataset: { action: 'sort', key: 'pl' } }]);
-                              $element('td', thead, ['士气', { dataset: { action: 'sort', key: 'morale' } }]);
-                              $element('td', thead, ['*', { dataset: { action: 'reset', index: 'all', desc: '全部重置' } }]);
-
-                              $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'all', desc: '所有主属性强化提升1级，右键降低' } }]);
-                              $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'equal', desc: '均衡提升强化等级' } }]);
-                              _ml.upgrade.pa.forEach((pa, i) => { $element('td', thead, [pa.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: i, desc: pa.crystal } }]); });
-
-                              $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'all', desc: '所有元素减伤强化提升1级，右键降低' } }]);
-                              $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'equal', desc: '均衡提升强化等级' } }]);
-                              _ml.upgrade.er.forEach((er, i) => { $element('td', thead, [er.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'er', item: i, desc: er.crystal } }]); });
-
-                              $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: 'all', desc: '所有混沌强化提升1级，右键降低' } }]);
-                              _ml.upgrade.ct.forEach((ct, i) => { $element('td', thead, [ct.text.slice(0, 3).toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: i, desc: `${ct.text} : ${ct.desc}` } }]); });
-
-                              const pa_ul = $element('ul', bottom, ['.hvut-ml-up-crystal']);
-                              _ml.upgrade.pa.forEach((e) => {
-                                e.li = $element('li', pa_ul);
-                              });
-                              const er_ul = $element('ul', bottom, ['.hvut-ml-up-crystal']);
-                              _ml.upgrade.er.forEach((e) => {
-                                e.li = $element('li', er_ul);
-                              });
-                              _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
-
-                              const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
-                              $input(['button', '保存升级计划'], buttons, null, () => { _ml.upgrade.save(); });
-                              $input(['button', '加载升级计划'], buttons, null, () => { _ml.upgrade.load(); });
-                              _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, () => { _ml.upgrade.force_update(); });
-                              _ml.upgrade.node.run = $input(['button', '执行升级'], buttons, null, () => { _ml.upgrade.run(); });
-                              $input(['button', '关闭'], buttons, null, () => { _ml.upgrade.toggle(); });
-
-                              for (let i = 0; i < 25; i++) {
-                                _ml.upgrade.pa_pl[i + 1] = _ml.upgrade.pa_pl[i] + (3 + i * 0.5);
-                                _ml.upgrade.pa_crystal[i + 1] = _ml.upgrade.pa_crystal[i] + Math.round(50 * Math.pow(1.555079154, i));
-                                _ml.upgrade.pa_morale[i + 1] = _ml.upgrade.pa_morale[i] + (3 + Math.ceil(i * 0.5)) * 1000;
-                              }
-                              for (let i = 0; i < 50; i++) {
-                                _ml.upgrade.er_pl[i + 1] = _ml.upgrade.er_pl[i] + Math.floor(1 + i * 0.1);
-                                _ml.upgrade.er_crystal[i + 1] = _ml.upgrade.er_crystal[i] + Math.round(10 * Math.pow(1.26485522, i));
-                                _ml.upgrade.er_morale[i + 1] = _ml.upgrade.er_morale[i] + (1 + Math.floor(i * 0.1)) * 2000;
-                              }
-                              _ml.upgrade.pa.forEach((e) => {
-                                e.used = 0;
-                                e.require = 0;
-                              });
-                              _ml.upgrade.er.forEach((e) => {
-                                e.used = 0;
-                                e.require = 0;
-                              });
-
-                              let ct_slot = $qsa('#slot_pane > div.msl').length;
-                              const ct_next = /Cost: (\d+) Chaos Token/.test($id('monster_actions').textContent) && parseInt(RegExp.$1);
-                              if (ct_next === Math.ceil(1 + Math.pow(ct_slot, 1.2))) {
-                              } else if (ct_next === Math.ceil(1 + Math.pow(ct_slot / 2, 1.2))) {
-                                ct_slot = ct_slot / 2;
-                              } else {
-                                ct_slot = 0;
-                              }
-                              _ml.upgrade.ct.unlock = 0;
-                              for (let i = 0; i < ct_slot; i++) {
-                                _ml.upgrade.ct.unlock += Math.ceil(1 + Math.pow(i, 1.2));
-                              }
-                              _ml.upgrade.ct.used = 0;
-                              _ml.upgrade.ct.require = 0;
-
-                              // create mob list table here
-                              _ml.mobs.forEach((mob) => {
-                                mob.node.tr = $element('tr', _ml.upgrade.node.table);
-                                const tr = mob.node.tr;
-
-                                $element('td', tr, mob.index);
-                                $element('td', tr, mob.name);
-                                $element('td', tr, mob.class);
-                                mob.node.pl = $element('td', tr, mob.pl);
-                                mob.node.morale = $element('td', tr, [(mob.morale / 100), (mob.morale < settings.monsterLabMorale ? '.hvut-ml-up-change' : '')]);
-                                $element('td', tr, ['*', { dataset: { action: 'reset', index: mob.index } }]);
-
-                                $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: 'all' } }]);
-                                $element('td', tr, ['=', { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: 'equal' } }]);
-                                mob.pa.forEach((e, i) => {
-                                  e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: i } }]);
-                                  e.to = e.value;
-                                  e.used = _ml.upgrade.pa_crystal[e.value];
-                                  _ml.upgrade.pa[i].used += e.used;
-                                  e.require = 0;
-                                });
-
-                                $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: 'all' } }]);
-                                $element('td', tr, ['=', { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: 'equal' } }]);
-                                mob.er.forEach((e, i) => {
-                                  e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: i } }]);
-                                  e.to = e.value;
-                                  e.used = _ml.upgrade.er_crystal[e.value];
-                                  _ml.upgrade.er[i].used += e.used;
-                                  e.require = 0;
-                                });
-
-                                mob.ct.used = 0;
-                                mob.ct.require = 0;
-                                $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'ct', item: 'all' } }]);
-                                mob.ct.forEach((e, i) => {
-                                  e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'ct', item: i } }]);
-                                  e.to = e.value;
-                                  mob.ct.used += (1 + e.value) * e.value / 2;
-                                });
-                                _ml.upgrade.ct.used += mob.ct.used;
-                              });
-
-                              _ml.upgrade.sum();
-                            },
-
-                            update: async function () {
-                              const mobs = _ml.mobs.filter((mob) => mob.update_needed);
-                              const total = mobs.length;
-                              if (!total) {
-                                return;
-                              }
-
-                              _ml.upgrade.node.button.disabled = true;
-                              _ml.upgrade.node.button.value = '更新数据中...';
-                              if (_ml.upgrade.node.run) {
-                                _ml.upgrade.node.run.disabled = true;
-                                _ml.upgrade.node.run.value = '更新数据中...';
-                              }
-
-                              async function update(mob) {
-                                const html = await $ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`);
-                                const doc = $doc(html);
-                                done++;
-                                mob.update_needed = false;
-                                _ml.parse(mob, doc);
-                                _ml.upgrade.node.button.value = `更新中... (${done}/${total})`;
-                                if (_ml.upgrade.node.run) {
-                                  _ml.upgrade.node.run.value = `${done}/${total}`;
-                                }
-                              }
-
-                              let done = 0;
-                              const requests = mobs.map((mob) => update(mob));
-                              await Promise.all(requests);
-
-                              setValue('ml_log', _ml.log);
-                              _ml.upgrade.node.button.disabled = false;
-                              _ml.upgrade.node.button.value = '更新怪物数据';
-                              if (_ml.upgrade.node.run) {
-                                _ml.upgrade.node.run.value = '完成';
-                              }
-                            },
-
-                            force_update: function () {
-                              _ml.mobs.forEach((mob) => {
-                                mob.log.pl = -1;
-                              });
-                              setValue('ml_log', _ml.log);
-                              location.href = location.href;
-                            },
-
-                            sort: function (key) {
-                              if (!['#', 'index', 'name', 'class', 'pl', 'wins', 'kills', '+', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
-                                return;
-                              }
-                              if (key === '#') {
-                                key = 'index';
-                              }
-                              if (key === '+') {
-                                key = 'gains';
-                              }
-                              let order = ['wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
-                              if (key === _ml.upgrade.sort.key) {
-                                order = _ml.upgrade.sort.order * -1;
-                              }
-                              _ml.upgrade.sort.key = key;
-                              _ml.upgrade.sort.order = order;
-
-                              if (!_ml.upgrade.sort.list) {
-                                _ml.upgrade.sort.list = _ml.mobs.filter((mob) => mob);
-                              }
-                              _ml.upgrade.sort.list.sort((a, b) => (a[key] == b[key] ? 0 : a[key] == undefined ? 1 : b[key] == undefined ? -1 : (a[key] > b[key] ? 1 : -1) * order));
-                              _ml.upgrade.node.table.append(..._ml.upgrade.sort.list.map((mob) => mob.node.tr));
-                            },
-
-                            exec: function (index, type, item, which) {
-                              let mobs;
-                              if (index === 'all') {
-                                mobs = _ml.mobs;
-                              } else {
-                                mobs = [_ml.mobs[index]];
-                              }
-                              mobs.forEach((mob) => {
-                                let items;
-                                if (item === 'equal') {
-                                  const max = Math.max(...mob[type].map((e) => e.to));
-                                  mob[type].forEach((e) => { e.to = max; });
-                                  items = mob[type];
-                                  which = 0;
-                                } else if (item === 'all') {
-                                  items = mob[type];
-                                } else {
-                                  items = [mob[type][item]];
-                                }
-                                items.forEach((e) => {
-                                  const value = e.value;
-                                  let to = e.to + which;
-                                  const max = type === 'pa' ? 25 : type === 'er' ? 50 : type === 'ct' ? e.max : 0;
-                                  if (to < value) {
-                                    to = value;
-                                  } else if (to > max) {
-                                    to = max;
-                                  }
-                                  e.to = to;
-                                  e.node.textContent = to;
-                                  if (to > value) {
-                                    e.node.classList.add('hvut-ml-up-change');
-                                  } else {
-                                    e.node.classList.remove('hvut-ml-up-change');
-                                  }
-                                });
-                                _ml.upgrade.calc(mob);
-
-                                mob.node.pl.textContent = mob.pl_to;
-                                if (mob.pl === mob.pl_to) {
-                                  mob.node.pl.classList.remove('hvut-ml-up-change');
-                                } else {
-                                  mob.node.pl.classList.add('hvut-ml-up-change');
-                                }
-                                mob.node.morale.textContent = mob.morale_to / 100;
-                                if (mob.morale_to < settings.monsterLabMorale) {
-                                  mob.node.morale.classList.add('hvut-ml-up-change');
-                                } else {
-                                  mob.node.morale.classList.remove('hvut-ml-up-change');
-                                }
-                              });
-
-                              _ml.upgrade.sum(true);
-                            },
-
-                            reset: function (index) {
-                              let mobs;
-                              if (index === 'all') {
-                                mobs = _ml.mobs;
-                              } else {
-                                mobs = [_ml.mobs[index]];
-                              }
-                              mobs.forEach((mob) => {
-                                mob.pa.forEach((e) => {
-                                  e.to = e.value;
-                                });
-                                mob.er.forEach((e) => {
-                                  e.to = e.value;
-                                });
-                                mob.ct.forEach((e) => {
-                                  e.to = e.value;
-                                });
-                                _ml.upgrade.exec(mob.index, 'pa', 'all', 0);
-                                _ml.upgrade.exec(mob.index, 'er', 'all', 0);
-                                _ml.upgrade.exec(mob.index, 'ct', 'all', 0);
-                                //_ml.upgrade.calc(mob);
-                              });
-                              //_ml.upgrade.sum(true);
-                            },
-
-                            calc: function (mob) {
-                              mob.pa.forEach((e) => {
-                                e.require = _ml.upgrade.pa_crystal[e.to] - _ml.upgrade.pa_crystal[e.value];
-                              });
-                              mob.er.forEach((e) => {
-                                e.require = _ml.upgrade.er_crystal[e.to] - _ml.upgrade.er_crystal[e.value];
-                              });
-
-                              mob.ct.require = mob.ct.reduce((s, e) => s + (e.value + 1 + e.to) * (e.to - e.value) / 2, 0);
-                              mob.pl_to = Math.round(
-                                mob.pa.reduce((s, e) => s + _ml.upgrade.pa_pl[e.to], 0)
-                                + mob.er.reduce((s, e) => s + _ml.upgrade.er_pl[e.to], 0)
-                              );
-                              mob.morale_to = Math.min(
-                                24000,
-                                mob.morale
-                                + mob.pa.reduce((s, e) => s + (_ml.upgrade.pa_morale[e.to] - _ml.upgrade.pa_morale[e.value]), 0)
-                                + mob.er.reduce((s, e) => s + (_ml.upgrade.er_morale[e.to] - _ml.upgrade.er_morale[e.value]), 0)
-                              );
-                            },
-
-                            sum: function (calc) {
-                              if (calc) {
-                                _ml.upgrade.pa.forEach((e) => {
-                                  e.require = 0;
-                                });
-                                _ml.upgrade.er.forEach((e) => {
-                                  e.require = 0;
-                                });
-                                _ml.upgrade.ct.require = 0;
-
-                                _ml.mobs.forEach((mob) => {
-                                  mob.pa.forEach((e, i) => {
-                                    _ml.upgrade.pa[i].require += e.require;
-                                  });
-                                  mob.er.forEach((e, i) => {
-                                    _ml.upgrade.er[i].require += e.require;
-                                  });
-                                  _ml.upgrade.ct.require += mob.ct.require;
-                                });
-                              }
-
-                              _ml.upgrade.pa.forEach((e) => {
-                                e.li.innerHTML = `
+    _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
+    _ml.mobs = [];
+    _ml.now = Date.now();
+    _ml.log = $config.get('ml_log', [{ version: 1 }]);
+
+    _ml.parse = function (mob, doc) {
+      mob.pl = parseInt($qs('.msl > div:nth-child(3)', doc).textContent.slice(4));
+      mob.hunger = parseInt($qs('.msl > div:nth-child(5) img', doc).style.width) * 200;
+      mob.morale = parseInt($qs('.msl > div:nth-child(6) img', doc).style.width) * 200;
+      mob.wins = parseInt($qs('#monsterstats_right > div:nth-child(2) > div:nth-child(2)', doc).textContent);
+      mob.kills = parseInt($qs('#monsterstats_right > div:nth-child(3) > div:nth-child(2)', doc).textContent);
+      mob.log.pl = mob.pl;
+      mob.log.wins = mob.wins;
+      mob.log.kills = mob.kills;
+      mob.log.update = Date.now();
+
+      const stats = $qsa('#monsterstats_top td:nth-child(2)', doc).map((td) => parseInt(td.textContent));
+      const pa = stats.slice(0, 6);
+      const er = stats.slice(6, 12);
+      mob.pa.forEach((e, i) => {
+        e.value = pa[i];
+        mob.log.pa[i][0] = pa[i];
+      });
+      mob.er.forEach((e, i) => {
+        e.value = er[i];
+        mob.log.er[i][0] = er[i];
+      });
+
+      $qsa('#chaosupg td:nth-child(2)', doc).forEach((td, i) => {
+        mob.ct[i].value = $qsa('.mcu2', td).length;
+        mob.log.ct[i][0] = mob.ct[i].value;
+        mob.ct[i].max = 20 - $qsa('.mcu0', td).length;
+        mob.log.ct[i][2] = mob.ct[i].max;
+      });
+
+      $config.set('ml_log', _ml.log);
+    };
+
+    _ml.price2str = function (price) {
+      let str;
+      if (price > 1000000) {
+        str = (Math.round(price / 10000) / 100) + 'm';
+      } else if (price > 1000) {
+        str = (Math.round(price / 10) / 100) + 'k';
+      } else {
+        str = Math.round(price) + '';
+      }
+      return str;
+    };
+
+    // Monster List
+    _ml.main = {
+
+      node: {},
+      gains: {},
+
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, key } = target.dataset;
+        if (action === 'sort') {
+          _ml.main.sort(key);
+        } else if (action === 'morale') {
+          e.stopPropagation();
+          _ml.main.feed(index, 'drugs');
+        } else if (action === 'hunger') {
+          e.stopPropagation();
+          _ml.main.feed(index, 'food');
+        } else if (action === 'update') {
+          e.stopPropagation();
+          _ml.main.feed(index);
+        }
+      },
+      mouseover: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index } = target.dataset;
+        if (action === 'log') {
+          _ml.main.show_log(index);
+        }
+      },
+      mouseout: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index } = target.dataset;
+        if (action === 'log') {
+          _ml.main.hide_log(index);
+        }
+      },
+      sort: function (key) {
+        if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
+          return;
+        }
+        let order = ['pl', 'wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
+        if (key === _ml.main.sort.key) {
+          order = _ml.main.sort.order * -1;
+        }
+        if (_ml.main.sort.key) {
+          _ml.main.node.sort[_ml.main.sort.key].classList.remove('hvut-ml-sort-current');
+        }
+        _ml.main.node.sort[key].classList.add('hvut-ml-sort-current');
+        _ml.main.sort.key = key;
+        _ml.main.sort.order = order;
+        if (!_ml.main.sort.list) {
+          const empty = $qsa('#slot_pane > div[onclick*="&create=new"]').map((div) => ({ node: { div }, index: parseInt(div.firstElementChild.textContent) }));
+          _ml.main.sort.list = _ml.mobs.filter((mob) => mob).concat(empty);
+        }
+        _ml.main.sort.list.sort((a, b) => (a[key] == b[key] ? 0 : a[key] == undefined ? 1 : b[key] == undefined ? -1 : (a[key] > b[key] ? 1 : -1) * order));
+        $id('slot_pane').prepend(..._ml.main.sort.list.map((mob) => mob.node.div));
+      },
+      feed: async function (index, food) {
+        const mob = _ml.mobs[index];
+        if (!mob.status) {
+          return;
+        }
+        mob.status = 0;
+        mob.node.wins.textContent = '...';
+        const html = await $ajax.fetch('?s=Bazaar&ss=ml&slot=' + mob.index, food ? 'food_action=' + food : '');
+        const doc = $doc(html);
+        _ml.main.onsuccess(index, doc);
+        //_ml.main.onerror(index);
+      },
+      feedall: function (stat, value, food) {
+        _ml.mobs.forEach((mob) => { _ml.main.feed(mob.index, !value || value >= mob[stat] ? food : null); });
+      },
+      onsuccess: function (index, doc) {
+        const mob = _ml.mobs[index];
+        _ml.parse(mob, doc);
+        mob.status = 1;
+        mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
+        mob.node.wins.classList.remove('hvut-ml-outdated');
+        mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
+        mob.node.hunger.textContent = mob.hunger;
+        mob.node.hungerbar.style.width = (mob.hunger / 200) + 'px';
+        mob.node.morale.textContent = mob.morale;
+        mob.node.moralebar.style.width = (mob.morale / 200) + 'px';
+      },
+      onerror: function (index) {
+        const mob = _ml.mobs[index];
+        mob.status = -1;
+        mob.node.wins.classList.add('hvut-ml-outdated');
+        mob.node.wins.textContent = 'failed';
+      },
+      edit_price: function () {
+        _ml.main.make_summary();
+        if (_ml.mobs[-1].node.log) {
+          _ml.main.make_log(-1);
+        }
+        _ml.mobs.forEach((mob) => {
+          if (mob.node.log) {
+            _ml.main.make_log(mob.index);
+          }
+        });
+      },
+      toggle_summary: function () {
+        _ml.main.node.summary?.classList.toggle('hvut-none');
+      },
+      make_summary: function () {
+        const mobs = Object.values(_ml.main.gains);
+        if (!mobs.length) {
+          return;
+        }
+        const summary = {};
+        const gains = mobs.flat();
+        const prices = $price.get('Materials');
+        let income = 0;
+        gains.forEach((g) => {
+          if (!summary[g]) {
+            summary[g] = 0;
+          }
+          summary[g]++;
+          income += (prices[g] || 0);
+        });
+        if (!_ml.main.node.summary) {
+          _ml.main.node.summary = $element('ul', $id('monster_outer'), ['.hvut-ml-summary']);
+        }
+        _ml.main.node.summary.innerHTML = '';
+        $element('li', _ml.main.node.summary, `${mobs.length} monster(s) brought you ${gains.length} gift(s), ${_ml.price2str(income)} credits`);
+        _ml.materials.forEach((g) => {
+          if (summary[g]) {
+            $element('li', _ml.main.node.summary, `${summary[g]} x ${g}`);
+          }
+        });
+      },
+      toggle_log: function (index) {
+        const mob = _ml.mobs[index];
+        if (mob.node.log?.parentNode) {
+          _ml.main.hide_log(index);
+        } else {
+          _ml.main.show_log(index);
+        }
+      },
+      show_log: function (index) {
+        const mob = _ml.mobs[index];
+        if (!mob.node.log) {
+          _ml.main.make_log(index);
+        }
+        $id('monster_outer').appendChild(mob.node.log);
+      },
+      hide_log: function (index) {
+        const mob = _ml.mobs[index];
+        mob.node.log?.remove();
+      },
+      make_log: function (index) {
+        const mob = _ml.mobs[index];
+        if (!mob.node.log) {
+          mob.node.log = $element('ul', null, ['.hvut-ml-log']);
+        }
+        mob.node.log.innerHTML = '';
+        const date = mob.log.date;
+        const days = (_ml.now - date) / (1000 * 60 * 60 * 24);
+        const prices = $price.get('Materials');
+        let count = 0;
+        let income = 0;
+        _ml.materials.forEach((mat, i) => {
+          const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + mat);
+          if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
+            li.classList.add('hvut-ml-margin');
+          }
+          if (i === 27) {
+            li.classList.add('hvut-ml-break');
+          }
+          count += mob.log.gifts[i];
+          income += mob.log.gifts[i] * (prices[mat] || 0);
+        });
+
+        mob.node.log.prepend(
+          $element('li', null, `For ${Math.round(days * 10) / 10} days / Since ${(new Date(date)).toLocaleString()}`),
+          $element('li', null, `- Total: ${count} gifts, ${_ml.price2str(income)} credits`),
+          $element('li', null, `- Daily: ${Math.round(count / days * 10) / 10} gifts, ${_ml.price2str(income / days)} credits`)
+        );
+      },
+
+    };
+
+    // Initializing List
+    if ($id('messagebox_outer')) {
+      let monster;
+      let gift;
+      get_message(null, true).forEach((msg) => {
+        if (!msg) {
+          return;
+        } else if (/^(.+) brought you (?:a gift|some gifts)!$/.test(msg)) {
+          monster = RegExp.$1.toLowerCase();
+          _ml.main.gains[monster] = [];
+        } else if (/^Received (?:a|some) (.+)$/.test(msg)) {
+          gift = RegExp.$1;
+          _ml.main.gains[monster].push(gift);
+        } else {
+          popup(msg);
+        }
+      });
+      $id('messagebox_outer').classList.add('hvut-none');
+    }
+
+    _ml.mobs[-1] = { log: { date: _ml.now, gifts: (new Array(54)).fill(0) }, node: {} };
+
+    $qsa('#slot_pane > div').forEach((div, i) => {
+      const index = i + 1;
+      if (div.getAttribute('onclick').includes('&create=new')) {
+        _ml.log[index] = null;
+        return;
+      }
+
+      let log = _ml.log[index];
+      if (!log) {
+        log = { date: _ml.now, update: 0, pl: null, wins: 0, kills: 0, pa: [], er: [], ct: [], gifts: [] };
+        _ml.log[index] = log;
+        for (let i = 0; i < 6; i++) {
+          log.pa[i] = [0, 0];
+          log.er[i] = [0, 0];
+        }
+        for (let i = 0; i < 12; i++) {
+          log.ct[i] = [0, 0, 0];
+        }
+        for (let i = 0; i < 54; i++) {
+          log.gifts[i] = 0;
+        }
+      }
+      if (_ml.mobs[-1].log.date > log.date) {
+        _ml.mobs[-1].log.date = log.date;
+      }
+
+      const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
+      _ml.mobs[mob.index] = mob;
+
+      mob.name = div.children[1].textContent;
+      mob.class = div.children[3].textContent;
+      mob.pl = parseInt(div.children[2].textContent.slice(4));
+      div.children[2].textContent = mob.pl;
+      if (mob.pl !== mob.log.pl) {
+        mob.update_needed = true;
+      }
+      mob.wins = mob.log.wins;
+      mob.kills = mob.log.kills;
+      for (let i = 0; i < 6; i++) {
+        mob.pa[i] = { value: log.pa[i][0], to: 0 };
+        mob.er[i] = { value: log.er[i][0], to: 0 };
+      }
+      for (let i = 0; i < 12; i++) {
+        mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
+      }
+
+      const hungerdiv = div.children[4];
+      const moralediv = div.children[5];
+      hungerdiv.dataset.action = 'hunger';
+      hungerdiv.dataset.index = index;
+      moralediv.dataset.action = 'morale';
+      moralediv.dataset.index = index;
+
+      mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
+      mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
+      mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
+      mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
+      mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
+      mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
+      mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
+      mob.node.gains = $element('div', div, ['.hvut-ml-gains']);
+      mob.node.gifts = $element('div', div, { dataset: { action: 'log', index } });
+
+      if (mob.log.update) {
+        mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
+        mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
+        if (mob.log.update < Date.now() - 7 * 24 * 60 * 60 * 1000) {
+          mob.node.wins.classList.add('hvut-ml-outdated');
+        }
+      } else {
+        mob.node.wins.textContent = '-';
+      }
+
+      const gains = _ml.main.gains[mob.name.toLowerCase()];
+      if (gains) {
+        mob.gains = gains.length;
+        div.classList.add('hvut-ml-new');
+        $element('span', mob.node.gains, gains.length);
+        const ul = $element('ul', mob.node.gains);
+        gains.forEach((g) => {
+          $element('li', ul, g);
+          mob.log.gifts[_ml.materials.indexOf(g)]++;
+        });
+      }
+
+      for (let i = 0; i < 54; i++) {
+        _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
+      }
+      mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
+      mob.node.gifts.textContent = mob.gifts;
+    });
+
+    $config.set('ml_log', _ml.log);
+
+    $id('monster_list').addEventListener('click', _ml.main.click, true);
+    $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
+    $id('monster_list').addEventListener('mouseout', _ml.main.mouseout);
+
+    const sort_div = $element('div', [$id('slot_pane'), 'beforebegin'], ['.hvut-ml-sort hvut-cphu-sub']);
+    _ml.main.node.sort = {
+      index: $element('span', sort_div, [{ textContent: '#' }, '!width: 30px;', { dataset: { action: 'sort', key: 'index' } }]),
+      name: $element('span', sort_div, ['Name', '!width: 210px;', { dataset: { action: 'sort', key: 'name' } }]),
+      class: $element('span', sort_div, ['Class', '!width: 70px;', { dataset: { action: 'sort', key: 'class' } }]),
+      pl: $element('span', sort_div, ['PL', '!width: 40px;', { dataset: { action: 'sort', key: 'pl' } }]),
+      wins: $element('span', sort_div, ['Wins', '!width: 40px;', { dataset: { action: 'sort', key: 'wins' } }]),
+      kills: $element('span', sort_div, ['Kills', '!width: 40px;', { dataset: { action: 'sort', key: 'kills' } }]),
+      gains: $element('span', sort_div, ['+', '!width: 25px;', { dataset: { action: 'sort', key: 'gains' } }]),
+      gifts: $element('span', sort_div, ['Gifts', '!width: 50px;', { dataset: { action: 'sort', key: 'gifts' } }]),
+      morale: $element('span', sort_div, ['Morale', '!width: 200px;', { dataset: { action: 'sort', key: 'morale' } }]),
+      hunger: $element('span', sort_div, ['Hunger', '!width: 200px;', { dataset: { action: 'sort', key: 'hunger' } }]),
+    };
+
+    if ($config.settings.monsterLabDefaultSort === 'index') {
+      _ml.main.sort.key = 'index';
+      _ml.main.sort.order = 1;
+      _ml.main.node.sort.index.classList.add('hvut-ml-sort-current');
+    } else {
+      _ml.main.sort($config.settings.monsterLabDefaultSort);
+    }
+
+    const side_div = $element('div', $id('monster_outer'), ['.hvut-side hvut-ml-side']);
+    $input(['button', 'Gift Summary'], side_div, null, () => { _ml.main.toggle_summary(); });
+    $input(['button', 'Monster Lab Log'], side_div, null, () => { _ml.main.toggle_log(-1); });
+    $input(['button', 'Item Prices'], side_div, { className: 'hvut-side-margin' }, () => { $price.edit('Materials', 'ma', _ml.main.edit_price); });
+    $input(['button', 'Update Wins/Kills'], side_div, null, () => { _ml.main.feedall(); });
+    $input(['button', 'Monster Upgrader'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
+    $input(['button', 'Power Level Calculator'], side_div, null, () => { _ml.plc.toggle(); });
+
+    _ml.main.make_summary();
+
+    // Monster Upgrader
+    _ml.upgrade = {
+
+      pa: [
+        { query: 'pa_str', text: 'STR', crystal: 'Crystal of Vigor' },
+        { query: 'pa_dex', text: 'DEX', crystal: 'Crystal of Finesse' },
+        { query: 'pa_agi', text: 'AGI', crystal: 'Crystal of Swiftness' },
+        { query: 'pa_end', text: 'END', crystal: 'Crystal of Fortitude' },
+        { query: 'pa_int', text: 'INT', crystal: 'Crystal of Cunning' },
+        { query: 'pa_wis', text: 'WIS', crystal: 'Crystal of Knowledge' },
+      ],
+      er: [
+        { query: 'er_fire', text: 'FIRE', crystal: 'Crystal of Flames' },
+        { query: 'er_cold', text: 'COLD', crystal: 'Crystal of Frost' },
+        { query: 'er_elec', text: 'ELEC', crystal: 'Crystal of Lightning' },
+        { query: 'er_wind', text: 'WIND', crystal: 'Crystal of Tempest' },
+        { query: 'er_holy', text: 'HOLY', crystal: 'Crystal of Devotion' },
+        { query: 'er_dark', text: 'DARK', crystal: 'Crystal of Corruption' },
+      ],
+      ct: [
+        { query: 'affect', text: 'Scavenging', desc: 'Increases the gift factor by 2.5%' },
+        { query: 'health', text: 'Fortitude', desc: 'Increases monster health by 5%' },
+        { query: 'damage', text: 'Brutality', desc: 'Increases monster damage by 2.5%' },
+        { query: 'accur', text: 'Accuracy', desc: 'Increases monster accuracy by 5%' },
+        { query: 'cevbl', text: 'Precision', desc: 'Decreases effective target evade/block by 1%' },
+        { query: 'cpare', text: 'Overpower', desc: 'Decreases effective target parry/resist by 1%' },
+        { query: 'parry', text: 'Interception', desc: 'Increases monster parry by 0.5%' },
+        { query: 'resist', text: 'Dissipation', desc: 'Increases monster resist by 0.5%' },
+        { query: 'evade', text: 'Evasion', desc: 'Increases monster evade by 0.5%' },
+        { query: 'phymit', text: 'Defense', desc: 'Increases monster physical mitigation by 1%' },
+        { query: 'magmit', text: 'Warding', desc: 'Increases monster magical mitigation by 1%' },
+        { query: 'atkspd', text: 'Swiftness', desc: 'Increases monster attack speed by 2.5%' },
+      ],
+
+      pa_pl: [0],
+      er_pl: [0],
+      pa_crystal: [0],
+      er_crystal: [0],
+      pa_morale: [0],
+      er_morale: [0],
+
+      node: {
+        button: $id('hvut-ml-up-button'),
+      },
+
+      mousedown: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type, item, key } = target.dataset;
+        if (action === 'sort') {
+          _ml.upgrade.sort(key);
+        } else if (action === 'reset') {
+          _ml.upgrade.reset(index);
+        } else if (action === 'upgrade') {
+          const inc = e.button === 0 ? 1 : e.button === 2 ? -1 : 0;
+          _ml.upgrade.exec(index, type, item, inc);
+        }
+      },
+      contextmenu: function (e) {
+        e.preventDefault();
+      },
+
+      init: async function () {
+        if (_ml.upgrade.inited) {
+          return;
+        }
+        _ml.upgrade.inited = true;
+
+        _ml.upgrade.node.button.disabled = true;
+        await $item.once();
+        _ml.upgrade.pa.forEach((e) => {
+          e.stock = $item.count(e.crystal);
+        });
+        _ml.upgrade.er.forEach((e) => {
+          e.stock = $item.count(e.crystal);
+        });
+        _ml.upgrade.ct.stock = $item.count('Chaos Token');
+        _ml.upgrade.node.button.disabled = false;
+        await _ml.upgrade.update();
+
+        _ml.upgrade.node.div = $element('div', $id('mainpane'), ['.hvut-ml-up']);
+        const list = $element('div', _ml.upgrade.node.div, ['.hvut-ml-up-list'], { mousedown: (e) => { _ml.upgrade.mousedown(e); }, contextmenu: (e) => { _ml.upgrade.contextmenu(e); } });
+        const bottom = $element('div', _ml.upgrade.node.div, ['.hvut-ml-up-bottom']);
+
+        _ml.upgrade.sort.key = 'index';
+        _ml.upgrade.sort.order = 1;
+
+        _ml.upgrade.node.table = $element('table', list, ['.hvut-ml-up-table']);
+        const thead = $element('tr', _ml.upgrade.node.table);
+        $element('td', thead, { textContent: '#', dataset: { action: 'sort', key: 'index' } });
+        $element('td', thead, ['name', { dataset: { action: 'sort', key: 'name' } }]);
+        $element('td', thead, ['class', { dataset: { action: 'sort', key: 'class' } }]);
+        $element('td', thead, ['pl', { dataset: { action: 'sort', key: 'pl' } }]);
+        $element('td', thead, ['morale', { dataset: { action: 'sort', key: 'morale' } }]);
+        $element('td', thead, ['*', { dataset: { action: 'reset', index: 'all', desc: 'Reset' } }]);
+
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'all', desc: 'Increase / Decrease Primary Attributes' } }]);
+        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'equal', desc: 'Equalize Primary Attributes' } }]);
+        _ml.upgrade.pa.forEach((pa, i) => { $element('td', thead, [pa.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: i, desc: pa.crystal } }]); });
+
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'all', desc: 'Increase / Decrease Elemental Mitigations' } }]);
+        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'equal', desc: 'Equalize Elemental Mitigations' } }]);
+        _ml.upgrade.er.forEach((er, i) => { $element('td', thead, [er.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'er', item: i, desc: er.crystal } }]); });
+
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: 'all', desc: 'Increase / Decrease Token Stats' } }]);
+        _ml.upgrade.ct.forEach((ct, i) => { $element('td', thead, [ct.text.slice(0, 3).toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: i, desc: `${ct.text} : ${ct.desc}` } }]); });
+
+        const pa_ul = $element('ul', bottom, ['.hvut-ml-up-crystal']);
+        _ml.upgrade.pa.forEach((e) => {
+          e.li = $element('li', pa_ul);
+        });
+        const er_ul = $element('ul', bottom, ['.hvut-ml-up-crystal']);
+        _ml.upgrade.er.forEach((e) => {
+          e.li = $element('li', er_ul);
+        });
+        _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
+
+        const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
+        $input(['button', 'Save'], buttons, null, () => { _ml.upgrade.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.upgrade.load(); });
+        _ml.upgrade.node.update = $input(['button', 'Update'], buttons, null, () => { _ml.upgrade.force_update(); });
+        _ml.upgrade.node.run = $input(['button', 'Run'], buttons, null, () => { _ml.upgrade.run(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.upgrade.toggle(); });
+
+        for (let i = 0; i < 25; i++) {
+          _ml.upgrade.pa_pl[i + 1] = _ml.upgrade.pa_pl[i] + (3 + i * 0.5);
+          _ml.upgrade.pa_crystal[i + 1] = _ml.upgrade.pa_crystal[i] + Math.round(50 * Math.pow(1.555079154, i));
+          _ml.upgrade.pa_morale[i + 1] = _ml.upgrade.pa_morale[i] + (3 + Math.ceil(i * 0.5)) * 1000;
+        }
+        for (let i = 0; i < 50; i++) {
+          _ml.upgrade.er_pl[i + 1] = _ml.upgrade.er_pl[i] + Math.floor(1 + i * 0.1);
+          _ml.upgrade.er_crystal[i + 1] = _ml.upgrade.er_crystal[i] + Math.round(10 * Math.pow(1.26485522, i));
+          _ml.upgrade.er_morale[i + 1] = _ml.upgrade.er_morale[i] + (1 + Math.floor(i * 0.1)) * 2000;
+        }
+        _ml.upgrade.pa.forEach((e) => {
+          e.used = 0;
+          e.require = 0;
+        });
+        _ml.upgrade.er.forEach((e) => {
+          e.used = 0;
+          e.require = 0;
+        });
+
+        let ct_slot = $qsa('#slot_pane > div.msl').length;
+        const ct_next = parseInt(/Cost: (\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);
+        if (ct_next === Math.ceil(1 + Math.pow(ct_slot, 1.2))) {
+        } else if (ct_next === Math.ceil(1 + Math.pow(ct_slot / 2, 1.2))) {
+          ct_slot = ct_slot / 2;
+        } else {
+          ct_slot = 0;
+        }
+        _ml.upgrade.ct.unlock = 0;
+        for (let i = 0; i < ct_slot; i++) {
+          _ml.upgrade.ct.unlock += Math.ceil(1 + Math.pow(i, 1.2));
+        }
+        _ml.upgrade.ct.used = 0;
+        _ml.upgrade.ct.require = 0;
+
+        // create mob list table here
+        _ml.mobs.forEach((mob) => {
+          mob.node.tr = $element('tr', _ml.upgrade.node.table);
+          const tr = mob.node.tr;
+
+          $element('td', tr, mob.index);
+          $element('td', tr, mob.name);
+          $element('td', tr, mob.class);
+          mob.node.pl = $element('td', tr, mob.pl);
+          mob.node.morale = $element('td', tr, mob.morale / 100);
+          $element('td', tr, ['*', { dataset: { action: 'reset', index: mob.index } }]);
+
+          $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: 'all' } }]);
+          $element('td', tr, ['=', { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: 'equal' } }]);
+          mob.pa.forEach((e, i) => {
+            e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: i } }]);
+            e.to = e.value;
+            e.used = _ml.upgrade.pa_crystal[e.value];
+            _ml.upgrade.pa[i].used += e.used;
+            e.require = 0;
+          });
+
+          $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: 'all' } }]);
+          $element('td', tr, ['=', { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: 'equal' } }]);
+          mob.er.forEach((e, i) => {
+            e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'er', item: i } }]);
+            e.to = e.value;
+            e.used = _ml.upgrade.er_crystal[e.value];
+            _ml.upgrade.er[i].used += e.used;
+            e.require = 0;
+          });
+
+          mob.ct.used = 0;
+          mob.ct.require = 0;
+          $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'ct', item: 'all' } }]);
+          mob.ct.forEach((e, i) => {
+            e.node = $element('td', tr, [e.value, { dataset: { action: 'upgrade', index: mob.index, type: 'ct', item: i } }]);
+            e.to = e.value;
+            mob.ct.used += (1 + e.value) * e.value / 2;
+          });
+          _ml.upgrade.ct.used += mob.ct.used;
+        });
+
+        _ml.upgrade.sum();
+        _ml.upgrade.load();
+      },
+
+      update: async function () {
+        const mobs = _ml.mobs.filter((mob) => mob.update_needed);
+        const total = mobs.length;
+        if (!total) {
+          return;
+        }
+
+        _ml.upgrade.node.button.disabled = true;
+        _ml.upgrade.node.button.value = 'Updating... ...';
+        if (_ml.upgrade.node.run) {
+          _ml.upgrade.node.run.disabled = true;
+          _ml.upgrade.node.run.value = 'Updating...';
+        }
+
+        async function update(mob) {
+          const html = await $ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`);
+          const doc = $doc(html);
+          done++;
+          mob.update_needed = false;
+          _ml.parse(mob, doc);
+          _ml.upgrade.node.button.value = `Updating... (${done}/${total})`;
+          if (_ml.upgrade.node.run) {
+            _ml.upgrade.node.run.value = `${done}/${total}`;
+          }
+        }
+
+        let done = 0;
+        const requests = mobs.map((mob) => update(mob));
+        await Promise.all(requests);
+
+        $config.set('ml_log', _ml.log);
+        _ml.upgrade.node.button.disabled = false;
+        _ml.upgrade.node.button.value = 'Monster Upgrader';
+        if (_ml.upgrade.node.run) {
+          _ml.upgrade.node.run.value = 'Completed';
+        }
+      },
+
+      force_update: function () {
+        _ml.mobs.forEach((mob) => {
+          mob.log.pl = -1;
+        });
+        $config.set('ml_log', _ml.log);
+        location.href = location.href;
+      },
+
+      sort: function (key) {
+        if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
+          return;
+        }
+        let order = ['wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
+        if (key === _ml.upgrade.sort.key) {
+          order = _ml.upgrade.sort.order * -1;
+        }
+        _ml.upgrade.sort.key = key;
+        _ml.upgrade.sort.order = order;
+
+        if (!_ml.upgrade.sort.list) {
+          _ml.upgrade.sort.list = _ml.mobs.filter((mob) => mob);
+        }
+        _ml.upgrade.sort.list.sort((a, b) => (a[key] == b[key] ? 0 : a[key] == undefined ? 1 : b[key] == undefined ? -1 : (a[key] > b[key] ? 1 : -1) * order));
+        _ml.upgrade.node.table.append(..._ml.upgrade.sort.list.map((mob) => mob.node.tr));
+      },
+
+      exec: function (index, type, item, inc) {
+        let mobs;
+        if (index === 'all') {
+          mobs = _ml.mobs;
+        } else {
+          mobs = [_ml.mobs[index]];
+        }
+        mobs.forEach((mob) => {
+          let items;
+          if (item === 'equal') {
+            const max = Math.max(...mob[type].map((e) => e.to));
+            mob[type].forEach((e) => { e.to = max; });
+            items = mob[type];
+            inc = 0;
+          } else if (item === 'all') {
+            items = mob[type];
+          } else {
+            items = [mob[type][item]];
+          }
+          items.forEach((e) => {
+            const value = e.value;
+            let to = e.to + inc;
+            const max = type === 'pa' ? 25 : type === 'er' ? 50 : type === 'ct' ? e.max : 0;
+            if (to < value) {
+              to = value;
+            } else if (to > max) {
+              to = max;
+            }
+            e.to = to;
+            e.node.textContent = to;
+            if (to > value) {
+              e.node.classList.add('hvut-ml-up-change');
+            } else {
+              e.node.classList.remove('hvut-ml-up-change');
+            }
+          });
+          _ml.upgrade.calc(mob);
+
+          mob.node.pl.textContent = mob.pl_to;
+          if (mob.pl === mob.pl_to) {
+            mob.node.pl.classList.remove('hvut-ml-up-change');
+          } else {
+            mob.node.pl.classList.add('hvut-ml-up-change');
+          }
+          mob.node.morale.textContent = mob.morale_to / 100;
+          if (mob.morale === mob.morale_to) {
+            mob.node.morale.classList.remove('hvut-ml-up-change');
+          } else {
+            mob.node.morale.classList.add('hvut-ml-up-change');
+          }
+        });
+
+        _ml.upgrade.sum(true);
+      },
+
+      reset: function (index) {
+        let mobs;
+        if (index === 'all') {
+          mobs = _ml.mobs;
+        } else {
+          mobs = [_ml.mobs[index]];
+        }
+        mobs.forEach((mob) => {
+          mob.pa.forEach((e) => {
+            e.to = e.value;
+          });
+          mob.er.forEach((e) => {
+            e.to = e.value;
+          });
+          mob.ct.forEach((e) => {
+            e.to = e.value;
+          });
+          _ml.upgrade.exec(mob.index, 'pa', 'all', 0);
+          _ml.upgrade.exec(mob.index, 'er', 'all', 0);
+          _ml.upgrade.exec(mob.index, 'ct', 'all', 0);
+          //_ml.upgrade.calc(mob);
+        });
+        //_ml.upgrade.sum(true);
+      },
+
+      calc: function (mob) {
+        mob.pa.forEach((e) => {
+          e.require = _ml.upgrade.pa_crystal[e.to] - _ml.upgrade.pa_crystal[e.value];
+        });
+        mob.er.forEach((e) => {
+          e.require = _ml.upgrade.er_crystal[e.to] - _ml.upgrade.er_crystal[e.value];
+        });
+
+        mob.ct.require = mob.ct.reduce((s, e) => (s + (e.value + 1 + e.to) * (e.to - e.value) / 2), 0);
+        mob.pl_to = Math.round(
+          mob.pa.reduce((s, e) => (s + _ml.upgrade.pa_pl[e.to]), 0)
+          + mob.er.reduce((s, e) => (s + _ml.upgrade.er_pl[e.to]), 0)
+        );
+        mob.morale_to = Math.min(
+          24000,
+          mob.morale
+          + mob.pa.reduce((s, e) => (s + (_ml.upgrade.pa_morale[e.to] - _ml.upgrade.pa_morale[e.value])), 0)
+          + mob.er.reduce((s, e) => (s + (_ml.upgrade.er_morale[e.to] - _ml.upgrade.er_morale[e.value])), 0)
+        );
+      },
+
+      sum: function (calc) {
+        if (calc) {
+          _ml.upgrade.pa.forEach((e) => {
+            e.require = 0;
+          });
+          _ml.upgrade.er.forEach((e) => {
+            e.require = 0;
+          });
+          _ml.upgrade.ct.require = 0;
+
+          _ml.mobs.forEach((mob) => {
+            mob.pa.forEach((e, i) => {
+              _ml.upgrade.pa[i].require += e.require;
+            });
+            mob.er.forEach((e, i) => {
+              _ml.upgrade.er[i].require += e.require;
+            });
+            _ml.upgrade.ct.require += mob.ct.require;
+          });
+        }
+
+        _ml.upgrade.pa.forEach((e) => {
+          e.li.innerHTML = `
             <span>${e.crystal.slice(11)}</span>
             <span>${e.used.toLocaleString()}</span>
             <span>+${e.require.toLocaleString()}</span>
             <span>(${e.stock.toLocaleString()})</span>`;
 
-                                if (e.require > e.stock) {
-                                  e.li.classList.add('hvut-ml-up-nostock');
-                                } else {
-                                  e.li.classList.remove('hvut-ml-up-nostock');
-                                }
-                              });
+          if (e.require > e.stock) {
+            e.li.classList.add('hvut-ml-up-nostock');
+          } else {
+            e.li.classList.remove('hvut-ml-up-nostock');
+          }
+        });
 
-                              _ml.upgrade.er.forEach((e) => {
-                                e.li.innerHTML = `
+        _ml.upgrade.er.forEach((e) => {
+          e.li.innerHTML = `
             <span>${e.crystal.slice(11)}</span>
             <span>${e.used.toLocaleString()}</span>
             <span>+${e.require.toLocaleString()}</span>
             <span>(${e.stock.toLocaleString()})</span>`;
 
-                                if (e.require > e.stock) {
-                                  e.li.classList.add('hvut-ml-up-nostock');
-                                } else {
-                                  e.li.classList.remove('hvut-ml-up-nostock');
-                                }
-                              });
+          if (e.require > e.stock) {
+            e.li.classList.add('hvut-ml-up-nostock');
+          } else {
+            e.li.classList.remove('hvut-ml-up-nostock');
+          }
+        });
 
-                              _ml.upgrade.ct.ul.innerHTML = `
-          <li><span>混沌令牌</span></li>
-          <li><span>用于解锁</span><span>${_ml.upgrade.ct.unlock.toLocaleString()}</span></li>
-          <li><span>用于升级</span><span>${_ml.upgrade.ct.used.toLocaleString()}</span></li>
-          <li><span>总计</span><span>${(_ml.upgrade.ct.unlock + _ml.upgrade.ct.used).toLocaleString()}</span></li>
-          <li><span>需求</span><span>${_ml.upgrade.ct.require.toLocaleString()}</span></li>
-          <li><span>库存</span><span>${_ml.upgrade.ct.stock.toLocaleString()}</span></li>`;
+        _ml.upgrade.ct.ul.innerHTML = `
+          <li><span>Chaos Tokens</span></li>
+          <li><span>(Unlock slots)</span><span>${_ml.upgrade.ct.unlock.toLocaleString()}</span></li>
+          <li><span>(Upgrade monsters)</span><span>${_ml.upgrade.ct.used.toLocaleString()}</span></li>
+          <li><span>Total Usage</span><span>${(_ml.upgrade.ct.unlock + _ml.upgrade.ct.used).toLocaleString()}</span></li>
+          <li><span>Requires</span><span>${_ml.upgrade.ct.require.toLocaleString()}</span></li>
+          <li><span>Stock</span><span>${_ml.upgrade.ct.stock.toLocaleString()}</span></li>`;
 
-                              if (_ml.upgrade.ct.require > _ml.upgrade.ct.stock) {
-                                _ml.upgrade.ct.ul.lastElementChild.classList.add('hvut-ml-up-nostock');
-                              }
-                              _ml.upgrade.stock = !$qs('.hvut-ml-up-nostock');
-                              _ml.upgrade.node.run.disabled = !_ml.upgrade.stock;
-                            },
+        if (_ml.upgrade.ct.require > _ml.upgrade.ct.stock) {
+          _ml.upgrade.ct.ul.lastElementChild.classList.add('hvut-ml-up-nostock');
+        }
+        _ml.upgrade.stock = !$qs('.hvut-ml-up-nostock');
+        _ml.upgrade.node.run.disabled = !_ml.upgrade.stock;
+      },
 
-                            run: async function () {
-                              if (!_ml.upgrade.stock) {
-                                alert('水晶或混沌令牌不足');
-                                return;
-                              }
-                              if (!confirm('确定要这么升级怪物吗?')) {
-                                return;
-                              }
+      run: async function () {
+        if (!_ml.upgrade.stock) {
+          alert('Not enough Crystals or Chaos Tokens');
+          return;
+        }
+        if (!confirm('Are you sure that you wish to upgrade the selected monsters?')) {
+          return;
+        }
 
-                              const urls = [];
-                              _ml.mobs.forEach((mob) => {
-                                let update_needed = false;
-                                mob.pa.forEach((e, i) => {
-                                  let count = e.to - e.value;
-                                  if (count < 1) {
-                                    return;
-                                  }
-                                  update_needed = true;
-                                  while (count > 10) {
-                                    urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
-                                    count -= 10;
-                                  }
-                                  urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
-                                });
-                                mob.er.forEach((e, i) => {
-                                  let count = e.to - e.value;
-                                  if (count < 1) {
-                                    return;
-                                  }
-                                  update_needed = true;
-                                  while (count > 10) {
-                                    urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
-                                    count -= 10;
-                                  }
-                                  urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
-                                });
-                                mob.ct.forEach((e, i) => {
-                                  let count = e.to - e.value;
-                                  if (count < 1) {
-                                    return;
-                                  }
-                                  update_needed = true;
-                                  while (count > 10) {
-                                    urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
-                                    count -= 10;
-                                  }
-                                  urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
-                                });
-                                if (update_needed) {
-                                  mob.update_needed = true;
-                                  mob.log.pl = -1;
-                                }
-                              });
+        const urls = [];
+        _ml.mobs.forEach((mob) => {
+          let update_needed = false;
+          mob.pa.forEach((e, i) => {
+            let count = e.to - e.value;
+            if (count < 1) {
+              return;
+            }
+            update_needed = true;
+            while (count > 10) {
+              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
+              count -= 10;
+            }
+            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
+          });
+          mob.er.forEach((e, i) => {
+            let count = e.to - e.value;
+            if (count < 1) {
+              return;
+            }
+            update_needed = true;
+            while (count > 10) {
+              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
+              count -= 10;
+            }
+            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
+          });
+          mob.ct.forEach((e, i) => {
+            let count = e.to - e.value;
+            if (count < 1) {
+              return;
+            }
+            update_needed = true;
+            while (count > 10) {
+              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
+              count -= 10;
+            }
+            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
+          });
+          if (update_needed) {
+            mob.update_needed = true;
+            mob.log.pl = -1;
+          }
+        });
 
-                              const total = urls.length;
-                              if (total === 0) {
-                                return;
-                              }
-                              setValue('ml_log', _ml.log);
-                              _ml.upgrade.node.run.disabled = true;
-                              _ml.upgrade.node.update.disabled = true;
+        const total = urls.length;
+        if (total === 0) {
+          return;
+        }
+        $config.set('ml_log', _ml.log);
+        _ml.upgrade.node.run.disabled = true;
+        _ml.upgrade.node.update.disabled = true;
 
-                              async function upgrade(url, post) {
-                                await $ajax.fetch(url, post);
-                                done++;
-                                _ml.upgrade.node.run.value = `${done}/${total}`;
-                              }
+        async function upgrade(url, post) {
+          await $ajax.fetch(url, post);
+          done++;
+          _ml.upgrade.node.run.value = `${done}/${total}`;
+        }
 
-                              let done = 0;
-                              const requests = urls.map(([url, post]) => upgrade(url, post));
-                              await Promise.all(requests);
-                              _ml.upgrade.update();
-                            },
+        let done = 0;
+        const requests = urls.map(([url, post]) => upgrade(url, post));
+        await Promise.all(requests);
+        _ml.upgrade.update();
+      },
 
-                            save: function () {
-                              _ml.mobs.forEach((mob) => {
-                                mob.log.pa.forEach((e, i) => {
-                                  e[1] = mob.pa[i].to;
-                                });
-                                mob.log.er.forEach((e, i) => {
-                                  e[1] = mob.er[i].to;
-                                });
-                                mob.log.ct.forEach((e, i) => {
-                                  e[1] = mob.ct[i].to;
-                                });
-                              });
+      save: function () {
+        _ml.mobs.forEach((mob) => {
+          mob.log.pa.forEach((e, i) => {
+            e[1] = mob.pa[i].to;
+          });
+          mob.log.er.forEach((e, i) => {
+            e[1] = mob.er[i].to;
+          });
+          mob.log.ct.forEach((e, i) => {
+            e[1] = mob.ct[i].to;
+          });
+        });
 
-                              setValue('ml_log', _ml.log);
-                            },
-                            load: function () {
-                              _ml.mobs.forEach((mob) => {
-                                mob.pa.forEach((e, j) => {
-                                  e.to = mob.log.pa[j][1] || e.value;
-                                });
-                                mob.er.forEach((e, j) => {
-                                  e.to = mob.log.er[j][1] || e.value;
-                                });
-                                mob.ct.forEach((e, j) => {
-                                  e.to = mob.log.ct[j][1] || e.value;
-                                });
-                              });
+        $config.set('ml_log', _ml.log);
+      },
+      load: function () {
+        _ml.mobs.forEach((mob) => {
+          mob.pa.forEach((e, j) => {
+            e.to = mob.log.pa[j][1] || e.value;
+          });
+          mob.er.forEach((e, j) => {
+            e.to = mob.log.er[j][1] || e.value;
+          });
+          mob.ct.forEach((e, j) => {
+            e.to = mob.log.ct[j][1] || e.value;
+          });
+        });
 
-                              _ml.upgrade.exec('all', 'pa', 'all', 0);
-                              _ml.upgrade.exec('all', 'er', 'all', 0);
-                              _ml.upgrade.exec('all', 'ct', 'all', 0);
-                            },
-                            toggle: function () {
-                              $id('messagebox_outer')?.remove();
-                              _ml.upgrade.node.div?.classList.toggle('hvut-none');
-                              _ml.upgrade.init();
-                            },
+        _ml.upgrade.exec('all', 'pa', 'all', 0);
+        _ml.upgrade.exec('all', 'er', 'all', 0);
+        _ml.upgrade.exec('all', 'ct', 'all', 0);
+      },
+      toggle: function () {
+        $id('messagebox_outer')?.remove();
+        _ml.upgrade.node.div?.classList.toggle('hvut-none');
+        _ml.upgrade.init();
+      },
 
-                          };
+    };
 
-                          // PL-Crystal Calculator
-                          _ml.plc = {
+    // PL-Crystal Calculator
+    _ml.plc = {
 
-                            preset: {
-                              '250': { count: 1, pa_lv: 5, pa_up: 4, er_lv: 14, er_up: 0 },
-                              '500': { count: 1, pa_lv: 9, pa_up: 3, er_lv: 21, er_up: 4 },
-                              '750': { count: 1, pa_lv: 12, pa_up: 3, er_lv: 27, er_up: 1 },
-                              '1000': { count: 1, pa_lv: 15, pa_up: 1, er_lv: 32, er_up: 0 },
-                              '1250': { count: 1, pa_lv: 17, pa_up: 2, er_lv: 36, er_up: 3 },
-                              '1500': { count: 1, pa_lv: 19, pa_up: 3, er_lv: 40, er_up: 2 },
-                              '1750': { count: 1, pa_lv: 21, pa_up: 2, er_lv: 43, er_up: 5 },
-                              '2250': { count: 1, pa_lv: 25, pa_up: 0, er_lv: 50, er_up: 0 },
-                            },
-                            data: {
-                              pa_crystal: [0],
-                              pa_pl: [0],
-                              er_crystal: [0],
-                              er_pl: [0],
-                            },
-                            list: [],
-                            node: {},
+      preset: {
+        '250': { count: 1, pa_lv: 5, pa_up: 4, er_lv: 14, er_up: 0 },
+        '500': { count: 1, pa_lv: 9, pa_up: 3, er_lv: 21, er_up: 4 },
+        '750': { count: 1, pa_lv: 12, pa_up: 3, er_lv: 27, er_up: 1 },
+        '1000': { count: 1, pa_lv: 15, pa_up: 1, er_lv: 32, er_up: 0 },
+        '1250': { count: 1, pa_lv: 17, pa_up: 2, er_lv: 36, er_up: 3 },
+        '1500': { count: 1, pa_lv: 19, pa_up: 3, er_lv: 40, er_up: 2 },
+        '1750': { count: 1, pa_lv: 21, pa_up: 2, er_lv: 43, er_up: 5 },
+        '2250': { count: 1, pa_lv: 25, pa_up: 0, er_lv: 50, er_up: 0 },
+      },
+      data: {
+        pa_crystal: [0],
+        pa_pl: [0],
+        er_crystal: [0],
+        er_pl: [0],
+      },
+      list: [],
+      node: {},
 
-                            click: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index, type, value } = target.dataset;
-                              if (action === 'add') {
-                                _ml.plc.add(_ml.plc.preset[value]);
-                              } else if (action === 'remove') {
-                                _ml.plc.remove(index);
-                              } else if (action === 'change') {
-                                _ml.plc.change(index, type, value);
-                              }
-                            },
-                            input: function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, index, type } = target.dataset;
-                              if (action === 'change') {
-                                _ml.plc.change(index, type);
-                              }
-                            },
-                            init: function () {
-                              if (_ml.plc.inited) {
-                                return;
-                              }
-                              _ml.plc.inited = true;
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type, value } = target.dataset;
+        if (action === 'add') {
+          _ml.plc.add(_ml.plc.preset[value]);
+        } else if (action === 'remove') {
+          _ml.plc.remove(index);
+        } else if (action === 'change') {
+          _ml.plc.change(index, type, value);
+        }
+      },
+      input: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type } = target.dataset;
+        if (action === 'change') {
+          _ml.plc.change(index, type);
+        }
+      },
+      init: function () {
+        if (_ml.plc.inited) {
+          return;
+        }
+        _ml.plc.inited = true;
 
-                              const data = _ml.plc.data;
-                              for (let i = 0; i < 26; i++) {
-                                data.pa_pl[i + 1] = data.pa_pl[i] + (3 + i * 0.5);
-                                data.pa_crystal[i + 1] = data.pa_crystal[i] + Math.round(50 * Math.pow(1.555079154, i));
-                              }
-                              for (let i = 0; i < 51; i++) {
-                                data.er_pl[i + 1] = data.er_pl[i] + Math.floor(1 + i * 0.1);
-                                data.er_crystal[i + 1] = data.er_crystal[i] + Math.round(10 * Math.pow(1.26485522, i));
-                              }
+        const data = _ml.plc.data;
+        for (let i = 0; i < 26; i++) {
+          data.pa_pl[i + 1] = data.pa_pl[i] + (3 + i * 0.5);
+          data.pa_crystal[i + 1] = data.pa_crystal[i] + Math.round(50 * Math.pow(1.555079154, i));
+        }
+        for (let i = 0; i < 51; i++) {
+          data.er_pl[i + 1] = data.er_pl[i] + Math.floor(1 + i * 0.1);
+          data.er_crystal[i + 1] = data.er_crystal[i] + Math.round(10 * Math.pow(1.26485522, i));
+        }
 
-                              const node = _ml.plc.node;
-                              node.div = $element('div', $id('mainpane'), ['.hvut-ml-plc'], (e) => { _ml.plc.click(e); });
-                              node.left = $element('div', node.div, ['.hvut-ml-plc-left'], { input: () => { _ml.plc.input(); } });
+        const node = _ml.plc.node;
+        node.div = $element('div', $id('mainpane'), ['.hvut-ml-plc'], (e) => { _ml.plc.click(e); });
+        node.left = $element('div', node.div, ['.hvut-ml-plc-left'], { input: (e) => { _ml.plc.input(e); } });
 
-                              const total = $element('div', node.left);
-                              $element('div', total).append(
-                                $element('span', null, '怪物数量'), $element('br'), $element('br'),
-                                node.count = $input('number', null, { min: 0, max: 200, readOnly: true })
-                              );
-                              $element('div', total).append(
-                                $element('span', null, '主属性'), $element('br'),
-                                $element('span', null, ['所需水晶', '.hvut-ml-plc-btn']),
-                                node.pa_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
-                                $element('span', null, ['差额', '.hvut-ml-plc-btn']),
-                                node.pa_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
-                              );
-                              $element('div', total).append(
-                                $element('span', null, '属性减伤'), $element('br'),
-                                $element('span', null, ['所需水晶', '.hvut-ml-plc-btn']),
-                                node.er_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
-                                $element('span', null, ['差额', '.hvut-ml-plc-btn']),
-                                node.er_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
-                              );
+        const total = $element('div', node.left);
+        $element('div', total).append(
+          $element('span', null, 'Monsters'), $element('br'), $element('br'),
+          node.count = $input('number', null, { min: 0, max: 200, readOnly: true })
+        );
+        $element('div', total).append(
+          $element('span', null, 'Primary Attributes'), $element('br'),
+          $element('span', null, ['Crystal', '.hvut-ml-plc-btn']),
+          node.pa_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
+          $element('span', null, ['Difference', '.hvut-ml-plc-btn']),
+          node.pa_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
+        );
+        $element('div', total).append(
+          $element('span', null, 'Elemental Mitigations'), $element('br'),
+          $element('span', null, ['Crystal', '.hvut-ml-plc-btn']),
+          node.er_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
+          $element('span', null, ['Difference', '.hvut-ml-plc-btn']),
+          node.er_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
+        );
 
-                              node.right = $element('div', node.div, ['.hvut-ml-plc-right']);
+        node.right = $element('div', node.div, ['.hvut-ml-plc-right']);
 
-                              const buttons = $element('div', node.right, ['.hvut-ml-plc-buttons']);
-                              $input(['button', '保存计划'], buttons, null, () => { _ml.plc.save(); });
-                              $input(['button', '加载计划'], buttons, null, () => { _ml.plc.load(); });
-                              $input(['button', '关闭'], buttons, null, () => { _ml.plc.toggle(); });
-                              $input(['button', '添加怪物'], buttons, { dataset: { action: 'add' } });
-                              Object.keys(_ml.plc.preset).forEach((pl) => { $input(['button', pl], buttons, { dataset: { action: 'add', value: pl } }); });
+        const buttons = $element('div', node.right, ['.hvut-ml-plc-buttons']);
+        $input(['button', 'Save'], buttons, null, () => { _ml.plc.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.plc.load(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.plc.toggle(); });
+        $input(['button', 'Add Monster'], buttons, { dataset: { action: 'add' } });
+        Object.keys(_ml.plc.preset).forEach((pl) => { $input(['button', pl], buttons, { dataset: { action: 'add', value: pl } }); });
 
-                              $element('table', node.right, ['.hvut-ml-plc-table',
-                                                             `/<tbody>
-          <tr><td>战力</td><td>效果</td></tr>
-          <tr><td>25</td><td>解锁命名功能，并开始累计胜场与击杀数</td></tr>
-          <tr><td>200</td><td>解锁第二个技能</td></tr>
-          <tr><td>250</td><td>不再可以被删除<br>士气消耗减少2倍</td></tr>
-          <tr><td>251</td><td>需要怪物食品而不是怪物饲料作为食物</td></tr>
-          <tr><td>400</td><td>解锁灵力攻击</td></tr>
-          <tr><td>499</td><td>礼物现在可能包含高级材料</td></tr>
-          <tr><td>750</td><td>士气消耗减少3倍<br>不再给予低级材料作为礼物</td></tr>
-          <tr><td>751</td><td>需要怪物料理而不是怪物食品作为食物</td></tr>
-          <tr><td>1000</td><td>永远不会被停用</td></tr>
-          <tr><td>1005</td><td>解锁所有混沌升级</td></tr>
-          <tr><td>1250</td><td>士气消耗减少4倍</td></tr>
-          <tr><td>1499</td><td>100%给予高级材料作为礼物</td></tr>
-          <tr><td>1750</td><td>士气消耗减少5倍</td></tr>
-          <tr><td>2250</td><td>战斗力等级上限<br>士气消耗减少6倍</td></tr>
+        $element('table', node.right, ['.hvut-ml-plc-table',
+          `/<tbody>
+          <tr><td>Power<br> Level</td><td>Effects</td></tr>
+          <tr><td>25</td><td>Unlocks naming and becomes active in battles once named</td></tr>
+          <tr><td>200</td><td>Unlocks second Skill Attack</td></tr>
+          <tr><td>250</td><td>Can no longer be deleted<br>Morale drain reduced by 2x</td></tr>
+          <tr><td>251</td><td>Requires Monster Edibles instead of Monster Chow as Food</td></tr>
+          <tr><td>400</td><td>Unlocks Spirit Attack</td></tr>
+          <tr><td>499</td><td>Gifts may now include High-Grade materials</td></tr>
+          <tr><td>750</td><td>Morale drain reduced by 3x<br>Low-Grade materials can no longer be gifts</td></tr>
+          <tr><td>751</td><td>Requires Monster Cuisine instead of Monster Edibles as Food</td></tr>
+          <tr><td>1000</td><td>Will never be deactivated</td></tr>
+          <tr><td>1005</td><td>All Chaos Upgrades are available</td></tr>
+          <tr><td>1250</td><td>Morale drain reduced by 4x</td></tr>
+          <tr><td>1499</td><td>Mid-Grade materials can no longer be gifts (100% are High-Grade)</td></tr>
+          <tr><td>1750</td><td>Morale drain reduced by 5x</td></tr>
+          <tr><td>2250</td><td>Power Level cap reached<br>Morale drain reduced by 6x</td></tr>
           </tbody>`,
-                                                            ]);
+        ]);
 
-                              _ml.plc.load();
-                            },
-                            save: function () {
-                              setValue('ml_lab', _ml.plc.list.filter((m) => m).map((m) => m.json));
-                              _ml.plc.load();
-                            },
-                            load: function () {
-                              _ml.plc.list.forEach((m) => { m?.node.div.remove(); });
-                              _ml.plc.list.length = 0;
-                              getValue('ml_lab', [_ml.plc.preset['250']]).forEach((j) => { _ml.plc.add(j); });
-                            },
-                            toggle: function () {
-                              _ml.plc.node.div?.classList.toggle('hvut-none');
-                              _ml.plc.init();
-                            },
+        _ml.plc.load();
+      },
+      save: function () {
+        $config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json));
+        _ml.plc.load();
+      },
+      load: function () {
+        _ml.plc.list.forEach((m) => { m?.node.div.remove(); });
+        _ml.plc.list.length = 0;
+        $config.get('ml_plc', [_ml.plc.preset['250']]).forEach((j) => { _ml.plc.add(j); });
+      },
+      toggle: function () {
+        _ml.plc.node.div?.classList.toggle('hvut-none');
+        _ml.plc.init();
+      },
 
-                            add: function (j) {
-                              const m = { json: { count: 1, pa_lv: 0, pa_up: 0, er_lv: 0, er_up: 0 }, node: {} };
-                              const index = _ml.plc.list.length;
-                              if (j) {
-                                Object.assign(m.json, j);
-                              }
-                              m.node.div = $element('div', _ml.plc.node.left);
-                              let sub;
-                              let span;
+      add: function (j) {
+        const m = { json: { count: 1, pa_lv: 0, pa_up: 0, er_lv: 0, er_up: 0 }, node: {} };
+        const index = _ml.plc.list.length;
+        if (j) {
+          Object.assign(m.json, j);
+        }
+        m.node.div = $element('div', _ml.plc.node.left);
+        let sub;
+        let span;
 
-                              sub = $element('div', m.node.div);
-                              $input(['button', 'x'], sub, { className: 'hvut-ml-plc-del', dataset: { action: 'remove', index } });
-                              m.node.index = $element('span', sub, `#${index + 1}`);
-                              $element('br', sub);
-                              m.node.pl = $element('span', sub);
-                              $element('br', sub);
-                              m.node.count = $input('number', sub, { value: m.json.count, min: 0, max: 200, dataset: { action: 'change', index, type: 'count' } });
+        sub = $element('div', m.node.div);
+        $input(['button', 'x'], sub, { className: 'hvut-ml-plc-del', dataset: { action: 'remove', index } });
+        m.node.index = $element('span', sub, `#${index + 1}`);
+        $element('br', sub);
+        m.node.pl = $element('span', sub);
+        $element('br', sub);
+        m.node.count = $input('number', sub, { value: m.json.count, min: 0, max: 200, dataset: { action: 'change', index, type: 'count' } });
 
-                              sub = $element('div', m.node.div);
-                              $element('span', sub, '主属性');
-                              $element('br', sub);
+        sub = $element('div', m.node.div);
+        $element('span', sub, 'Primary Attributes');
+        $element('br', sub);
 
-                              span = $element('span', sub, ['.hvut-ml-plc-btn']);
-                              m.node.pa = [];
-                              for (let i = 0; i < 6; i++) {
-                                m.node.pa.push($element('span', span));
-                              }
-                              m.node.pa_avg = $element('span', sub, ['.hvut-ml-plc-crystal']);
-                              $element('br', sub);
+        span = $element('span', sub, ['.hvut-ml-plc-btn']);
+        m.node.pa = [];
+        for (let i = 0; i < 6; i++) {
+          m.node.pa.push($element('span', span));
+        }
+        m.node.pa_avg = $element('span', sub, ['.hvut-ml-plc-crystal']);
+        $element('br', sub);
 
-                              span = $element('span', sub, ['.hvut-ml-plc-btn']);
-                              $input(['button', '-6'], span, { dataset: { action: 'change', index, type: 'pa', value: '-' } });
-                              $input(['button', '-1'], span, { dataset: { action: 'change', index, type: 'pa', value: '-1' } });
-                              $input(['button', '+1'], span, { dataset: { action: 'change', index, type: 'pa', value: '+1' } });
-                              $input(['button', '+6'], span, { dataset: { action: 'change', index, type: 'pa', value: '+' } });
-                              m.node.pa_diff = $element('span', sub, ['.hvut-ml-plc-crystal']);
+        span = $element('span', sub, ['.hvut-ml-plc-btn']);
+        $input(['button', '-6'], span, { dataset: { action: 'change', index, type: 'pa', value: '-' } });
+        $input(['button', '-1'], span, { dataset: { action: 'change', index, type: 'pa', value: '-1' } });
+        $input(['button', '+1'], span, { dataset: { action: 'change', index, type: 'pa', value: '+1' } });
+        $input(['button', '+6'], span, { dataset: { action: 'change', index, type: 'pa', value: '+' } });
+        m.node.pa_diff = $element('span', sub, ['.hvut-ml-plc-crystal']);
 
-                              sub = $element('div', m.node.div);
-                              $element('span', sub, '元素减伤');
-                              $element('br', sub);
+        sub = $element('div', m.node.div);
+        $element('span', sub, 'Elemental Mitigations');
+        $element('br', sub);
 
-                              span = $element('span', sub, ['.hvut-ml-plc-btn']);
-                              m.node.er = [];
-                              for (let i = 0; i < 6; i++) {
-                                m.node.er.push($element('span', span));
-                              }
-                              m.node.er_avg = $element('span', sub, ['.hvut-ml-plc-crystal']);
-                              $element('br', sub);
+        span = $element('span', sub, ['.hvut-ml-plc-btn']);
+        m.node.er = [];
+        for (let i = 0; i < 6; i++) {
+          m.node.er.push($element('span', span));
+        }
+        m.node.er_avg = $element('span', sub, ['.hvut-ml-plc-crystal']);
+        $element('br', sub);
 
-                              span = $element('span', sub, ['.hvut-ml-plc-btn']);
-                              $input(['button', '-6'], span, { dataset: { action: 'change', index, type: 'er', value: '-' } });
-                              $input(['button', '-1'], span, { dataset: { action: 'change', index, type: 'er', value: '-1' } });
-                              $input(['button', '+1'], span, { dataset: { action: 'change', index, type: 'er', value: '+1' } });
-                              $input(['button', '+6'], span, { dataset: { action: 'change', index, type: 'er', value: '+' } });
-                              m.node.er_diff = $element('span', sub, ['.hvut-ml-plc-crystal']);
+        span = $element('span', sub, ['.hvut-ml-plc-btn']);
+        $input(['button', '-6'], span, { dataset: { action: 'change', index, type: 'er', value: '-' } });
+        $input(['button', '-1'], span, { dataset: { action: 'change', index, type: 'er', value: '-1' } });
+        $input(['button', '+1'], span, { dataset: { action: 'change', index, type: 'er', value: '+1' } });
+        $input(['button', '+6'], span, { dataset: { action: 'change', index, type: 'er', value: '+' } });
+        m.node.er_diff = $element('span', sub, ['.hvut-ml-plc-crystal']);
 
-                              _ml.plc.list.push(m);
-                              _ml.plc.change(index);
-                            },
-                            remove: function (index) {
-                              const m = _ml.plc.list[index];
-                              m.node.div.remove();
-                              _ml.plc.list[index] = null;
-                              _ml.plc.calc();
-                            },
-                            change: function (index, type, value) {
-                              const m = _ml.plc.list[index];
-                              if (!type) {
-                              } else if (type === 'count') {
-                                m.json[type] = (value === undefined ? parseInt(m.node[type].value) : parseInt(value)) || 0;
-                              } else {
-                                let lv = m.json[type + '_lv'];
-                                let up = m.json[type + '_up'];
-                                const max = type === 'pa' ? 25 : type === 'er' ? 50 : 0;
-                                if (value === '+') {
-                                  lv++;
-                                  up = 0;
-                                } else if (value === '-') {
-                                  if (up === 0) {
-                                    lv--;
-                                  }
-                                  up = 0;
-                                } else {
-                                  up += Number(value);
-                                  if (up >= 6) {
-                                    lv++;
-                                    up -= 6;
-                                  } else if (up < 0) {
-                                    lv--;
-                                    up += 6;
-                                  }
-                                }
-                                if (lv < 0) {
-                                  lv = 0;
-                                  up = 0;
-                                } else if (lv >= max) {
-                                  lv = max;
-                                  up = 0;
-                                }
-                                m.json[type + '_lv'] = lv;
-                                m.json[type + '_up'] = up;
-                              }
+        _ml.plc.list.push(m);
+        _ml.plc.change(index);
+      },
+      remove: function (index) {
+        const m = _ml.plc.list[index];
+        m.node.div.remove();
+        _ml.plc.list[index] = null;
+        _ml.plc.calc();
+      },
+      change: function (index, type, value) {
+        const m = _ml.plc.list[index];
+        if (!type) {
+        } else if (type === 'count') {
+          m.json[type] = (value === undefined ? parseInt(m.node[type].value) : parseInt(value)) || 0;
+        } else {
+          let lv = m.json[type + '_lv'];
+          let up = m.json[type + '_up'];
+          const max = type === 'pa' ? 25 : type === 'er' ? 50 : 0;
+          if (value === '+') {
+            lv++;
+            up = 0;
+          } else if (value === '-') {
+            if (up === 0) {
+              lv--;
+            }
+            up = 0;
+          } else {
+            up += Number(value);
+            if (up >= 6) {
+              lv++;
+              up -= 6;
+            } else if (up < 0) {
+              lv--;
+              up += 6;
+            }
+          }
+          if (lv < 0) {
+            lv = 0;
+            up = 0;
+          } else if (lv >= max) {
+            lv = max;
+            up = 0;
+          }
+          m.json[type + '_lv'] = lv;
+          m.json[type + '_up'] = up;
+        }
 
-                              if (m.node.count.validity.valid) {
-                                const data = _ml.plc.data;
-                                const { pa_lv, pa_up, er_lv, er_up } = m.json;
-                                m.count = m.json.count;
-                                m.pl = data.pa_pl[pa_lv] * (6 - pa_up) + data.pa_pl[pa_lv + 1] * (pa_up) + data.er_pl[er_lv] * (6 - er_up) + data.er_pl[er_lv + 1] * (er_up);
-                                m.pa_avg = (data.pa_crystal[pa_lv] * (6 - pa_up) + data.pa_crystal[pa_lv + 1] * (pa_up)) / 6;
-                                m.er_avg = (data.er_crystal[er_lv] * (6 - er_up) + data.er_crystal[er_lv + 1] * (er_up)) / 6;
-                                m.diff = m.pa_avg - m.er_avg;
+        if (m.node.count.validity.valid) {
+          const data = _ml.plc.data;
+          const { pa_lv, pa_up, er_lv, er_up } = m.json;
+          m.count = m.json.count;
+          m.pl = data.pa_pl[pa_lv] * (6 - pa_up) + data.pa_pl[pa_lv + 1] * (pa_up) + data.er_pl[er_lv] * (6 - er_up) + data.er_pl[er_lv + 1] * (er_up);
+          m.pa_avg = (data.pa_crystal[pa_lv] * (6 - pa_up) + data.pa_crystal[pa_lv + 1] * (pa_up)) / 6;
+          m.er_avg = (data.er_crystal[er_lv] * (6 - er_up) + data.er_crystal[er_lv + 1] * (er_up)) / 6;
+          m.diff = m.pa_avg - m.er_avg;
 
-                                m.node.pl.textContent = 'PL ' + m.pl;
-                                m.node.pa.forEach((span, i) => {
-                                  if (i + pa_up >= 6) {
-                                    span.textContent = pa_lv + 1;
-                                    span.classList.add('hvut-ml-plc-up');
-                                  } else {
-                                    span.textContent = pa_lv;
-                                    span.classList.remove('hvut-ml-plc-up');
-                                  }
-                                });
-                                m.node.er.forEach((span, i) => {
-                                  if (i + er_up >= 6) {
-                                    span.textContent = er_lv + 1;
-                                    span.classList.add('hvut-ml-plc-up');
-                                  } else {
-                                    span.textContent = er_lv;
-                                    span.classList.remove('hvut-ml-plc-up');
-                                  }
-                                });
-                                m.node.pa_avg.textContent = Math.round(m.pa_avg).toLocaleString();
-                                m.node.pa_diff.textContent = m.diff > 0 ? '(+' + Math.round(m.diff).toLocaleString() + ')' : '';
-                                m.node.er_avg.textContent = Math.round(m.er_avg).toLocaleString();
-                                m.node.er_diff.textContent = m.diff < 0 ? '(+' + Math.round(-m.diff).toLocaleString() + ')' : '';
+          m.node.pl.textContent = 'PL ' + m.pl;
+          m.node.pa.forEach((span, i) => {
+            if (i + pa_up >= 6) {
+              span.textContent = pa_lv + 1;
+              span.classList.add('hvut-ml-plc-up');
+            } else {
+              span.textContent = pa_lv;
+              span.classList.remove('hvut-ml-plc-up');
+            }
+          });
+          m.node.er.forEach((span, i) => {
+            if (i + er_up >= 6) {
+              span.textContent = er_lv + 1;
+              span.classList.add('hvut-ml-plc-up');
+            } else {
+              span.textContent = er_lv;
+              span.classList.remove('hvut-ml-plc-up');
+            }
+          });
+          m.node.pa_avg.textContent = Math.round(m.pa_avg).toLocaleString();
+          m.node.pa_diff.textContent = m.diff > 0 ? '(+' + Math.round(m.diff).toLocaleString() + ')' : '';
+          m.node.er_avg.textContent = Math.round(m.er_avg).toLocaleString();
+          m.node.er_diff.textContent = m.diff < 0 ? '(+' + Math.round(-m.diff).toLocaleString() + ')' : '';
 
-                                m.valid = true;
-                              } else {
-                                m.valid = false;
-                              }
+          m.valid = true;
+        } else {
+          m.valid = false;
+        }
 
-                              _ml.plc.calc();
-                            },
-                            calc: function () {
-                              let count = 0;
-                              let pa = 0;
-                              let er = 0;
-                              _ml.plc.list.forEach((m) => {
-                                if (!m?.valid) {
-                                  return;
-                                }
-                                count += m.count;
-                                pa += m.pa_avg * m.count;
-                                er += m.er_avg * m.count;
-                              });
-                              const diff = pa - er;
-                              _ml.plc.node.count.value = count;
-                              _ml.plc.node.pa_total.textContent = Math.round(pa).toLocaleString();
-                              _ml.plc.node.pa_total_diff.textContent = diff > 0 ? '(+' + Math.round(diff).toLocaleString() + ')' : '';
-                              _ml.plc.node.er_total.textContent = Math.round(er).toLocaleString();
-                              _ml.plc.node.er_total_diff.textContent = diff < 0 ? '(+' + Math.round(-diff).toLocaleString() + ')' : '';
-                            },
+        _ml.plc.calc();
+      },
+      calc: function () {
+        let count = 0;
+        let pa = 0;
+        let er = 0;
+        _ml.plc.list.forEach((m) => {
+          if (!m?.valid) {
+            return;
+          }
+          count += m.count;
+          pa += m.pa_avg * m.count;
+          er += m.er_avg * m.count;
+        });
+        const diff = pa - er;
+        _ml.plc.node.count.value = count;
+        _ml.plc.node.pa_total.textContent = Math.round(pa).toLocaleString();
+        _ml.plc.node.pa_total_diff.textContent = diff > 0 ? '(+' + Math.round(diff).toLocaleString() + ')' : '';
+        _ml.plc.node.er_total.textContent = Math.round(er).toLocaleString();
+        _ml.plc.node.er_total_diff.textContent = diff < 0 ? '(+' + Math.round(-diff).toLocaleString() + ')' : '';
+      },
 
-                          };
-                        }
-                      } else
-                        // [END 12] Bazaar - Monster Lab */
+    };
+  }
+} else
+// [END 12] Bazaar - Monster Lab */
 
 
-                        //* [13] Bazaar - MoogleMail
-                        if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
-                          _mm.node = {};
+//* [13] Bazaar - MoogleMail
+if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
+  _mm.node = {};
 
-                          _mm.attach_text = function (item) {
-                            if (!item.data.count) {
-                              return '';
-                            } else if (item.data.pane === 'equip') {
-                              return `[${item.info.eid}] ${item.info.name}` + (item.data.cod ? ` @ ${item.data.cod.toLocaleString()}c` : '');
-                            } else {
-                              return `${item.data.count.toLocaleString()} x ${item.info.name}` + (item.data.cod ? ` @ ${item.data.price.toLocaleString()}c = ${item.data.cod.toLocaleString()}c` : '');
-                            }
-                          };
+  _mm.attach_text = function (item) {
+    if (!item.data.count) {
+      return '';
+    } else if (item.data.pane === 'equip') {
+      return `[${item.info.eid}] ${item.info.name}` + (item.data.cod ? ` @ ${item.data.cod.toLocaleString()}c` : '');
+    } else {
+      return `${item.data.count.toLocaleString()} x ${item.info.name}` + (item.data.cod ? ` @ ${item.data.price.toLocaleString()}c = ${item.data.cod.toLocaleString()}c` : '');
+    }
+  };
 
-                          _mm.parse_count = function (str) {
-                            if (!str) {
-                              return 0;
-                            }
-                            return parseInt(str.replace(/,/g, '')) || 0;
-                          };
+  _mm.parse_count = function (str) {
+    if (!str) {
+      return 0;
+    }
+    return parseInt(str.replace(/,/g, '')) || 0;
+  };
 
-                          _mm.parse_price = function (str, float) {
-                            if (!str) {
-                              return 0;
-                            }
-                            if (/([0-9,]+(?:\.\d*)?)([ckm]?)/i.test(str)) {
-                              const u = RegExp.$2.toLowerCase();
-                              let n = parseFloat(RegExp.$1.replace(/,/g, ''));
-                              if (u === 'm') {
-                                n *= 1000000;
-                              } else if (u === 'k') {
-                                n *= 1000;
-                              }
-                              if (!float) {
-                                n = Math.round(n);
-                              }
-                              return n;
-                            } else {
-                              return 0;
-                            }
-                          };
+  _mm.parse_price = function (str, float) {
+    if (!str) {
+      return 0;
+    }
+    if (/([0-9,]+(?:\.\d*)?)([ckm]?)/i.test(str)) {
+      const u = RegExp.$2.toLowerCase();
+      let n = parseFloat(RegExp.$1.replace(/,/g, ''));
+      if (u === 'm') {
+        n *= 1000000;
+      } else if (u === 'k') {
+        n *= 1000;
+      }
+      if (!float) {
+        n = Math.round(n);
+      }
+      return n;
+    } else {
+      return 0;
+    }
+  };
 
-                          // MM WRITE
-                          if (_query.filter === 'new' && _query.hvut !== 'disabled') {
-                            if ($id('mmail_attachremove')) {
-                              alert('请移除附加的物品。');
-                              location.href = location.href + '&hvut=disabled';
-                              return;
-                            }
+  // MM WRITE
+  if (_query.filter === 'new' && _query.hvut !== 'disabled') {
+    if ($id('mmail_attachremove')) {
+      alert('Remove attached items.');
+      location.href = location.href + '&hvut=disabled';
+      return;
+    }
 
-                            _mm.mmtoken = $id('mailform').elements.mmtoken.value;
+    _mm.mmtoken = $id('mailform').elements.mmtoken.value;
 
-                            _mm.write_calc = function () {
-                              const queue = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
-                              let atext = '';
-                              let cod_total = 0;
-                              queue.forEach((e) => {
-                                atext += `${e.data.atext}\n`;
-                                cod_total += e.data.cod;
-                              });
-                              if (cod_total) {
-                                if (queue.length > 1) {
-                                  atext += `\n总计：${cod_total.toLocaleString()} Credits`;
-                                }
-                                const cod_deduction = _mm.parse_price(_mm.node.write_cod_deduction.value);
-                                if (cod_deduction) {
-                                  const cod = cod_total - cod_deduction;
-                                  atext += `\n抵扣额：-${cod_deduction.toLocaleString()} Credits`;
-                                  atext += `\n货到付款额：${cod.toLocaleString()} Credits`;
-                                  if (cod < 10) {
-                                    atext += '\n=> 货到付款：0 Credits';
-                                  }
-                                }
-                              }
-                              _mm.write_log(atext, true);
-                            };
+    _mm.write_calc = function () {
+      const queue = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
+      let atext = '';
+      let cod_total = 0;
+      queue.forEach((e) => {
+        atext += `${e.data.atext}\n`;
+        cod_total += e.data.cod;
+      });
+      if (cod_total) {
+        if (queue.length > 1) {
+          atext += `\nTotal: ${cod_total.toLocaleString()} Credits`;
+        }
+        const cod_deduction = _mm.parse_price(_mm.node.write_cod_deduction.value);
+        if (cod_deduction) {
+          const cod = cod_total - cod_deduction;
+          atext += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
+          atext += `\nCoD: ${cod.toLocaleString()} Credits`;
+          if (cod < 10) {
+            atext += '\n=> CoD: 0 Credits';
+          }
+        }
+      }
+      _mm.write_log(atext, true);
+    };
 
-                            _mm.write_pack = function (e) {
-                              if (_mm.write_pack.current) {
-                                popup('正在处理其他请求...');
-                                return;
-                              }
+    _mm.write_pack = function (e) {
+      if (_mm.write_pack.current) {
+        popup('Processing other requests...');
+        return;
+      }
 
-                              let selected;
-                              if (!e) {
-                                selected = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
-                              } else if (Array.isArray(e)) {
-                                selected = e;
-                              } else if (e.data) {
-                                selected = [e];
-                                e.data.atext = _mm.attach_text(e);
-                              } else {
-                                return;
-                              }
-                              if (selected.some((e) => e.data.pane === 'equip' && e.node.div?.dataset.locked == '1')) {
-                                alert('已锁定的装备'); // 装备无法附加
-                                return;
-                              }
-                              if (selected.some((e) => e.data.count > e.data.stock)) {
-                                alert('物品不足'); // 物品不足
-                                return;
-                              }
-                              if (!_mm.node.write_to_name.value) {
-                                alert('没有收件人');
-                                return;
-                              }
-                              _mm.write_pack.current = true;
-                              _mm.node.write_field.disabled = true;
-                              _mm.userlist.add(_mm.node.write_to_name.value);
+      let selected;
+      if (!e) {
+        selected = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
+      } else if (Array.isArray(e)) {
+        selected = e;
+      } else if (e.data) {
+        selected = [e];
+        e.data.atext = _mm.attach_text(e);
+      } else {
+        return;
+      }
+      if (selected.some((e) => e.data.pane === 'equip' && e.node.div?.dataset.locked == '1')) {
+        alert('Locked equipment'); // Equipment cannot be attached, kupo!
+        return;
+      }
+      if (selected.some((e) => e.data.count > e.data.stock)) {
+        alert('Insufficient number of items'); // Insufficient items, kupo!
+        return;
+      }
+      if (!_mm.node.write_to_name.value) {
+        alert('No recipient');
+        return;
+      }
+      _mm.write_pack.current = true;
+      _mm.node.write_field.disabled = true;
+      _mm.userlist.add(_mm.node.write_to_name.value);
 
-                              const attach = selected.map((e) => e.data);
-                              const mail = {
-                                to_name: _mm.node.write_to_name.value,
-                                subject: _mm.node.write_subject.value,
-                                body: _mm.node.write_body.value,
-                                attach,
-                                cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
-                                cod_persistent: _isekai && _mm.node.write_cod_persistent.checked,
-                              };
-                              $mail.request(mail);
-                            };
+      const attach = selected.map((e) => e.data);
+      const mail = {
+        to_name: _mm.node.write_to_name.value,
+        subject: _mm.node.write_subject.value,
+        body: _mm.node.write_body.value,
+        attach,
+        cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
+        cod_persistent: $config.isekai && _mm.node.write_cod_persistent.checked,
+      };
+      $mail.request(mail);
+    };
 
-                            _mm.write_log = function (text, clear) {
-                              if (clear) {
-                                _mm.node.write_log.value = '';
-                              }
-                              _mm.node.write_log.value += text + '\n';
-                              _mm.node.write_log.scrollTop = _mm.node.write_log.scrollHeight;
-                            };
+    _mm.write_log = function (text, clear) {
+      if (clear) {
+        _mm.node.write_log.value = '';
+      }
+      _mm.node.write_log.value += text + '\n';
+      _mm.node.write_log.scrollTop = _mm.node.write_log.scrollHeight;
+    };
 
-                            _mm.write_toggle = function (div) {
-                              if (div === _mm.write_toggle.current) {
-                                return;
-                              }
-                              if (_mm.write_toggle.current) {
-                                _mm.node[_mm.write_toggle.current].classList.add('hvut-none');
-                              }
-                              _mm.write_toggle.current = div;
-                              _mm.node[_mm.write_toggle.current].classList.remove('hvut-none');
-                            };
+    _mm.write_toggle = function (div) {
+      if (div === _mm.write_toggle.current) {
+        return;
+      }
+      if (_mm.write_toggle.current) {
+        _mm.node[_mm.write_toggle.current].classList.add('hvut-none');
+      }
+      _mm.write_toggle.current = div;
+      _mm.node[_mm.write_toggle.current].classList.remove('hvut-none');
+    };
 
-                            _mm.userlist = {
-                              list: getValue('mm_userlist', []),
-                              create: function () {
-                                _mm.node.write_userlist.innerHTML = '';
-                                _mm.userlist.list.forEach((u) => { $element('option', _mm.node.write_userlist, { value: u }); });
-                              },
-                              add: function (user) {
-                                if (!user) {
-                                  return;
-                                }
-                                _mm.userlist.list.unshift(user);
-                                _mm.userlist.save();
-                              },
-                              save: function () {
-                                _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
-                                setValue('mm_userlist', _mm.userlist.list);
-                                if (_mm.node.write_userlist) {
-                                  _mm.userlist.create();
-                                }
-                              },
-                              popup: function () {
-                                popup_text(_mm.userlist.list.join('\n'), 'width: 300px; height: 300px;', [
-                                  {
-                                    value: '保存列表', click: (w, t) => {
-                                      _mm.userlist.list = t.value.split('\n');
-                                      _mm.userlist.save();
-                                      w.remove();
-                                    }
-                                  },
-                                ]);
-                              },
-                            };
+    _mm.userlist = {
+      list: $config.get('mm_userlist', []),
+      create: function () {
+        _mm.node.write_userlist.innerHTML = '';
+        _mm.userlist.list.forEach((u) => { $element('option', _mm.node.write_userlist, { value: u }); });
+      },
+      add: function (user) {
+        if (!user) {
+          return;
+        }
+        _mm.userlist.list.unshift(user);
+        _mm.userlist.save();
+      },
+      save: function () {
+        _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
+        $config.set('mm_userlist', _mm.userlist.list);
+        if (_mm.node.write_userlist) {
+          _mm.userlist.create();
+        }
+      },
+      popup: function () {
+        popup_text(_mm.userlist.list.join('\n'), 300, 300, [
+          { text: 'Save', click: (p) => {
+            _mm.userlist.list = p.textarea.value.split('\n');
+            _mm.userlist.save();
+            p.close();
+          } },
+        ]);
+      },
+    };
 
-                            GM_addStyle(/*css*/`
+    GM_addStyle(/*css*/`
       #mailform, #mmail_left, #mmail_right { display: none; }
 
       .hvut-mm-field { margin: 0; padding: 0; border: 0; }
@@ -9512,1664 +8365,1610 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .eqp:hover .hvut-mm-eid { visibility: visible; }
     `);
 
-                            _mm.node.write_field = $element('fieldset', $id('mmail_outer'), ['.hvut-mm-field']);
-                            _mm.node.write_left = $element('div', _mm.node.write_field, ['.hvut-mm-left']);
-
-                            $input(['button', '发送'], _mm.node.write_left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write_pack(); });
-                            $element('span', _mm.node.write_left, ['收件人:', '!width: 60px;']);
-                            _mm.node.write_to_name = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_to_name.value || '', tabIndex: 1, style: 'width: 360px; font-weight: bold;' });
-                            $input(['button', '编辑列表'], _mm.node.write_left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
-                            $element('span', _mm.node.write_left, ['主题:', '!width: 60px;']);
-                            _mm.node.write_subject = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_subject.value || '', tabIndex: 2, style: 'width: 450px; font-weight: bold;' });
-
-                            _mm.node.write_to_name.setAttribute('list', 'hvut-mm-userlist');
-                            _mm.node.write_userlist = $element('datalist', _mm.node.write_left, ['#hvut-mm-userlist']);
-                            _mm.userlist.create();
-
-                            $element('span', _mm.node.write_left, ['可选项:', '!width: 60px;']);
-                            _mm.node.write_cod_deduction = $input(['text', 'CoD抵扣额'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
-                            if (_isekai) {
-                              _mm.node.write_cod_persistent = $input(['checkbox', '永久区货到付款'], _mm.node.write_left, { checked: true });
-                            }
-
-                            const template_div = $element('div', _mm.node.write_left, ['!margin-left: 60px;']);
-                            Object.entries(settings.moogleMailTemplate).forEach(([k, t]) => { $input(['button', k], template_div, null, () => { _mm.item_template(t); }); });
-
-                            _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 220px; margin-top: 10px;' });
-                            _mm.node.write_log = $element('textarea', _mm.node.write_left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
-                            $mail.log = _mm.write_log;
-
-                            const attach_div = $element('div', _mm.node.write_left, ['.hvut-mm-attachtext']);
-                            $input(['button', '从文本添加'], attach_div);
-                            $input(['button', '可用格式范例'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nVibrant Catalyst @ 4.5k (100)', 'width: 300px; white-space: pre;'); });
-                            $input(['button', '清除文本'], attach_div, null, () => { _mm.item_text(); });
-                            $input(['button', '添加附件'], attach_div, null, () => { _mm.item_text(true); });
-                            $input(['button', '重置搜索框'], attach_div, null, () => { _mm.item_search('', true); });
-
-
-                            _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
-                            _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
-                            $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { location.href = location.href + '&hvut=disabled'; });
-
-                            // MM item
-                            _mm.item_change = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, iid } = target.dataset;
-                              const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
-                              if (action === 'calc') {
-                                it.data.count = _mm.parse_count(it.node.count.value);
-                                if (it.data.count > it.data.stock) {
-                                  it.node.count.classList.add('hvut-mm-invalid');
-                                } else {
-                                  it.node.count.classList.remove('hvut-mm-invalid');
-                                }
-                                it.data.price = _mm.parse_price(it.node.price.value, true);
-                                it.data.cod = Math.ceil(it.data.count * it.data.price);
-                                it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
-                                it.data.atext = _mm.attach_text(it);
-                                _mm.write_calc();
-                              }
-                            };
-                            _mm.item_click = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, iid } = target.dataset;
-                              const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
-                              if (action === 'send') {
-                                _mm.write_pack(it);
-                              }
-                            };
-                            _mm.item_set = function (it, count, price) {
-                              count = parseInt(count);
-                              if (!isNaN(count)) {
-                                it.data.count = Math.min(it.data.stock, Math.max(0, count));
-                                it.node.count.value = it.data.count || '';
-                                if (it.data.count > it.data.stock) {
-                                  it.node.count.classList.add('hvut-mm-invalid');
-                                } else {
-                                  it.node.count.classList.remove('hvut-mm-invalid');
-                                }
-                              }
-                              price = parseFloat(price);
-                              if (!isNaN(price)) {
-                                it.data.price = Math.max(0, price);
-                                it.node.price.value = it.data.price || '';
-                              }
-                              it.data.cod = Math.ceil(it.data.count * it.data.price);
-                              it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
-                              it.data.atext = _mm.attach_text(it);
-                            };
-                            _mm.item_count = function (num) {
-                              if (num !== Infinity) {
-                                num = parseInt(num);
-                                if (!Number.isInteger(num)) {
-                                  return;
-                                }
-                              }
-                              _mm.item_list.forEach((it) => {
-                                if (it.node.check.checked) {
-                                  _mm.item_set(it, num === Infinity ? it.data.stock : num);
-                                }
-                              });
-                              _mm.write_calc();
-                            };
-                            _mm.item_all = function (checked) {
-                              _mm.item_list.forEach((it) => {
-                                if (it.visible) {
-                                  it.node.check.checked = checked;
-                                  it.data.atext = _mm.attach_text(it);
-                                }
-                              });
-                              _mm.write_calc();
-                            };
-                            _mm.item_search = function (value, set) {
-                              if (set) {
-                                _mm.node.item_search.value = value;
-                              } else {
-                                value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
-                                if (value === _mm.item_search.value) {
-                                  return;
-                                }
-                              }
-                              _mm.item_search.value = value;
-
-                              let results;
-                              if (!value) {
-                                results = _mm.item_list;
-                              } else if (/^\[(.*)\]$/.test(value)) {
-                                value = RegExp.$1.toLowerCase();
-                                value = $price.keys.find((k) => k.toLowerCase() === value);
-                                if (!value) {
-                                  return;
-                                }
-                                const prices = $price.get(value);
-                                results = _mm.item_list.filter((e) => {
-                                  if (e.info.name in prices) {
-                                    _mm.item_set(e, e.data.count, prices[e.info.name]);
-                                    return true;
-                                  } else if (e.node.check.checked) {
-                                    return true;
-                                  } else {
-                                    return false;
-                                  }
-                                });
-                                _mm.write_calc();
-                              } else {
-                                value = value.split(',').map((v) => v.split(' '));
-                                results = _mm.item_list.filter((e) => {
-                                  const lowercase = e.info.lowercase;
-                                  return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
-                                });
-                              }
-                              _mm.item_list.forEach((e) => { e.visible = false; });
-                              results.forEach((e) => { e.visible = true; });
-                              _mm.item_list.forEach((e) => {
-                                if (e.visible) {
-                                  e.node.tr.classList.remove('hvut-none');
-                                } else {
-                                  e.node.tr.classList.add('hvut-none');
-                                }
-                              });
-                            };
-                            _mm.item_text = function (attach) {
-                              const text = _mm.node.write_body.value.split('\n');
-                              const textdata = {};
-                              text.forEach((t) => {
-                                if (t.includes('> Removed attachment:')) {
-                                  return;
-                                }
-
-                                let exec;
-                                let name;
-                                let count;
-                                let price;
-                                if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
-                                  name = exec[1];
-                                  count = exec[3];
-                                  price = exec[2];
-                                } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
-                                  name = exec[2];
-                                  count = exec[1];
-                                  price = exec[3];
-                                } else {
-                                  return;
-                                }
-                                name = name.trim();
-                                count = _mm.parse_count(count);
-                                price = _mm.parse_price(price, true);
-                                const lowercase = name.toLowerCase();
-                                textdata[lowercase] = { name, count, price };
-                              });
-
-                              if (attach) {
-                                _mm.item_list.forEach((it) => {
-                                  const lowercase = it.info.lowercase;
-                                  const textitem = textdata[lowercase];
-                                  if (textitem) {
-                                    _mm.item_set(it, textitem.count, textitem.price);
-                                    it.visible = true;
-                                    it.node.check.checked = true;
-                                    it.node.tr.classList.remove('hvut-none');
-                                  } else if (it.visible && !it.node.check.checked) {
-                                    it.visible = false;
-                                    it.node.tr.classList.add('hvut-none');
-                                  }
-                                });
-                                _mm.write_calc();
-                              } else {
-                                let cod = 0;
-                                let atext = '';
-                                Object.values(textdata).forEach((textitem) => {
-                                  textitem.cod = Math.ceil(textitem.count * textitem.price);
-                                  cod += textitem.cod;
-                                  atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
-                                  if (textitem.cod) {
-                                    atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
-                                  }
-                                  atext += '\n';
-                                });
-                                if (cod) {
-                                  atext += `\n总计：${cod.toLocaleString()} Credits`;
-                                }
-                                _mm.write_log(atext, true);
-                              }
-                            };
-                            _mm.item_template = function (t) {
-                              _mm.node.write_to_name.value = t.to;
-                              _mm.node.write_subject.value = t.subject;
-                              _mm.node.write_body.value = t.body;
-                              _mm.item_text(t.attach);
-                            };
-
-                            _mm.node.item_div = $element('div', null, ['.hvut-none']);
-                            _mm.node.item_menu = $element('div', _mm.node.item_div, ['.hvut-mm-attach-menu']);
-                            $price.init();
-                            $price.keys.forEach((k) => {
-                              if (['WTB', 'Materials'].includes(k)) {
-                                return;
-                              }
-                              $input(['button', k], _mm.node.item_menu, null, () => { _mm.item_search(`[${k}]`, true); });
-                            });
-                            $element('br', _mm.node.item_menu);
-                            _mm.node.item_search = $input('text', _mm.node.item_menu, { placeholder: '搜索框', style: 'width: 170px;' }, { input: (e) => { _mm.item_search(e.target.value); }, keyup: (e) => { if (e.which === 27) { _mm.item_search('', true); } } });
-                            $input(['button', '清除'], _mm.node.item_menu, null, () => { _mm.item_search('', true); });
-                            $input('checkbox', _mm.node.item_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.item_all(e.target.checked); });
-                            $input('text', _mm.node.item_menu, { placeholder: '数量', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item_count(e.target.value); } });
-                            $input(['button', '全部'], _mm.node.item_menu, null, () => { _mm.item_count(Infinity); });
-                            $input(['button', '0'], _mm.node.item_menu, null, () => { _mm.item_count(0); });
-                            _mm.node.item_menu.appendChild($price.selector());
-
-                            _mm.node.item_attach = $element('div', _mm.node.item_div, ['#item', '.hvut-mm-attach'], { input: (e) => { _mm.item_change(e); }, click: (e) => { _mm.item_click(e); } });
-                            _mm.node.item_list = $qs('.itemlist') || $element('table');
-                            _mm.node.item_attach.appendChild(_mm.node.item_list);
-
-                            _mm.item_list = Array.from(_mm.node.item_list.rows).map((tr) => {
-                              const div = tr.cells[0].firstElementChild;
-                              const name = div.textContent;
-                              const type = $item.type(div.getAttribute('onmouseover'));
-                              const iid = $item.reg.mooglemail.test(div.getAttribute('onclick')) && RegExp.$1;
-                              const lowercase = name.toLowerCase();
-                              const stock = parseInt(tr.cells[1].textContent);
-                              return { info: { name, lowercase, iid, type }, data: { pane: 'item', id: iid, name, stock, count: 0, price: 0, cod: 0 }, node: { tr } };
-                            });
-                            _mm.item_list.forEach((it) => {
-                              it.visible = true;
-                              it.node.tr.classList.add('hvut-it-' + it.info.type);
-                              it.node.td = $element('td', it.node.tr);
-                              it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
-                              it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
-                              it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-                              it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: '货到付款额', readOnly: true });
-                              it.node.send = $input(['button', '发送'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
-                            });
-
-                            if ($id('mmail_attachitem')) {
-                              $id('item').id += '_';
-                              $element('span', _mm.node.write_tabs, '物品', () => { _mm.write_toggle('item_div'); });
-                              _mm.node.write_right.appendChild(_mm.node.item_div);
-                            }
-
-                            // MM equip
-                            _mm.equip_change = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, eid } = target.dataset;
-                              const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
-                              if (action === 'calc') {
-                                eq.data.cod = _mm.parse_price(eq.node.price.value);
-                                eq.data.atext = _mm.attach_text(eq);
-                                _mm.write_calc();
-                              }
-                            };
-                            _mm.equip_click = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, eid } = target.dataset;
-                              const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
-                              if (action === 'send') {
-                                _mm.write_pack(eq);
-                              }
-                            };
-                            _mm.equip_all = function (checked) {
-                              _mm.equip_list.forEach((eq) => {
-                                if (eq.visible) {
-                                  eq.node.check.checked = checked;
-                                  eq.data.atext = _mm.attach_text(eq);
-                                }
-                              });
-                              _mm.write_calc();
-                            };
-                            _mm.equip_search = function (value, set) {
-                              if (set) {
-                                _mm.node.equip_search.value = value;
-                              }
-                              value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
-                              if (value === _mm.equip_search.value) {
-                                return;
-                              }
-                              _mm.equip_search.value = value;
-
-                              let results;
-                              if (!value) {
-                                results = _mm.equip_list;
-                              } else {
-                                value = value.split(',').map((v) => v.split(' '));
-                                results = _mm.equip_list.filter((e) => {
-                                  const lowercase = e.info.lowercase;
-                                  const eid = e.info.eid ? e.info.eid.toString() : '';
-                                  return e.node.check.checked || value.some((v) => v.every((s) => s && (lowercase.includes(s) || eid.includes(s))));
-                                });
-                              }
-                              _mm.equip_list.forEach((e) => { e.visible = false; });
-                              results.forEach((e) => { e.visible = true; });
-                              $equip.sort(results, _mm.node.equip_list);
-                            };
-
-                            _mm.node.equip_div = $element('div', null, ['.hvut-none']);
-                            _mm.node.equip_menu = $element('div', _mm.node.equip_div, ['.hvut-mm-attach-menu']);
-                            _mm.node.equip_search = $input('text', _mm.node.equip_menu, { placeholder: '装备名称或eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip_search(e.target.value); }, keyup: (e) => { if (e.which === 27) { _mm.equip_search('', true); } } });
-                            $input(['button', '清除'], _mm.node.equip_menu, null, () => { _mm.equip_search('', true); });
-                            $input('checkbox', _mm.node.equip_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.equip_all(e.target.checked); });
-
-                            _mm.node.equip_attach = $element('div', _mm.node.equip_div, ['#equip', '.hvut-mm-attach'], { input: (e) => { _mm.equip_change(e); }, click: (e) => { _mm.equip_click(e); } });
-                            _mm.node.equip_list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
-                            _mm.node.equip_attach.appendChild(_mm.node.equip_list);
-
-                            _mm.equip_json = getValue('in_equipdata', {});
-                            _mm.equip_list = $equip.list(_mm.node.equip_list);
-                            _mm.equip_list.forEach((eq) => {
-                              eq.visible = true;
-                              eq.info.lowercase = eq.info.name.toLowerCase();
-                              eq.data.pane = 'equip';
-                              eq.data.id = eq.info.eid;
-                              eq.data.name = eq.info.name;
-                              eq.data.count = 1;
-                              eq.node.div.removeAttribute('onclick');
-                              eq.node.lock = eq.node.wrapper.firstElementChild;
-                              eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-mm-sub']);
-                              eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
-                              eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
-                              eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-                              eq.node.send = $input(['button', '发送'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
-
-                              const json = _mm.equip_json[eq.info.eid];
-                              if (json?.price) {
-                                eq.node.price.value = json.price;
-                                eq.data.cod = _mm.parse_price(json.price);
-                              }
-                            });
-
-                            if ($id('mmail_attachequip')) {
-                              $id('equip').id += '_';
-                              $element('span', _mm.node.write_tabs, '装备', () => { _mm.write_toggle('equip_div'); });
-                              _mm.node.write_right.appendChild(_mm.node.equip_div);
-                            }
-
-                            // MM credits
-                            _mm.credits_change = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, name } = target.dataset;
-                              const it = name && _mm.credits_list.find((it) => it.info.name === name);
-                              if (action === 'calc') {
-                                if (name === 'Credits') {
-                                  it.data.count = _mm.parse_price(it.node.count.value);
-                                } else {
-                                  it.data.count = _mm.parse_count(it.node.count.value);
-                                }
-                                if (it.data.count > it.data.stock) {
-                                  it.node.count.classList.add('hvut-mm-invalid');
-                                } else {
-                                  it.node.count.classList.remove('hvut-mm-invalid');
-                                }
-                                it.data.price = _mm.parse_price(it.node.price.value, true);
-                                it.data.cod = Math.ceil(it.data.count * it.data.price);
-                                it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
-                                it.data.atext = _mm.attach_text(it);
-                                _mm.write_calc();
-                              }
-                            };
-
-                            _mm.credits_list = [];
-                            const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
-                            const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
-                            if ($id('mmail_attachcredits')) {
-                              credits.data.stock = /Current Funds: ([0-9,]+) Credits/.test($id('mmail_attachcredits').textContent) && _mm.parse_count(RegExp.$1);
-                            }
-                            if ($id('mmail_attachhath')) {
-                              hath.data.stock = /Current Funds: ([0-9,]+) Hath/.test($id('mmail_attachhath').textContent) && _mm.parse_count(RegExp.$1);
-                            }
-
-                            _mm.node.credits_div = $element('div', null, ['.hvut-none']);
-                            _mm.node.credits_attach = $element('div', _mm.node.credits_div, ['.hvut-mm-attach'], { input: (e) => { _mm.credits_change(e); } });
-                            _mm.node.credits_list = $element('table', _mm.node.credits_attach, ['.itemlist itemlist-credits', '/<tbody></tbody>']);
-
-                            credits.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
-                            $element('td', credits.node.tr, credits.info.name);
-                            $element('td', credits.node.tr, credits.data.stock.toLocaleString());
-                            credits.node.td = $element('td', credits.node.tr);
-                            credits.node.check = $input('checkbox', credits.node.td, { dataset: { action: 'calc', name: 'Credits' } });
-                            credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: '数量', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-                            credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
-                            credits.node.cod = $input('text', credits.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true, style: 'visibility: hidden;' });
-
-                            hath.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
-                            $element('td', hath.node.tr, hath.info.name);
-                            $element('td', hath.node.tr, hath.data.stock.toLocaleString());
-                            hath.node.td = $element('td', hath.node.tr);
-                            hath.node.check = $input('checkbox', hath.node.td, { dataset: { action: 'calc', name: 'Hath' } });
-                            hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
-                            hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-                            hath.node.cod = $input('text', hath.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
-
-                            if ($id('mmail_attachcredits')) {
-                              _mm.credits_list.push(credits, hath);
-                              $element('span', _mm.node.write_tabs, 'Credits / Hath', () => { _mm.write_toggle('credits_div'); });
-                              _mm.node.write_right.appendChild(_mm.node.credits_div);
-                            }
-
-                            _mm.credits_multi = function () {
-                              if (_mm.credits_multi.current) {
-                                popup('正在处理其他请求...');
-                                return;
-                              }
-                              _mm.credits_multi.current = true;
-                              _mm.node.write_field.disabled = true;
-
-                              const queue = [];
-                              const error = [];
-                              let credits_funds = credits.data.stock;
-                              let hath_funds = hath.data.stock;
-                              _mm.node.credits_multi.value.split('\n').forEach((t) => {
-                                if (!t) {
-                                  return;
-                                }
-                                const [to_name, ctext, subject, ...body] = t.split(';');
-                                if (!to_name) {
-                                  error.push('无收件人: ' + t);
-                                  return;
-                                }
-
-                                const attach = [];
-                                if (!ctext) {
-                                } else if (/^\s*([0-9,.]+[ckm]?)\s*$/i.test(ctext)) {
-                                  const it = { pane: 'credits', name: 'Credits', id: 0, count: _mm.parse_price(RegExp.$1) };
-                                  attach.push(it);
-                                  credits_funds -= it.count;
-                                } else if (/^\s*([0-9,]+)h\s*$/i.test(ctext)) {
-                                  const it = { pane: 'hath', name: 'Hath', id: 0, count: _mm.parse_count(RegExp.$1) };
-                                  attach.push(it);
-                                  hath_funds -= it.count;
-                                } else {
-                                  error.push('无效的附件: ' + t);
-                                  return;
-                                }
-
-                                const mail = {
-                                  to_name,
-                                  subject: subject.trim() || _mm.node.write_subject.value,
-                                  body: body.length ? body.join(';').replace(/\|/g, '\n') : _mm.node.write_body.value,
-                                  attach,
-                                };
-                                queue.push(mail);
-                              });
-                              if (error.length) {
-                                alert(error.join('\n'));
-                                return;
-                              }
-                              if (credits_funds < 0) {
-                                alert('Credits不足');
-                                return;
-                              }
-                              if (hath_funds < 0) {
-                                alert('Hath不足');
-                                return;
-                              }
-
-                              queue.map((mail) => $mail.request(mail));
-                            };
-
-                            const multi_div = $element('div', _mm.node.credits_attach, ['!margin-top: 50px;']);
-                            $input(['button', '群发'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits_multi(); });
-                            $element('br', multi_div);
-                            _mm.node.credits_multi = $element('textarea', multi_div, { placeholder: 'user; credits; subject; text (| = new line)\nex)\nsssss2; 10m\nsssss3; 500k; WTB; hi|I want to buy...\nTenboro; 500c\nMoogleMail; 1000h; Thanks', style: 'width: 500px; height: 300px;', spellcheck: false });
-
-                            if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
-                              $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
-                              _mm.node.write_cod_deduction.disabled = true;
-                              if (_isekai) {
-                                _mm.node.write_cod_persistent.disabled = true;
-                                _mm.node.write_cod_persistent.checked = false;
-                              }
-                            }
-                            _mm.node.write_to_name.focus();
-
-                            // MM LIST
-                          } else if ($id('mmail_list')) {
-                            _mm.db = {
-
-                              version: 1,
-                              season: 'mm',
-
-                              open: function (callback) {
-                                if (_mm.db.database) {
-                                  callback?.();
-                                  return;
-                                }
-                                const request = indexedDB.open(_ns, _mm.db.version);
-                                request.onsuccess = function (e) {
-                                  _mm.db.database = e.target.result;
-                                  callback?.();
-                                };
-                                request.onupgradeneeded = function (e) {
-                                  const db = e.target.result;
-                                  const stores = [_mm.db.season];
-                                  stores.forEach((store) => {
-                                    if (!db.objectStoreNames.contains(store)) {
-                                      db.createObjectStore(store, { keyPath: 'mid' });
-                                    }
-                                  });
-                                };
-                              },
-                              conn: function (mode = 'readonly', store = _mm.db.season) {
-                                const db = _mm.db.database;
-                                const tx = db.transaction(store, mode);
-                                const os = tx.objectStore(store);
-                                return { db, tx, os };
-                              },
-                              search: function (query) {
-                                const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;
-                                const results = [];
-                                return new Promise((resolve) => {
-                                  const conn = _mm.db.conn('readonly', season);
-                                  conn.os.openCursor().onsuccess = function (e) {
-                                    const cursor = e.target.result;
-                                    if (cursor) {
-                                      const db = cursor.value;
-                                      const mail = _mm.mail_get(db.mid, season);
-                                      mail.db = db;
-
-                                      const exclude = filter && filter !== db.filter
-                                      || name && !db.user.toLowerCase().includes(name)
-                                      || subject && !db.subject.toLowerCase().includes(subject)
-                                      || text && !db.text.toLowerCase().includes(text)
-                                      || cod && cod !== db.cod || cod_min && (!db.cod || cod_min > db.cod) || cod_max && cod_max < db.cod
-                                      || attach && !(db.attach?.some((e) => { if (eid) { return e.t === 'e' && e.e === eid; } else { const n = e.n.toLowerCase(); return attach.every((a) => n.includes(a)); } }));
-                                      if (!exclude) {
-                                        results.push(mail);
-                                      }
-                                      cursor.continue();
-                                    } else {
-                                      resolve(results);
-                                    }
-                                  };
-                                });
-                              },
-                              export: function () {
-                                _mm.node.db_export.disabled = true;
-                                const json = [];
-                                const database = _mm.db.database.name;
-                                const stores = Array.from(_mm.db.database.objectStoreNames);
-                                let completed = stores.length;
-                                stores.forEach((store) => {
-                                  const values = [];
-                                  const conn = _mm.db.conn('readonly', store);
-                                  conn.os.openCursor().onsuccess = function (e) {
-                                    const cursor = e.target.result;
-                                    if (cursor) {
-                                      values.push(cursor.value);
-                                      cursor.continue();
-                                    } else {
-                                      json.push({ database, store, values });
-                                      completed--;
-                                      if (completed === 0) {
-                                        const date = new Date();
-                                        const download = _ns.toUpperCase() + '_MoogleMail_' + (date.getFullYear() + ('0' + (date.getMonth() + 1)).slice(-2) + ('0' + date.getDate()).slice(-2)) + '.json';
-                                        const link = $element('a', document.body, { download, style: 'display: none;' });
-                                        window.URL.revokeObjectURL(link.href);
-                                        link.href = window.URL.createObjectURL(new Blob([JSON.stringify(json)], { type: 'application/json' }));
-                                        link.click();
-                                        _mm.node.db_export.value = 'Completed';
-                                      }
-                                    }
-                                  };
-                                });
-                              },
-                              import: function () {
-                                _mm.node.db_import.disabled = true;
-                                const input = $input('file', _mm.node.db_div, { accept: '.json' });
-                                const run = $input(['button', '选择'], _mm.node.db_div, null, () => {
-                                  const file = input.files[0];
-                                  if (!file) {
-                                    alert('首先选择一个文件');
-                                    return;
-                                  }
-                                  run.disabled = true;
-
-                                  const reader = new FileReader();
-                                  reader.onload = function (e) {
-                                    try {
-                                      const dbname = _mm.db.database.name;
-                                      const stores = Array.from(_mm.db.database.objectStoreNames);
-                                      const json = JSON.parse(e.target.result);
-                                      let completed = json.length;
-
-                                      function complete() {
-                                        completed--;
-                                        if (completed === 0) {
-                                          _mm.node.db_import.value = 'Completed';
-                                        }
-                                      }
-
-                                      json.forEach((obj) => {
-                                        const { database, store, values } = obj;
-                                        if (database !== dbname) {
-                                          console.log('无效的数据库');
-                                          complete();
-                                          return;
-                                        }
-                                        if (!stores.includes(store)) {
-                                          complete();
-                                          console.log('无效的对象存储');
-                                          return;
-                                        }
-                                        const conn = _mm.db.conn('readwrite', store);
-                                        conn.tx.oncomplete = function () {
-                                          complete();
-                                        };
-                                        values.forEach((data) => {
-                                          conn.os.put(data);
-                                        });
-                                      });
-                                    } catch (e) {
-                                      alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
-                                      run.disabled = false;
-                                      return;
-                                    }
-                                  };
-                                  reader.onerror = function () {
-                                    alert('读取文件失败');
-                                  };
-                                  reader.readAsText(file);
-                                });
-                              },
-                              clear: function () {
-                                if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
-                                  const season = _mm.node.search_season?.value || _mm.db.season;
-                                  const conn = _mm.db.conn('readwrite', season);
-                                  conn.os.clear();
-                                }
-                              },
-                              toggle: function () {
-                                if (_mm.node.db_div) {
-                                  _mm.node.db_div.classList.toggle('hvut-none');
-                                  return;
-                                }
-                                _mm.node.db_div = $element('div', _mm.node.bottom);
-                                $input(['button', '关闭'], _mm.node.db_div, null, () => { _mm.db.toggle(); });
-                                $input(['button', '重置数据库'], _mm.node.db_div, null, () => { _mm.db.clear(); });
-                                _mm.node.db_export = $input(['button', '导出为JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
-                                _mm.node.db_import = $input(['button', '从JSON导入'], _mm.node.db_div, null, () => { _mm.db.import(); });
-                              },
-                              init: function () {
-                                if (_isekai) {
-                                  const version = /(\d+) Season (\d+)/.exec(_isekai) ? parseInt(RegExp.$1.slice(2) + RegExp.$2.padStart(2, '0').slice(-2)) : 1;
-                                  _mm.db.version = version;
-                                  _mm.db.season = _isekai;
-                                }
-                              },
-
-                            };
-
-                            _mm.page_filter = _query.filter || 'inbox';
-                            _mm.page_current = parseInt(_query.page) || 0;
-
-                            _mm.page_init = function () {
-                              _mm.node.page_table[_mm.page_current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
-                              _mm.page_create($id('mmail_list'), _mm.page_current);
-                              $id('mmail_list').remove();
-                              _mm.page_prev = _mm.page_current;
-                              _mm.page_next = _mm.page_current;
-                              _mm.page_pager($id('mmail_pager'), _mm.page_current);
-                            };
-
-                            _mm.page_click = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, mid, season } = target.dataset;
-                              if (action === 'read') {
-                                e.preventDefault();
-                                _mm.mail_read(mid, null, season);
-                              }
-                            };
-
-                            _mm.page_load = async function (p) {
-                              if (p === 'prev') {
-                                if (_mm.page_prev === null) {
-                                  return;
-                                }
-                                p = _mm.page_prev;
-                              } else if (p === 'next') {
-                                if (_mm.page_next === null) {
-                                  return;
-                                }
-                                p = _mm.page_next;
-                              }
-                              if (_mm.node.page_table[p]) {
-                                return;
-                              }
-                              _mm.node.page_table[p] = $element('table', [$id('mmail_outerlist'), _mm.node.page_table[p + 1]], ['.hvut-mm-list']);
-                              const table = _mm.node.page_table[p];
-                              $element('tr', table, [`/<td>${p} 页面：加载中...</td>`]);
-                              scrollIntoView(table);
-                              _mm.node.page_prev.disabled = true;
-                              _mm.node.page_next.disabled = true;
-
-                              const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page_filter}&page=${p}`);
-                              const doc = $doc(html);
-                              const list = $qs('#mmail_list', doc);
-                              _mm.kill_asshole(list);
-                              _mm.page_create(list, p);
-                              scrollIntoView(table);
-                              _mm.page_pager($id('mmail_pager', doc), p);
-                              return doc;
-                            };
-
-                            _mm.page_pager = function (pager, p) {
-                              const prev = /&page=(\d+)/.test(pager.children[0].firstElementChild.href) ? parseInt(RegExp.$1) : null;
-                              const next = /&page=(\d+)/.test(pager.children[1].firstElementChild.href) ? parseInt(RegExp.$1) : null;
-                              if (_mm.page_prev !== null && p <= _mm.page_prev) {
-                                _mm.page_prev = prev;
-                              }
-                              if (_mm.page_next !== null && p >= _mm.page_next) {
-                                _mm.page_next = next;
-                              }
-                              _mm.node.page_prev.disabled = _mm.page_prev === null;
-                              _mm.node.page_next.disabled = _mm.page_next === null;
-                            };
-
-                            _mm.page_create = function (list, p) {
-                              const table = _mm.node.page_table[p];
-                              const tbody = $element('tbody');
-                              const type = { 'inbox': '收件箱', 'read': '来自', 'sent': '发给' }[_mm.page_filter];
-                              $element('tr', tbody, [`/<td>${type}</td><td>第 ${p} 页</td><td>附件</td><td>货到付款额</td><td>发送时间</td><td>阅读时间</td>`]);
-
-                              const conn = _mm.db.conn();
-                              let count = list.rows.length - 1;
-                              Array.from(list.rows).slice(1).forEach((row) => {
-                                if (row.cells[0].id === 'mmail_nnm') {
-                                  $element('tr', tbody, ['/<td colspan="6">没有新邮件</td>']);
-                                  return;
-                                }
-                                const mid = /mid=(\d+)/.test(row.getAttribute('onclick')) && parseInt(RegExp.$1);
-                                const user = row.cells[0].textContent;
-                                const returned = user === 'MoogleMail';
-                                const subject = row.cells[1].textContent;
-                                let sent = row.cells[2].textContent;
-                                sent = Date.parse(sent + ':00.000Z') / 1000;
-                                let read = row.cells[3].textContent;
-                                read = read === 'Never' ? null : Date.parse(read + ':00.000Z') / 1000;
-
-                                const mail = _mm.mail_get(mid);
-                                if (mail.page) {
-                                  return;
-                                }
-                                mail.page = { filter: _mm.page_filter, user, returned, subject, sent, read };
-                                const page = mail.page;
-                                mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-                                $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
-
-                                conn.os.get(mid).onsuccess = function (e) {
-                                  mail.db = e.target.result || null;
-                                  const db = mail.db;
-                                  if (!db || db.filter !== page.filter || !page.returned && !db.user.startsWith(page.user) || db.sent !== page.sent || db.read !== page.read) {
-                                    if (page.filter !== 'inbox') {
-                                      _mm.mail_load(mid);
-                                    }
-                                  }
-                                  _mm.page_modify(mail);
-                                  if (!--count) {
-                                    scrollIntoView(table);
-                                  }
-                                };
-                              });
-                              table.innerHTML = '';
-                              table.appendChild(tbody);
-                            };
-
-                            _mm.page_modify = function (mail) {
-                              const page = mail.page;
-                              const db = mail.db;
-                              const tr = mail.node.page;
-                              tr.cells[0].textContent = (db || page).user;
-                              tr.cells[1].firstElementChild.textContent = (db || page).subject;
-                              tr.cells[2].innerHTML = '';
-                              tr.cells[3].innerHTML = '';
-
-                              db?.attach?.forEach((e) => {
-                                const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-                                if (e.t === 'e') {
-                                  if (e.e && e.k) {
-                                    $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
-                                  } else {
-                                    span.textContent = e.n;
-                                  }
-                                } else {
-                                  span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-                                }
-                              });
-                              if (db?.cod) {
-                                tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-                              }
-                              tr.cells[4].textContent = _mm.dts(page.sent);
-                              tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
-
-                              tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
-                              tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
-                              tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
-                              tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
-                            };
-
-                            _mm.page_go = function (p) {
-                              p = parseInt(p);
-                              if (isNaN(p) || p < 0) {
-                                return;
-                              }
-                              location.href = location.href.replace(/&page=\d+/, '') + '&page=' + p;
-                            };
-
-                            _mm.mail_data = {};
-
-                            _mm.mail_get = function (mid, season = _mm.db.season) {
-                              if (!_mm.mail_data[season]) {
-                                _mm.mail_data[season] = {};
-                              }
-                              if (!_mm.mail_data[season][mid]) {
-                                _mm.mail_data[season][mid] = { mid, node: {} };
-                              }
-                              return _mm.mail_data[season][mid];
-                            };
-
-                            _mm.mail_read = async function (mid, post, season = _mm.db.season) {
-                              const mail = _mm.mail_get(mid, season);
-                              if (_mm.mail_current === mail && !post) {
-                                _mm.mail_close();
-                                return;
-                              }
-                              _mm.mail_close();
-                              _mm.mail_current = mail;
-                              _mm.node.mail_view.classList.remove('hvut-none');
-                              $element('p', _mm.node.mail_view, ['加载中...', '.hvut-mm-loading']);
-
-                              mail.node.page?.classList.add('hvut-mm-current');
-                              mail.node.search?.classList.add('hvut-mm-current');
-
-                              if (season === _mm.db.season) {
-                                await _mm.mail_load(mid, post);
-                              }
-                              _mm.mail_view(mail);
-                            };
-
-                            _mm.mail_load = async function (mid, post) {
-                              const mail = _mm.mail_get(mid);
-                              const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
-                              mail.view = _mm.mail_parse(html);
-                              _mm.mail_update(mail);
-                              return true;
-                            };
-
-                            _mm.mail_parse = function (arg) {
-                              let html;
-                              let doc;
-                              if (typeof arg === 'string') {
-                                html = arg;
-                                doc = $doc(html);
-                              } else {
-                                doc = arg;
-                                html = doc.documentElement.innerHTML;
-                              }
-
-                              const view = {};
-                              const form = $id('mailform', doc);
-                              if (form) {
-                                _mm.mmtoken = form.elements.mmtoken.value;
-                                view.to = form.elements[3].value;
-                                view.from = form.elements[4].value;
-                                view.subject = form.elements[5].value;
-                                view.text = form.elements[6].value;
-                                view.attach = [];
-                                view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
-                                view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
-                                view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
-                                view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-
-                                if (view.from === 'MoogleMail') {
-                                  view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
-                                  view.returned = true;
-                                }
-                                if (view.take) {
-                                  view.filter = 'inbox';
-                                  view.user = view.from;
-                                } else if (view.reply) {
-                                  view.filter = 'read';
-                                  view.user = view.from;
-                                } else if (view.returned) {
-                                  view.filter = 'read';
-                                  view.user = view.from;
-                                } else {
-                                  view.filter = 'sent';
-                                  view.user = view.to;
-                                }
-                                view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
-
-                                if ($id('mmail_attachlist', doc)) {
-                                  Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
-                                  Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
-                                    let exec;
-                                    const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
-                                    if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
-                                      const eid = parseInt(exec[1]);
-                                      const key = $equip.dynjs_eqstore[eid].k;
-                                      const name = $equip.dynjs_eqstore[eid].t;
-                                      const type = 'e';
-                                      view.attach.push({ t: type, n: name, e: eid, k: key });
-                                    } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
-                                      const count = _mm.parse_count(exec[1]);
-                                      const name = exec[2];
-                                      const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
-                                      view.attach.push({ t: type, n: name, c: count });
-                                    } else {
-                                      console.log(div.textContent.trim());
-                                    }
-                                  });
-                                  if ($id('mmail_currentcod', doc)) {
-                                    view.cod = /Requested Payment on Delivery: ([0-9,]+) credits/.test($id('mmail_currentcod', doc).textContent) && _mm.parse_count(RegExp.$1);
-                                  }
-                                } else {
-                                  const split = view.text.split('\n\n').reverse();
-                                  const attach = split[0].split('\n').every((e) => {
-                                    const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
-                                    if (!exec) {
-                                      return false;
-                                    }
-                                    if (exec[3]) {
-                                      const name = exec[3];
-                                      const type = 'e';
-                                      view.attach.unshift({ t: type, n: name });
-                                    } else {
-                                      const name = exec[2];
-                                      const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
-                                      const count = _mm.parse_count(exec[1]);
-                                      view.attach.unshift({ t: type, n: name, c: count });
-                                    }
-                                    return true;
-                                  });
-                                  if (attach) {
-                                    view.cod = /^CoD Paid: ([0-9,]+) Credits$/.test(split[1]) && _mm.parse_count(RegExp.$1);
-                                  }
-
-                                  // pre 0.85
-                                  const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
-                                  if (exec) {
-                                    const type = exec[4];
-                                    if (type === 'e') {
-                                      const name = exec[3];
-                                      const eid = exec[5];
-                                      view.attach.push({ t: type, n: name, e: eid });
-                                    } else {
-                                      const name = exec[2];
-                                      const count = _mm.parse_count(exec[1]);
-                                      view.attach.push({ t: type, n: name, c: count });
-                                    }
-                                    view.cod = _mm.parse_count(exec[6]);
-                                  }
-                                }
-                              } else {
-                                view.error = get_message(doc) || '未知错误';
-                              }
-
-                              return view;
-                            };
-
-                            _mm.mail_update = function (mail) {
-                              const mid = mail.mid;
-                              const page = mail.page;
-                              const view = mail.view;
-
-                              if (view.error) {
-                              } else if (mail.db) {
-                                const db = mail.db;
-                                const sent = page?.sent || db.sent;
-                                let read = page?.read || db.read;
-                                if (read === null && view.read) {
-                                  read = -1;
-                                }
-                                if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
-                                  db.filter = view.filter;
-                                  db.user = view.user;
-                                  db.subject = view.subject;
-                                  db.text = view.text;
-                                  db.sent = sent;
-                                  db.read = read;
-                                  if (view.returned) {
-                                    db.returned = 1;
-                                    delete db.cod;
-                                  }
-                                  const conn = _mm.db.conn('readwrite');
-                                  conn.os.put(db);
-                                }
-                              } else if (page) {
-                                mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
-                                const db = mail.db;
-                                if (view.returned) {
-                                  db.returned = 1;
-                                }
-                                if (view.attach.length) {
-                                  db.attach = view.attach;
-                                }
-                                if (view.cod) {
-                                  db.cod = view.cod;
-                                }
-                                const conn = _mm.db.conn('readwrite');
-                                conn.os.add(db);
-                              }
-
-                              _mm.mail_modify(mail);
-                            };
-
-                            _mm.mail_modify = function (mail) {
-                              if (mail.node.page) {
-                                _mm.page_modify(mail);
-                              }
-                              if (mail.node.search) {
-                                _mm.search_modify(mail);
-                              }
-                            };
-
-                            _mm.mail_view = function (mail) {
-                              if (_mm.mail_current !== mail) {
-                                return;
-                              }
-                              const mid = mail.mid;
-                              const view = mail.view || {};
-                              const db = mail.db;
-                              const div = _mm.node.mail_view;
-                              div.innerHTML = '';
-                              if (!db) {
-                                $element('p', div, [`错误：${view.error}`, '.hvut-mm-loading']);
-                                return;
-                              }
-                              div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
-
-                              const type = db.filter === 'sent' ? '发给' : '来自';
-                              const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : _mm.dts(db.read, 4);
-                              $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>发送</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>主题</dt><dd>${db.subject}</dd><dt>已读</dt><dd>${read}</dd>`]);
-
-                              _mm.node.mail_body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
-                              const buttons = $element('div', div);
-                              $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
-                              if (view.reply) {
-                                $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
-                              }
-                              if (view.take) {
-                                $input(['button', '全部获取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
-                              }
-                              if (view.return) {
-                                $input(['button', '退回'], buttons, { dataset: { action: 'return', mid } });
-                              }
-                              if (view.recall) {
-                                $input(['button', '撤回'], buttons, { dataset: { action: 'recall', mid } });
-                              }
-                              if (view.error) {
-                                $input(['button', view.error], buttons);
-                                div.classList.add('hvut-mm-failed');
-                              } else {
-                                div.classList.remove('hvut-mm-failed');
-                              }
-                              if (db.returned) {
-                                $input(['button', `这条消息已从${db.user}处退回`], buttons);
-                              }
-
-                              if (view.take && !view.returned && settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
-                                _mm.itemshop_parse();
-                                $input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid } });
-                              }
-                              if (view.take && !view.returned && settings.moogleMailDarkDescent && /Dark Descent|reforge/i.test(db.subject + '\n' + db.text)) {
-                                const [, cost] = _mm.reforge_parse(db.attach);
-                                if (cost) {
-                                  $input(['button', `代重铸服务 [${cost}]`], buttons, { dataset: { action: 'reforge', mid } });
-                                }
-                              }
-
-                              mail.attach = [];
-                              if (db.attach) {
-                                const ul = $element('ul', div, null, { input: (e) => { _mm.mail_cod(e); } });
-                                const li = $element('li', ul);
-                                const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
-
-                                $input(['button', `编辑${wtx}价格`], buttons, { className: 'hvut-mm-edit', dataset: { action: 'edit_price', value: wtx } });
-                                $element('span', li, 'CoD: ' + (db.cod ? db.cod.toLocaleString() + (db.read ? ' [已支付]' : '') : '未设置'));
-                                mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
-                                mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-                                mail.attach = JSON.parse(JSON.stringify(db.attach));
-                                mail.attach.forEach((e) => {
-                                  const li = $element('li', ul);
-                                  const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
-                                  if (e.t === 'e') {
-                                    if (e.e && e.k) {
-                                      $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
-                                    } else {
-                                      span.textContent = e.n;
-                                    }
-                                  } else {
-                                    span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-                                  }
-                                  e.node = {};
-                                  if (e.n === 'Credits') {
-                                    return;
-                                  }
-                                  e.node.price = $input('text', li, { className: 'hvut-mm-price', value: '' });
-                                  e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-                                });
-                                _mm.mail_price();
-                              }
-                            };
-
-                            _mm.mail_click = function (e) {
-                              const target = e.target.closest('[data-action]');
-                              if (!target) {
-                                return;
-                              }
-                              const { action, mid, value } = target.dataset;
-                              if (action === 'close') {
-                                _mm.mail_close();
-                              } else if (action === 'reply') {
-                                location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
-                              } else if (action === 'take') {
-                                if (value && !confirm(`拿取附件将从你的账户中扣除${parseInt(value).toLocaleString()}Credits，确定吗？`)) {
-                                  return;
-                                }
-                                _mm.mail_read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
-                              } else if (action === 'return') {
-                                if (!confirm('这将把消息退回给发送者，确定吗？')) {
-                                  return;
-                                }
-                                _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
-                              } else if (action === 'recall') {
-                                if (!confirm('这将把消息撤回，确定吗？')) {
-                                  return;
-                                }
-                                _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
-                              } else if (action === 'itemshop') {
-                                _mm.itemshop_confirm(mid);
-                              } else if (action === 'reforge') {
-                                _mm.reforge_confirm(mid);
-                              } if (action === 'edit_price') {
-                                $price.edit(value, _mm.mail_price);
-                              }
-                            };
-
-                            _mm.mail_close = function () {
-                              if (_mm.mail_current) {
-                                const mail = _mm.mail_current;
-                                mail.node.page?.classList.remove('hvut-mm-current');
-                                mail.node.search?.classList.remove('hvut-mm-current');
-                              }
-                              _mm.mail_current = null;
-                              _mm.node.mail_view.classList.add('hvut-none');
-                              _mm.node.mail_view.innerHTML = '';
-                              _mm.mail_log('', true);
-                              _mm.node.mail_log.parentNode.classList.add('hvut-none');
-                            };
-
-                            _mm.mail_price = function () {
-                              const mail = _mm.mail_current;
-                              if (!mail) {
-                                return;
-                              }
-                              const db = mail.db;
-                              const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
-                              const attach = mail.attach;
-                              const prices = $price.get(wtx);
-
-                              attach.forEach((e) => {
-                                if (e.n === 'Credits') {
-                                  return;
-                                }
-                                if (e.n in prices) {
-                                  e.node.price.value = prices[e.n] || '';
-                                }
-                              });
-                              _mm.mail_cod();
-                            };
-
-                            _mm.mail_cod = function () {
-                              const mail = _mm.mail_current;
-                              if (!mail) {
-                                return;
-                              }
-                              const db = mail.db;
-                              const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
-                              const attach = mail.attach;
-                              let sum = 0;
-
-                              attach.forEach((e) => {
-                                if (e.n === 'Credits') {
-                                  return;
-                                }
-                                const p = _mm.parse_price(e.node.price.value, true);
-                                const cod = p * (e.c || 1);
-                                e.node.cod.value = cod ? cod.toLocaleString() : '';
-                                sum += cod;
-                              });
-                              mail.node.cod.value = sum ? sum.toLocaleString() : '';
-                              if (db?.cod) {
-                                mail.node.price.value = !sum ? wtx : db.cod === sum ? 'CoD =' : db.cod > sum ? 'CoD >' : 'CoD <';
-                                mail.node.price.dataset.codMatch = db.cod === sum ? '1' : '0';
-                                mail.node.cod.dataset.codMatch = db.cod === sum ? '1' : '0';
-                              }
-                            };
-
-                            _mm.mail_log = function (text, clear) {
-                              _mm.node.mail_log.parentNode.classList.remove('hvut-none');
-                              if (clear) {
-                                _mm.node.mail_log.value = '';
-                              }
-                              _mm.node.mail_log.value += text + '\n';
-                              _mm.node.mail_log.scrollTop = _mm.node.mail_log.scrollHeight;
-                            };
-
-                            _mm.search_submit = function () {
-                              const season = _mm.node.search_season?.value || _mm.db.season;
-                              const filter = _mm.node.search_filter.value;
-                              const name = _mm.node.search_name.value.trim().toLowerCase();
-                              const subject = _mm.node.search_subject.value.trim().toLowerCase();
-                              const text = _mm.node.search_text.value.trim().toLowerCase();
-                              let attach = _mm.node.search_attach.value.trim();
-                              let eid = null;
-                              let cod = _mm.node.search_cod.value.replace(/\s/g, '').toLowerCase();
-                              let cod_min = 0;
-                              let cod_max = 0;
-                              if (attach) {
-                                if (isNaN(attach)) {
-                                  attach = attach.toLowerCase().replace(/\s+/g, ' ').split(' ');
-                                } else {
-                                  eid = parseInt(attach);
-                                }
-                              }
-                              if (/^([0-9.]+[ckm]?)$/i.test(cod)) {
-                                cod = _mm.parse_price(RegExp.$1);
-                              } else if (/^([0-9.]+[ckm]?)?[-~]([0-9.]+[ckm]?)?$/i.test(cod)) {
-                                cod = false;
-                                cod_min = _mm.parse_price(RegExp.$1);
-                                cod_max = _mm.parse_price(RegExp.$2);
-                              } else {
-                                cod = false;
-                              }
-                              const query = { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max };
-                              _mm.search(query);
-                            };
-
-                            _mm.search = function (query) {
-                              _mm.mail_close();
-                              _mm.node.search_div.innerHTML = '';
-                              _mm.node.search_div.classList.remove('hvut-none');
-                              $element('div', _mm.node.search_div, ['正在搜索...', '.hvut-mm-searching']);
-
-                              _mm.db.search(query).then((results) => {
-                                const table = $element('table', null, ['.hvut-mm-list']);
-                                const tbody = $element('tbody', table);
-                                $element('tr', tbody, [`/<td>搜索</td><td>${results.length} 封邮件</td><td>附件</td><td>货到付款</td><td>发送时间</td><td>阅读时间</td>`]);
-
-                                results.sort((a, b) => b.db.mid - a.db.mid);
-                                results.forEach((mail) => {
-                                  const db = mail.db;
-                                  if (!mail.node.search) {
-                                    mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-                                    if (query.season === _mm.db.season) {
-                                      $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
-                                    } else {
-                                      $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: query.season } });
-                                    }
-                                  }
-                                  tbody.appendChild(mail.node.search);
-                                  _mm.search_modify(mail);
-                                });
-
-                                _mm.node.search_div.innerHTML = '';
-                                _mm.node.search_div.appendChild(table);
-                              });
-                            };
-
-                            _mm.search_modify = function (mail) {
-                              const db = mail.db;
-                              const tr = mail.node.search;
-                              const type = { 'inbox': '收件箱', 'read': '来自', 'sent': '发送至' }[db.filter];
-                              tr.cells[0].innerHTML = `<span>${type}</span> ${db.user}`;
-                              tr.cells[1].firstElementChild.textContent = db.subject;
-                              tr.cells[2].innerHTML = '';
-                              tr.cells[3].innerHTML = '';
-
-                              db.attach?.forEach((e) => {
-                                const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-                                if (e.t === 'e') {
-                                  if (e.e && e.k) {
-                                    $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
-                                  } else {
-                                    span.textContent = e.n;
-                                  }
-                                } else {
-                                  span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-                                }
-                              });
-                              if (db.cod) {
-                                tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-                              }
-                              tr.cells[4].textContent = _mm.dts(db.sent);
-                              tr.cells[5].textContent = db.read ? _mm.dts(db.read) : '';
-
-                              tr.classList[db.read ? 'remove' : 'add']('hvut-mm-unread');
-                              tr.classList[db.returned ? 'add' : 'remove']('hvut-mm-returned');
-                            };
-
-                            _mm.search_close = function () {
-                              _mm.node.search_div.classList.add('hvut-none');
-                              _mm.node.search_div.innerHTML = '';
-                            };
-
-                            _mm.search_keypress = function (e) {
-                              if (e.which === 13) {
-                                _mm.search_submit();
-                              }
-                            };
-
-                            _mm.search_toggle = function () {
-                              if (_mm.node.search_form) {
-                                _mm.node.search_form.classList.toggle('hvut-none');
-                                return;
-                              }
-                              _mm.node.search_form = $element('div', _mm.node.bottom, null, { keypress: (e) => { _mm.search_keypress(e); } });
-                              $input(['button', '关闭'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
-
-                              if (_isekai) {
-                                _mm.node.search_season = $element('select', _mm.node.search_form);
-                                Array.from(_mm.db.database.objectStoreNames).forEach((s) => { $element('option', _mm.node.search_season, { value: s, text: s }); });
-                                _mm.node.search_season.value = _isekai;
-                              }
-                              _mm.node.search_filter = $element('select', _mm.node.search_form, ['/<option value="">全部</option><option value="inbox">收件箱</option><option value="read">已读</option><option value="sent">已发送</option>']);
-                              _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: '用户', style: 'width: 120px;' });
-                              _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: '主题', style: 'width: 120px;' });
-                              _mm.node.search_text = $input('text', _mm.node.search_form, { placeholder: '文本', style: 'width: 120px;' });
-                              _mm.node.search_attach = $input('text', _mm.node.search_form, { placeholder: '附件', style: 'width: 120px;' });
-                              _mm.node.search_cod = $input('text', _mm.node.search_form, { placeholder: 'COD金额(小-大)', style: 'width: 100px;' });
-                              $input(['button', '搜索'], _mm.node.search_form, null, () => { _mm.search_submit(); });
-                              $input(['button', '清除'], _mm.node.search_form, null, () => { _mm.search_close(); });
-                            };
-
-                            _mm.dts = function (date, year = 2) { // date_to_string
-                              const d = new Date(date * 1000);
-                              const yy = d.getFullYear().toString().slice(-year);
-                              const MM = (d.getMonth() + 1).toString().padStart(2, '0');
-                              const dd = d.getDate().toString().padStart(2, '0');
-                              const HH = d.getHours().toString().padStart(2, '0');
-                              const mm = d.getMinutes().toString().padStart(2, '0');
-                              return `${yy}-${MM}-${dd} ${HH}:${mm}`;
-                            };
-
-                            _mm.kill_asshole = function (obj) { // email-decode.min.js: usernames with '@' are encoded in html, then decoded
-                              function h(e, t, r, a) {
-                                for (r = '', a = '0x' + e.slice(t, t + 2) | 0, t += 2; t < e.length; t += 2) {
-                                  r += String.fromCharCode('0x' + e.slice(t, t + 2) ^ a);
-                                }
-                                return r;
-                              }
-                              $qsa('.__cf_email__', obj).forEach((a) => {
-                                a.parentNode.replaceChild(document.createTextNode(h(a.dataset.cfemail, 0)), a);
-                              });
-                              return obj;
-                            };
-
-                            _mm.itemshop_data = {
-                              'health draught': { id: 11191, price: 23 },
-                              'health potion': { id: 11195, price: 45 },
-                              'health elixir': { id: 11199, price: 450 },
-                              'mana draught': { id: 11291, price: 45 },
-                              'mana potion': { id: 11295, price: 90 },
-                              'mana elixir': { id: 11299, price: 900 },
-                              'spirit draught': { id: 11391, price: 45 },
-                              'spirit potion': { id: 11395, price: 90 },
-                              'spirit elixir': { id: 11399, price: 900 },
-                              //'soul fragment': { id: 48001, price: 900 },
-                              'crystal of vigor': { id: 50001, price: 9 },
-                              'crystal of finesse': { id: 50002, price: 9 },
-                              'crystal of swiftness': { id: 50003, price: 9 },
-                              'crystal of fortitude': { id: 50004, price: 9 },
-                              'crystal of cunning': { id: 50005, price: 9 },
-                              'crystal of knowledge': { id: 50006, price: 9 },
-                              'crystal of flames': { id: 50011, price: 9 },
-                              'crystal of frost': { id: 50012, price: 9 },
-                              'crystal of lightning': { id: 50013, price: 9 },
-                              'crystal of tempest': { id: 50014, price: 9 },
-                              'crystal of devotion': { id: 50015, price: 9 },
-                              'crystal of corruption': { id: 50016, price: 9 },
-                              'monster chow': { id: 51001, price: 14 },
-                              'monster edibles': { id: 51002, price: 27 },
-                              'monster cuisine': { id: 51003, price: 45 },
-                              'happy pills': { id: 51011, price: 1800 },
-                              'scrap cloth': { id: 60051, price: 90 },
-                              'scrap leather': { id: 60052, price: 90 },
-                              'scrap metal': { id: 60053, price: 90 },
-                              'scrap wood': { id: 60054, price: 90 },
-                              'energy cell': { id: 60071, price: 180 },
-                              //'wispy catalyst': { id: 60301, price: 90 },
-                              //'diluted catalyst': { id: 60302, price: 450 },
-                              //'regular catalyst': { id: 60303, price: 900 },
-                              //'robust catalyst': { id: 60304, price: 2250 },
-                              //'vibrant catalyst': { id: 60305, price: 4500 },
-                              //'coruscating catalyst': { id: 60306, price: 9000 },
-                            };
-
-                            _mm.itemshop_confirm = function (mid) {
-                              const mail = _mm.mail_get(mid);
-                              const [items, cost] = _mm.itemshop_parse();
-                              if (!items.length) {
-                                alert('无效的请求');
-                                return;
-                              }
-                              const credits = mail.db.attach.filter((e) => e.n === 'Credits').reduce((s, e) => s + e.c, 0);
-                              let msg;
-                              if (cost !== credits) {
-                                msg = '请求的材料总价为 ' + cost.toLocaleString() + ' credits，但是附加的credits数量为 ' + credits.toLocaleString() + '。\n继续吗？';
-                              }
-                              if (msg && !confirm(msg)) {
-                                return;
-                              }
-                              _mm.itemshop(mid, items);
-                            };
-
-                            _mm.itemshop_parse = function (text = _mm.node.mail_body.value) {
-                              const items = [];
-                              let cost = 0;
-                              _mm.mail_log('[系统店代购]', true);
-                              text.split('\n').forEach((t) => {
-                                let exec;
-                                let name;
-                                let count;
-                                if (t.startsWith('> ')) {
-                                  return;
-                                } else if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
-                                  name = exec[1];
-                                  count = exec[3];
-                                } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
-                                  name = exec[2];
-                                  count = exec[1];
-                                } else {
-                                  return;
-                                }
-                                name = name.trim();
-                                count = _mm.parse_count(count);
-                                const lowercase = name.toLowerCase();
-                                if ((lowercase in _mm.itemshop_data) && count) {
-                                  const id = _mm.itemshop_data[lowercase].id;
-                                  const price = _mm.itemshop_data[lowercase].price;
-                                  const it = { pane: 'item', id, name, count };
-                                  items.push(it);
-                                  cost += count * price;
-                                  _mm.mail_log(`- ${count.toLocaleString()} x ${name} @ ${price.toLocaleString()}`);
-                                }
-                              });
-                              _mm.mail_log(`# 总价: ${cost.toLocaleString()}c`);
-                              return [items, cost];
-                            };
-
-                            _mm.itemshop = async function (mid, items) {
-                              if (_mm.itemshop.current) {
-                                popup('正在处理其他请求...');
-                                return;
-                              }
-                              _mm.itemshop.current = mid;
-
-                              _mm.mail_log('[系统店代购]', true);
-                              _mm.mail_log('接收');
-                              await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
-
-                              _mm.mail_log('购买');
-                              const html = await $ajax.fetch('?s=Bazaar&ss=is');
-                              const doc = $doc(html);
-                              const storetoken = $id('shopform', doc).elements.storetoken.value;
-                              _mm.mail_log('...');
-
-                              async function buy(id, count) {
-                                const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
-                                const doc = $doc(html);
-                                const error = get_message(doc);
-                                if (error) {
-                                  _mm.mail_log(error);
-                                  return false;
-                                }
-                                done++;
-                                _mm.mail_log(`已购买 (${done}/${total})`);
-                                return true;
-                              }
-
-                              const total = items.length;
-                              let done = 0;
-                              const requests = items.map((it) => buy(it.id, it.count));
-                              const results = await Promise.all(requests);
-                              if (!results.every((r) => r)) {
-                                return;
-                              }
-
-                              const attach = items;
-                              const mail = {
-                                to_name: _mm.mail_get(mid).view.from,
-                                subject: '[系统店代购]',
-                                body: '[系统店代购]',
-                                attach,
-                              };
-                              $mail.request(mail);
-                            };
-
-                            _mm.reforge_confirm = function (mid) {
-                              const mail = _mm.mail_get(mid);
-                              const [equips, cost] = _mm.reforge_parse(mail.db.attach);
-                              if (!cost) {
-                                alert('没有潜能的装备');
-                                return;
-                              }
-                              const amnesia = mail.db.attach.filter((e) => e.n === 'Amnesia Shard').reduce((s, e) => s + e.c, 0);
-                              let msg;
-                              if (!amnesia) {
-                                msg = `这需要 ${cost} 重铸碎片，但没有附加任何物品。\n继续吗？`;
-                              } else if (amnesia !== cost) {
-                                msg = `这需要 ${cost} 重铸碎片，但附加物品的数量是 ${amnesia}。\n继续吗？`;
-                              }
-                              if (msg && !confirm(msg)) {
-                                return;
-                              }
-                              _mm.reforge(mid, equips);
-                            };
-
-                            _mm.reforge_parse = function (attach) {
-                              let cost = 0;
-                              const equips = attach.filter((e) => e.t === 'e').map((dbeq) => {
-                                const eid = dbeq.e;
-                                const dynjs = $equip.dynjs_eqstore[eid];
-                                const key = dynjs.k;
-                                const name = dynjs.t;
-                                const html = dynjs.d;
-                                const exec = $equip.reg.html.exec(html);
-                                const eq = {
-                                  info: { eid, key, name, category: exec[1], tier: parseInt(exec[6]) },
-                                  data: { pane: 'equip', id: eid, name, count: 1 },
-                                  node: {},
-                                };
-                                //$equip.parse.name(eq.info.name, eq);
-                                cost += Math.ceil(eq.info.tier / 2);
-                                return eq;
-                              });
-                              return [equips, cost];
-                            };
-
-                            _mm.reforge = async function (mid, equips) {
-                              if (_mm.reforge.current) {
-                                popup('正在处理其他请求...');
-                                return;
-                              }
-                              _mm.reforge.current = mid;
-
-                              _mm.mail_log('[代重铸服务]', true);
-                              _mm.mail_log('接收');
-                              await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
-
-                              _mm.mail_log('重铸');
-                              const html = await $ajax.fetch('?s=Character&ss=in');
-                              const uid = /var uid = (\d+);/.test(html) && RegExp.$1;
-                              const token = /var simple_token = "(\w+)";/.test(html) && RegExp.$1;
-                              _mm.mail_log('...');
-
-                              async function reforge(eq) {
-                                let html = await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid, token, eid: eq.info.eid, lock: 0 }, 'JSON');
-                                const json = JSON.parse(html);
-                                if (!json || json.eid != eq.info.eid || json.locked != 0) {
-                                  const error = '解锁失败';
-                                  _mm.mail_log(error);
-                                  return false;
-                                }
-                                unlocked++;
-                                _mm.mail_log(`已解锁 (${unlocked}/${total})`);
-
-                                if (!eq.info.tier) {
-                                  reforged++;
-                                  _mm.mail_log(`已重铸 (${reforged}/${total}): 潜能等级 0`);
-                                  return true;
-                                }
-
-                                html = await $ajax.fetch('?s=Forge&ss=fo&filter=' + $equip.alias[eq.info.category], 'select_item=' + eq.info.eid);
-                                const doc = $doc(html);
-                                const error = get_message(doc);
-                                if (error) {
-                                  _mm.mail_log(error);
-                                  return false;
-                                }
-                                reforged++;
-                                _mm.mail_log(`已重铸 (${reforged}/${total})`);
-                                return true;
-                              }
-
-                              const total = equips.length;
-                              let unlocked = 0;
-                              let reforged = 0;
-                              const requests = equips.map((eq) => reforge(eq));
-                              const results = await Promise.all(requests);
-                              if (!results.every((r) => r)) {
-                                return;
-                              }
-
-                              const attach = equips.map((eq) => eq.data);
-                              const mail = {
-                                to_name: _mm.mail_get(mid).view.from,
-                                subject: '[代重铸服务]',
-                                body: '[代重铸服务]',
-                                attach,
-                              };
-                              $mail.request(mail);
-                            };
-
-                            GM_addStyle(/*css*/`
+    _mm.node.write_field = $element('fieldset', $id('mmail_outer'), ['.hvut-mm-field']);
+    _mm.node.write_left = $element('div', _mm.node.write_field, ['.hvut-mm-left']);
+
+    $input(['button', 'SEND'], _mm.node.write_left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write_pack(); });
+    $element('span', _mm.node.write_left, ['To:', '!width: 60px;']);
+    _mm.node.write_to_name = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_to_name.value || '', tabIndex: 1, style: 'width: 360px; font-weight: bold;' });
+    $input(['button', 'Edit List'], _mm.node.write_left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
+    $element('span', _mm.node.write_left, ['Subject:', '!width: 60px;']);
+    _mm.node.write_subject = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_subject.value || '', tabIndex: 2, style: 'width: 450px; font-weight: bold;' });
+
+    _mm.node.write_to_name.setAttribute('list', 'hvut-mm-userlist');
+    _mm.node.write_userlist = $element('datalist', _mm.node.write_left, ['#hvut-mm-userlist']);
+    _mm.userlist.create();
+
+    $element('span', _mm.node.write_left, ['Options:', '!width: 60px;']);
+    _mm.node.write_cod_deduction = $input(['text', 'CoD Deduction'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
+    if ($config.isekai) {
+      _mm.node.write_cod_persistent = $input(['checkbox', 'Persistent CoD'], _mm.node.write_left, { checked: true });
+    }
+
+    _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
+    _mm.node.write_log = $element('textarea', _mm.node.write_left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
+    $mail.log = _mm.write_log;
+
+    const attach_div = $element('div', _mm.node.write_left, ['.hvut-mm-attachtext']);
+    $input(['button', 'ATTACH from TEXT'], attach_div);
+    $input(['button', 'Available Formats'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nLast Elixir @ 1.5k (100)', 300, 100); });
+    $input(['button', 'CALC'], attach_div, null, () => { _mm.item_text(); });
+    $input(['button', 'ATTACH'], attach_div, null, () => { _mm.item_text(true); });
+    $input(['button', 'RESET'], attach_div, null, () => { _mm.item_search('', true); });
+
+    _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
+    _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
+    $element('span', _mm.node.write_tabs, 'Use Default MoogleMail', () => { location.href = location.href + '&hvut=disabled'; });
+
+    // MM item
+    _mm.item_change = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, iid } = target.dataset;
+      const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
+      if (action === 'calc') {
+        it.data.count = _mm.parse_count(it.node.count.value);
+        if (it.data.count > it.data.stock) {
+          it.node.count.classList.add('hvut-mm-invalid');
+        } else {
+          it.node.count.classList.remove('hvut-mm-invalid');
+        }
+        it.data.price = _mm.parse_price(it.node.price.value, true);
+        it.data.cod = Math.ceil(it.data.count * it.data.price);
+        it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
+        it.data.atext = _mm.attach_text(it);
+        _mm.write_calc();
+      }
+    };
+    _mm.item_click = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, iid } = target.dataset;
+      const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
+      if (action === 'send') {
+        _mm.write_pack(it);
+      }
+    };
+    _mm.item_set = function (it, count, price) {
+      count = parseInt(count);
+      if (!isNaN(count)) {
+        it.data.count = Math.min(it.data.stock, Math.max(0, count));
+        it.node.count.value = it.data.count || '';
+        if (it.data.count > it.data.stock) {
+          it.node.count.classList.add('hvut-mm-invalid');
+        } else {
+          it.node.count.classList.remove('hvut-mm-invalid');
+        }
+      }
+      price = parseFloat(price);
+      if (!isNaN(price)) {
+        it.data.price = Math.max(0, price);
+        it.node.price.value = it.data.price || '';
+      }
+      it.data.cod = Math.ceil(it.data.count * it.data.price);
+      it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
+      it.data.atext = _mm.attach_text(it);
+    };
+    _mm.item_count = function (num) {
+      if (num !== Infinity) {
+        num = parseInt(num);
+        if (!Number.isInteger(num)) {
+          return;
+        }
+      }
+      _mm.item_list.forEach((it) => {
+        if (it.node.check.checked) {
+          _mm.item_set(it, num === Infinity ? it.data.stock : num);
+        }
+      });
+      _mm.write_calc();
+    };
+    _mm.item_all = function (checked) {
+      _mm.item_list.forEach((it) => {
+        if (it.visible) {
+          it.node.check.checked = checked;
+          it.data.atext = _mm.attach_text(it);
+        }
+      });
+      _mm.write_calc();
+    };
+    _mm.item_search = function (value, set) {
+      if (typeof value === 'string') {
+        if (set) {
+          _mm.node.item_search.value = value;
+        } else {
+          value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
+          if (value === _mm.item_search.value) {
+            return;
+          }
+        }
+      }
+
+      let results;
+      if (!value) {
+        results = _mm.item_list;
+      } else if (typeof value === 'string') {
+        value = value.split(',').map((v) => v.split(' '));
+        results = _mm.item_list.filter((e) => {
+          const lowercase = e.info.lowercase;
+          return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
+        });
+      } else { // array
+        results = _mm.item_list.filter((e) => {
+          if (value.includes(e.info.name)) {
+            return true;
+          } else if (e.node.check.checked) {
+            return true;
+          } else {
+            return false;
+          }
+        });
+      }
+      _mm.item_list.forEach((e) => { e.visible = false; });
+      results.forEach((e) => { e.visible = true; });
+      _mm.item_list.forEach((e) => {
+        if (e.visible) {
+          e.node.tr.classList.remove('hvut-none');
+        } else {
+          e.node.tr.classList.add('hvut-none');
+        }
+      });
+    };
+    _mm.item_text = function (attach) {
+      const text = _mm.node.write_body.value.split('\n');
+      const textdata = {};
+      text.forEach((t) => {
+        if (t.includes('> Removed attachment:')) {
+          return;
+        }
+
+        let exec;
+        let name;
+        let count;
+        let price;
+        if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
+          name = exec[1];
+          count = exec[3];
+          price = exec[2];
+        } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
+          name = exec[2];
+          count = exec[1];
+          price = exec[3];
+        } else {
+          return;
+        }
+        name = name.trim();
+        count = _mm.parse_count(count);
+        price = _mm.parse_price(price, true);
+        const lowercase = name.toLowerCase();
+        textdata[lowercase] = { name, count, price };
+      });
+
+      if (attach) {
+        _mm.item_list.forEach((it) => {
+          const lowercase = it.info.lowercase;
+          const textitem = textdata[lowercase];
+          if (textitem) {
+            _mm.item_set(it, textitem.count, textitem.price);
+            it.visible = true;
+            it.node.check.checked = true;
+            it.node.tr.classList.remove('hvut-none');
+          } else if (it.visible && !it.node.check.checked) {
+            it.visible = false;
+            it.node.tr.classList.add('hvut-none');
+          }
+        });
+        _mm.write_calc();
+      } else {
+        let cod = 0;
+        let atext = '';
+        Object.values(textdata).forEach((textitem) => {
+          textitem.cod = Math.ceil(textitem.count * textitem.price);
+          cod += textitem.cod;
+          atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
+          if (textitem.cod) {
+            atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
+          }
+          atext += '\n';
+        });
+        if (cod) {
+          atext += `\nTotal: ${cod.toLocaleString()} Credits`;
+        }
+        _mm.write_log(atext, true);
+      }
+    };
+
+    _mm.node.item_div = $element('div', null, ['.hvut-none']);
+    _mm.node.item_menu = $element('div', _mm.node.item_div, ['.hvut-mm-attach-menu']);
+    $input(['button', 'All'], _mm.node.item_menu, null, () => { _mm.item_search(''); });
+    $price.init();
+    Object.keys($price.groups).forEach((g) => {
+      $input(['button', g], _mm.node.item_menu, null, () => { _mm.item_search($price.groups[g]); });
+    });
+    $element('br', _mm.node.item_menu);
+    _mm.node.item_search = $input('text', _mm.node.item_menu, { placeholder: 'heal dra, man pot, elix', style: 'width: 170px;' }, { input: (e) => { _mm.item_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.item_search('', true); } } });
+    $input(['button', 'Clear'], _mm.node.item_menu, null, () => { _mm.item_search('', true); });
+    $input('checkbox', _mm.node.item_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.item_all(e.target.checked); });
+    $input('text', _mm.node.item_menu, { placeholder: 'count', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item_count(e.target.value); } });
+    $input(['button', 'All'], _mm.node.item_menu, null, () => { _mm.item_count(Infinity); });
+    $input(['button', '0'], _mm.node.item_menu, null, () => { _mm.item_count(0); });
+
+    _mm.node.item_attach = $element('div', _mm.node.item_div, ['#item', '.hvut-mm-attach'], { input: (e) => { _mm.item_change(e); }, click: (e) => { _mm.item_click(e); } });
+    _mm.node.item_list = $qs('.itemlist') || $element('table');
+    _mm.node.item_attach.appendChild(_mm.node.item_list);
+
+    _mm.item_list = Array.from(_mm.node.item_list.rows).map((tr) => {
+      const div = tr.cells[0].firstElementChild;
+      const name = div.textContent;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      const { iid } = $item.get_data(div.getAttribute('onclick'));
+      const lowercase = name.toLowerCase();
+      const stock = parseInt(tr.cells[1].textContent);
+      return { info: { name, lowercase, iid, type }, data: { pane: 'item', id: iid, name, stock, count: 0, price: 0, cod: 0 }, node: { tr } };
+    });
+    _mm.item_list.forEach((it) => {
+      it.visible = true;
+      it.node.tr.classList.add('hvut-it-' + it.info.type);
+      it.node.td = $element('td', it.node.tr);
+      it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
+      it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
+      it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+      it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
+      it.node.send = $input(['button', 'send'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
+    });
+
+    if ($id('mmail_attachitem')) {
+      $id('item').id += '_';
+      $element('span', _mm.node.write_tabs, 'Item', () => { _mm.write_toggle('item_div'); });
+      _mm.node.write_right.appendChild(_mm.node.item_div);
+    }
+
+    // MM equip
+    _mm.equip_change = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, eid } = target.dataset;
+      const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
+      if (action === 'calc') {
+        eq.data.cod = _mm.parse_price(eq.node.price.value);
+        eq.data.atext = _mm.attach_text(eq);
+        _mm.write_calc();
+      }
+    };
+    _mm.equip_click = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, eid } = target.dataset;
+      const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
+      if (action === 'send') {
+        _mm.write_pack(eq);
+      }
+    };
+    _mm.equip_all = function (checked) {
+      _mm.equip_list.forEach((eq) => {
+        if (eq.visible) {
+          eq.node.check.checked = checked;
+          eq.data.atext = _mm.attach_text(eq);
+        }
+      });
+      _mm.write_calc();
+    };
+    _mm.equip_search = function (value, set) {
+      if (set) {
+        _mm.node.equip_search.value = value;
+      }
+      value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
+      if (value === _mm.equip_search.value) {
+        return;
+      }
+      _mm.equip_search.value = value;
+
+      let results;
+      if (!value) {
+        results = _mm.equip_list;
+      } else {
+        value = value.split(',').map((v) => v.split(' '));
+        results = _mm.equip_list.filter((e) => {
+          const lowercase = e.info.lowercase;
+          const eid = e.info.eid ? e.info.eid.toString() : '';
+          return e.node.check.checked || value.some((v) => v.every((s) => s && (lowercase.includes(s) || eid.includes(s))));
+        });
+      }
+      _mm.equip_list.forEach((e) => { e.visible = false; });
+      results.forEach((e) => { e.visible = true; });
+      $equip.sort(results, _mm.node.equip_list);
+    };
+
+    _mm.node.equip_div = $element('div', null, ['.hvut-none']);
+    _mm.node.equip_menu = $element('div', _mm.node.equip_div, ['.hvut-mm-attach-menu']);
+    _mm.node.equip_search = $input('text', _mm.node.equip_menu, { placeholder: 'Equipment name or eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.equip_search('', true); } } });
+    $input(['button', 'Clear}'], _mm.node.equip_menu, null, () => { _mm.equip_search('', true); });
+    $input('checkbox', _mm.node.equip_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.equip_all(e.target.checked); });
+
+    _mm.node.equip_attach = $element('div', _mm.node.equip_div, ['#equip', '.hvut-mm-attach'], { input: (e) => { _mm.equip_change(e); }, click: (e) => { _mm.equip_click(e); } });
+    _mm.node.equip_list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
+    _mm.node.equip_attach.appendChild(_mm.node.equip_list);
+
+    _mm.equip_data = $config.get('equipdata', {});
+    _mm.equip_list = $equip.list(_mm.node.equip_list);
+    _mm.equip_list.forEach((eq) => {
+      eq.visible = true;
+      eq.info.lowercase = eq.info.name.toLowerCase();
+      eq.data.pane = 'equip';
+      eq.data.id = eq.info.eid;
+      eq.data.name = eq.info.name;
+      eq.data.count = 1;
+      eq.node.div.removeAttribute('onclick');
+      eq.node.lock = eq.node.wrapper.firstElementChild;
+      eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-mm-sub']);
+      eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
+      eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
+      eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+      eq.node.send = $input(['button', 'send'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
+
+      const json = _mm.equip_data[eq.info.eid];
+      if (json?.price) {
+        eq.node.price.value = json.price;
+        eq.data.cod = _mm.parse_price(json.price);
+      }
+    });
+
+    if ($id('mmail_attachequip')) {
+      $id('equip').id += '_';
+      $element('span', _mm.node.write_tabs, 'Equipment', () => { _mm.write_toggle('equip_div'); });
+      _mm.node.write_right.appendChild(_mm.node.equip_div);
+    }
+
+    // MM credits
+    _mm.credits_change = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, name } = target.dataset;
+      const it = name && _mm.credits_list.find((it) => it.info.name === name);
+      if (action === 'calc') {
+        if (name === 'Credits') {
+          it.data.count = _mm.parse_price(it.node.count.value);
+        } else {
+          it.data.count = _mm.parse_count(it.node.count.value);
+        }
+        if (it.data.count > it.data.stock) {
+          it.node.count.classList.add('hvut-mm-invalid');
+        } else {
+          it.node.count.classList.remove('hvut-mm-invalid');
+        }
+        it.data.price = _mm.parse_price(it.node.price.value, true);
+        it.data.cod = Math.ceil(it.data.count * it.data.price);
+        it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
+        it.data.atext = _mm.attach_text(it);
+        _mm.write_calc();
+      }
+    };
+
+    _mm.credits_list = [];
+    const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
+    const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
+    if ($id('mmail_attachcredits')) {
+      credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
+    }
+    if ($id('mmail_attachhath')) {
+      hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
+    }
+
+    _mm.node.credits_div = $element('div', null, ['.hvut-none']);
+    _mm.node.credits_attach = $element('div', _mm.node.credits_div, ['.hvut-mm-attach'], { input: (e) => { _mm.credits_change(e); } });
+    _mm.node.credits_list = $element('table', _mm.node.credits_attach, ['.itemlist itemlist-credits', '/<tbody></tbody>']);
+
+    credits.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
+    $element('td', credits.node.tr, credits.info.name);
+    $element('td', credits.node.tr, credits.data.stock.toLocaleString());
+    credits.node.td = $element('td', credits.node.tr);
+    credits.node.check = $input('checkbox', credits.node.td, { dataset: { action: 'calc', name: 'Credits' } });
+    credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+    credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
+    credits.node.cod = $input('text', credits.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true, style: 'visibility: hidden;' });
+
+    hath.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
+    $element('td', hath.node.tr, hath.info.name);
+    $element('td', hath.node.tr, hath.data.stock.toLocaleString());
+    hath.node.td = $element('td', hath.node.tr);
+    hath.node.check = $input('checkbox', hath.node.td, { dataset: { action: 'calc', name: 'Hath' } });
+    hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
+    hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+    hath.node.cod = $input('text', hath.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
+
+    if ($id('mmail_attachcredits')) {
+      _mm.credits_list.push(credits, hath);
+      $element('span', _mm.node.write_tabs, 'Credits / Hath', () => { _mm.write_toggle('credits_div'); });
+      _mm.node.write_right.appendChild(_mm.node.credits_div);
+    }
+
+    _mm.credits_multi = function () {
+      if (_mm.credits_multi.current) {
+        popup('Processing other requests...');
+        return;
+      }
+      _mm.credits_multi.current = true;
+      _mm.node.write_field.disabled = true;
+
+      const queue = [];
+      const errors = [];
+      let credits_funds = credits.data.stock;
+      let hath_funds = hath.data.stock;
+      _mm.node.credits_multi.value.split('\n').forEach((t) => {
+        if (!t) {
+          return;
+        }
+        const [to_name, ctext, subject, ...body] = t.split(';');
+        if (!to_name) {
+          errors.push('No recipient: ' + t);
+          return;
+        }
+
+        const attach = [];
+        if (!ctext) {
+        } else if (/^\s*([0-9,.]+[ckm]?)\s*$/i.test(ctext)) {
+          const it = { pane: 'credits', name: 'Credits', id: 0, count: _mm.parse_price(RegExp.$1) };
+          attach.push(it);
+          credits_funds -= it.count;
+        } else if (/^\s*([0-9,]+)h\s*$/i.test(ctext)) {
+          const it = { pane: 'hath', name: 'Hath', id: 0, count: _mm.parse_count(RegExp.$1) };
+          attach.push(it);
+          hath_funds -= it.count;
+        } else {
+          errors.push('Invalid attachment: ' + t);
+          return;
+        }
+
+        const mail = {
+          to_name,
+          subject: subject.trim() || _mm.node.write_subject.value,
+          body: body.length ? body.join(';').replace(/\|/g, '\n') : _mm.node.write_body.value,
+          attach,
+        };
+        queue.push(mail);
+      });
+      if (errors.length) {
+        alert(errors.join('\n'));
+        return;
+      }
+      if (credits_funds < 0) {
+        alert('Insufficient Credits');
+        return;
+      }
+      if (hath_funds < 0) {
+        alert('Insufficient Hath');
+        return;
+      }
+
+      queue.map((mail) => $mail.request(mail));
+    };
+
+    const multi_div = $element('div', _mm.node.credits_attach, ['!margin-top: 50px;']);
+    $input(['button', 'Multi-Send'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits_multi(); });
+    $element('br', multi_div);
+    _mm.node.credits_multi = $element('textarea', multi_div, { placeholder: 'user; credits; subject; text (| = new line)\nex)\nsssss2; 10m\nsssss3; 500k; WTB; hi|I want to buy...\nTenboro; 500c\nMoogleMail; 1000h; Thanks', style: 'width: 500px; height: 300px;', spellcheck: false });
+
+    if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
+      $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
+      _mm.node.write_cod_deduction.disabled = true;
+      if ($config.isekai) {
+        _mm.node.write_cod_persistent.disabled = true;
+        _mm.node.write_cod_persistent.checked = false;
+      }
+    }
+    _mm.node.write_to_name.focus();
+
+    // MM LIST
+  } else if ($id('mmail_list')) {
+    _mm.db = {
+
+      version: 1,
+      season: 'mm',
+
+      open: function (callback) {
+        if (_mm.db.database) {
+          callback?.();
+          return;
+        }
+        const request = indexedDB.open($config.ns, _mm.db.version);
+        request.onsuccess = function (e) {
+          _mm.db.database = e.target.result;
+          callback?.();
+        };
+        request.onupgradeneeded = function (e) {
+          const db = e.target.result;
+          const stores = [_mm.db.season];
+          stores.forEach((store) => {
+            if (!db.objectStoreNames.contains(store)) {
+              db.createObjectStore(store, { keyPath: 'mid' });
+            }
+          });
+        };
+      },
+      conn: function (mode = 'readonly', store = _mm.db.season) {
+        const db = _mm.db.database;
+        const tx = db.transaction(store, mode);
+        const os = tx.objectStore(store);
+        return { db, tx, os };
+      },
+      search: function (query) {
+        const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;
+        const results = [];
+        return new Promise((resolve) => {
+          const conn = _mm.db.conn('readonly', season);
+          conn.os.openCursor().onsuccess = function (e) {
+            const cursor = e.target.result;
+            if (cursor) {
+              const db = cursor.value;
+              const mail = _mm.mail_get(db.mid, season);
+              mail.db = db;
+
+              const exclude = filter && filter !== db.filter
+                  || name && !db.user.toLowerCase().includes(name)
+                  || subject && !db.subject.toLowerCase().includes(subject)
+                  || text && !db.text.toLowerCase().includes(text)
+                  || cod && cod !== db.cod || cod_min && (!db.cod || cod_min > db.cod) || cod_max && cod_max < db.cod
+                  || attach && !(db.attach?.some((e) => { if (eid) { return e.t === 'e' && e.e === eid; } else { const n = e.n.toLowerCase(); return attach.every((a) => n.includes(a)); } }));
+              if (!exclude) {
+                results.push(mail);
+              }
+              cursor.continue();
+            } else {
+              resolve(results);
+            }
+          };
+        });
+      },
+      export: function () {
+        _mm.node.db_export.disabled = true;
+        const json = [];
+        const database = _mm.db.database.name;
+        const stores = Array.from(_mm.db.database.objectStoreNames);
+        let completed = stores.length;
+        stores.forEach((store) => {
+          const values = [];
+          const conn = _mm.db.conn('readonly', store);
+          conn.os.openCursor().onsuccess = function (e) {
+            const cursor = e.target.result;
+            if (cursor) {
+              values.push(cursor.value);
+              cursor.continue();
+            } else {
+              json.push({ database, store, values });
+              completed--;
+              if (completed === 0) {
+                const date = new Date();
+                const download = $config.ns.toUpperCase() + '_MoogleMail_' + (date.getFullYear() + ('0' + (date.getMonth() + 1)).slice(-2) + ('0' + date.getDate()).slice(-2)) + '.json';
+                const link = $element('a', document.body, { download, style: 'display: none;' });
+                window.URL.revokeObjectURL(link.href);
+                link.href = window.URL.createObjectURL(new Blob([JSON.stringify(json)], { type: 'application/json' }));
+                link.click();
+                _mm.node.db_export.value = 'Completed';
+                popup(`<p>The file has been saved.</p><p style="font-weight: bold;">${download}</p>`);
+              }
+            }
+          };
+        });
+      },
+      import: function () {
+        _mm.node.db_import.disabled = true;
+        const input = $input('file', null, { accept: '.json' }, { change: () => {
+          const file = input.files[0];
+          if (!file) {
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            db_import(e.target.result);
+          };
+          reader.onerror = function () {
+            alert('Failed to read the file');
+          };
+          reader.readAsText(file);
+        } });
+        input.click();
+
+        function db_import(text) {
+          try {
+            const dbname = _mm.db.database.name;
+            const stores = Array.from(_mm.db.database.objectStoreNames);
+            const json = JSON.parse(text);
+            let completed = json.length;
+
+            function complete() {
+              completed--;
+              if (completed === 0) {
+                _mm.node.db_import.value = 'Completed';
+              }
+            }
+
+            json.forEach((obj) => {
+              const { database, store, values } = obj;
+              if (database !== dbname) {
+                console.log('Invalid Database');
+                complete();
+                return;
+              }
+              if (!stores.includes(store)) {
+                complete();
+                console.log('Invalid objectStore');
+                return;
+              }
+              const conn = _mm.db.conn('readwrite', store);
+              conn.tx.oncomplete = function () {
+                complete();
+              };
+              values.forEach((data) => {
+                conn.os.put(data);
+              });
+            });
+          } catch (e) {
+            alert('Failed to parse the file\nSelect a valid MoogleMail Database json file');
+            return;
+          }
+        }
+      },
+      clear: function () {
+        if (confirm('The MoogleMail records for the selected season in this browser will be deleted.\nAre you sure?')) {
+          const season = _mm.node.search_season?.value || _mm.db.season;
+          const conn = _mm.db.conn('readwrite', season);
+          conn.os.clear();
+        }
+      },
+      toggle: function () {
+        if (_mm.node.db_div) {
+          _mm.node.db_div.classList.toggle('hvut-none');
+          return;
+        }
+        _mm.node.db_div = $element('div', _mm.node.bottom);
+        $input(['button', 'Close'], _mm.node.db_div, null, () => { _mm.db.toggle(); });
+        $input(['button', 'Reset Database'], _mm.node.db_div, null, () => { _mm.db.clear(); });
+        _mm.node.db_export = $input(['button', 'Export to JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
+        _mm.node.db_import = $input(['button', 'Import from JSON'], _mm.node.db_div, null, () => { _mm.db.import(); });
+      },
+      init: function () {
+        if ($config.isekai) {
+          _mm.db.season = $config.isekai;
+          const exec = /(\d+) Season (\d+)/.exec($config.isekai);
+          if (exec) {
+            const year = exec[1];
+            const season = exec[2];
+            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
+            _mm.db.version = version;
+          } else {
+            _mm.db.version = 1;
+          }
+        }
+      },
+
+    };
+
+    _mm.page_filter = _query.filter || 'inbox';
+    _mm.page_current = parseInt(_query.page) || 0;
+
+    _mm.page_init = function () {
+      _mm.node.page_table[_mm.page_current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
+      _mm.page_create($id('mmail_list'), _mm.page_current);
+      $id('mmail_list').remove();
+      _mm.page_prev = _mm.page_current;
+      _mm.page_next = _mm.page_current;
+      _mm.page_pager($id('mmail_pager'), _mm.page_current);
+    };
+
+    _mm.page_click = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, mid, season } = target.dataset;
+      if (action === 'read') {
+        e.preventDefault();
+        _mm.mail_read(mid, null, season);
+      }
+    };
+
+    _mm.page_load = async function (p) {
+      if (p === 'prev') {
+        if (_mm.page_prev === null) {
+          return;
+        }
+        p = _mm.page_prev;
+      } else if (p === 'next') {
+        if (_mm.page_next === null) {
+          return;
+        }
+        p = _mm.page_next;
+      }
+      if (_mm.node.page_table[p]) {
+        return;
+      }
+      _mm.node.page_table[p] = $element('table', [$id('mmail_outerlist'), _mm.node.page_table[p + 1]], ['.hvut-mm-list']);
+      const table = _mm.node.page_table[p];
+      $element('tr', table, [`/<td>${p} Page: Loading...</td>`]);
+      scrollIntoView(table);
+      _mm.node.page_prev.disabled = true;
+      _mm.node.page_next.disabled = true;
+
+      const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page_filter}&page=${p}`);
+      const doc = $doc(html);
+      const list = $qs('#mmail_list', doc);
+      _mm.kill_asshole(list);
+      _mm.page_create(list, p);
+      scrollIntoView(table);
+      _mm.page_pager($id('mmail_pager', doc), p);
+      return doc;
+    };
+
+    _mm.page_pager = function (pager, p) {
+      const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+      const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+      if (_mm.page_prev !== null && p <= _mm.page_prev) {
+        _mm.page_prev = prev;
+      }
+      if (_mm.page_next !== null && p >= _mm.page_next) {
+        _mm.page_next = next;
+      }
+      _mm.node.page_prev.disabled = _mm.page_prev === null;
+      _mm.node.page_next.disabled = _mm.page_next === null;
+    };
+
+    _mm.page_create = function (list, p) {
+      const table = _mm.node.page_table[p];
+      const tbody = $element('tbody');
+      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[_mm.page_filter];
+      $element('tr', tbody, [`/<td>${type}</td><td>${p} Page</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
+
+      const conn = _mm.db.conn();
+      let count = list.rows.length - 1;
+      Array.from(list.rows).slice(1).forEach((row) => {
+        if (row.cells[0].id === 'mmail_nnm') {
+          $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
+          return;
+        }
+        const mid = parseInt(/mid=(\d+)/.exec(row.getAttribute('onclick'))[1]);
+        const user = row.cells[0].textContent;
+        const returned = user === 'MoogleMail';
+        const subject = row.cells[1].textContent;
+        let sent = row.cells[2].textContent;
+        sent = Date.parse(sent + ':00.000Z') / 1000;
+        let read = row.cells[3].textContent;
+        read = read === 'Never' ? null : Date.parse(read + ':00.000Z') / 1000;
+
+        const mail = _mm.mail_get(mid);
+        if (mail.page) {
+          return;
+        }
+        mail.page = { filter: _mm.page_filter, user, returned, subject, sent, read };
+        const page = mail.page;
+        mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
+        $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
+
+        conn.os.get(mid).onsuccess = function (e) {
+          mail.db = e.target.result || null;
+          const db = mail.db;
+          if (!db || db.filter !== page.filter || !page.returned && !db.user.startsWith(page.user) || db.sent !== page.sent || db.read !== page.read) {
+            if (page.filter !== 'inbox') {
+              _mm.mail_load(mid);
+            }
+          }
+          _mm.page_modify(mail);
+          if (!--count) {
+            scrollIntoView(table);
+          }
+        };
+      });
+      table.innerHTML = '';
+      table.appendChild(tbody);
+    };
+
+    _mm.page_modify = function (mail) {
+      const page = mail.page;
+      const db = mail.db;
+      const tr = mail.node.page;
+      tr.cells[0].textContent = (db || page).user;
+      tr.cells[1].firstElementChild.textContent = (db || page).subject;
+      tr.cells[2].innerHTML = '';
+      tr.cells[3].innerHTML = '';
+
+      db?.attach?.forEach((e) => {
+        const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
+        if (e.t === 'e') {
+          if (e.e && e.k) {
+            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+          } else {
+            span.textContent = e.n;
+          }
+        } else {
+          span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+        }
+      });
+      if (db?.cod) {
+        tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
+      }
+      tr.cells[4].textContent = _mm.dts(page.sent);
+      tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
+
+      tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
+      tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
+      tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
+      tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
+    };
+
+    _mm.page_go = function (p) {
+      p = parseInt(p);
+      if (isNaN(p) || p < 0) {
+        return;
+      }
+      location.href = location.href.replace(/&page=\d+/, '') + '&page=' + p;
+    };
+
+    _mm.mail_data = {};
+
+    _mm.mail_get = function (mid, season = _mm.db.season) {
+      if (!_mm.mail_data[season]) {
+        _mm.mail_data[season] = {};
+      }
+      if (!_mm.mail_data[season][mid]) {
+        _mm.mail_data[season][mid] = { mid, node: {} };
+      }
+      return _mm.mail_data[season][mid];
+    };
+
+    _mm.mail_read = async function (mid, post, season = _mm.db.season) {
+      const mail = _mm.mail_get(mid, season);
+      if (_mm.mail_current === mail && !post) {
+        _mm.mail_close();
+        return;
+      }
+      _mm.mail_close();
+      _mm.mail_current = mail;
+      _mm.node.mail_view.classList.remove('hvut-none');
+      $element('p', _mm.node.mail_view, ['Loading...', '.hvut-mm-loading']);
+
+      mail.node.page?.classList.add('hvut-mm-current');
+      mail.node.search?.classList.add('hvut-mm-current');
+
+      if (season === _mm.db.season) {
+        await _mm.mail_load(mid, post);
+      }
+      _mm.mail_view(mail);
+    };
+
+    _mm.mail_load = async function (mid, post) {
+      const mail = _mm.mail_get(mid);
+      const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
+      mail.view = _mm.mail_parse(html);
+      _mm.mail_update(mail);
+      return true;
+    };
+
+    _mm.mail_parse = function (arg) {
+      let html;
+      let doc;
+      if (typeof arg === 'string') {
+        html = arg;
+        doc = $doc(html);
+      } else {
+        doc = arg;
+        html = doc.documentElement.innerHTML;
+      }
+
+      const view = {};
+      const form = $id('mailform', doc);
+      if (form) {
+        _mm.mmtoken = form.elements.mmtoken.value;
+        view.to = form.elements[3].value;
+        view.from = form.elements[4].value;
+        view.subject = form.elements[5].value;
+        view.text = form.elements[6].value;
+        view.attach = [];
+        view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
+        view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
+        view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
+        view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
+
+        if (view.from === 'MoogleMail') {
+          view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
+          view.returned = true;
+        }
+        if (view.take) {
+          view.filter = 'inbox';
+          view.user = view.from;
+        } else if (view.reply) {
+          view.filter = 'read';
+          view.user = view.from;
+        } else if (view.returned) {
+          view.filter = 'read';
+          view.user = view.from;
+        } else {
+          view.filter = 'sent';
+          view.user = view.to;
+        }
+        view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
+
+        if ($id('mmail_attachlist', doc)) {
+          Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+          Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
+            let exec;
+            const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
+            if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
+              const eid = parseInt(exec[1]);
+              const key = $equip.dynjs_eqstore[eid].k;
+              const name = $equip.dynjs_eqstore[eid].t;
+              const type = 'e';
+              view.attach.push({ t: type, n: name, e: eid, k: key });
+            } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
+              const count = _mm.parse_count(exec[1]);
+              const name = exec[2];
+              const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
+              view.attach.push({ t: type, n: name, c: count });
+            } else {
+              console.log(div.textContent.trim());
+            }
+          });
+          if ($id('mmail_currentcod', doc)) {
+            view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
+          }
+        } else {
+          const split = view.text.split('\n\n').reverse();
+          const attach = split[0].split('\n').every((e) => {
+            const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
+            if (!exec) {
+              return false;
+            }
+            if (exec[3]) {
+              const name = exec[3];
+              const type = 'e';
+              view.attach.unshift({ t: type, n: name });
+            } else {
+              const name = exec[2];
+              const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
+              const count = _mm.parse_count(exec[1]);
+              view.attach.unshift({ t: type, n: name, c: count });
+            }
+            return true;
+          });
+          if (attach) {
+            view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
+          }
+
+          // pre 0.85
+          const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
+          if (exec) {
+            const type = exec[4];
+            if (type === 'e') {
+              const name = exec[3];
+              const eid = exec[5];
+              view.attach.push({ t: type, n: name, e: eid });
+            } else {
+              const name = exec[2];
+              const count = _mm.parse_count(exec[1]);
+              view.attach.push({ t: type, n: name, c: count });
+            }
+            view.cod = _mm.parse_count(exec[6]);
+          }
+        }
+      } else {
+        view.error = get_message(doc) || 'UNKNOWN ERROR';
+      }
+
+      return view;
+    };
+
+    _mm.mail_update = function (mail) {
+      const mid = mail.mid;
+      const page = mail.page;
+      const view = mail.view;
+
+      if (view.error) {
+      } else if (mail.db) {
+        const db = mail.db;
+        const sent = page?.sent || db.sent;
+        let read = page?.read || db.read;
+        if (read === null && view.read) {
+          read = -1;
+        }
+        if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
+          db.filter = view.filter;
+          db.user = view.user;
+          db.subject = view.subject;
+          db.text = view.text;
+          db.sent = sent;
+          db.read = read;
+          if (view.returned) {
+            db.returned = 1;
+            delete db.cod;
+          }
+          const conn = _mm.db.conn('readwrite');
+          conn.os.put(db);
+        }
+      } else if (page) {
+        mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
+        const db = mail.db;
+        if (view.returned) {
+          db.returned = 1;
+        }
+        if (view.attach.length) {
+          db.attach = view.attach;
+        }
+        if (view.cod) {
+          db.cod = view.cod;
+        }
+        const conn = _mm.db.conn('readwrite');
+        conn.os.add(db);
+      }
+
+      _mm.mail_modify(mail);
+    };
+
+    _mm.mail_modify = function (mail) {
+      if (mail.node.page) {
+        _mm.page_modify(mail);
+      }
+      if (mail.node.search) {
+        _mm.search_modify(mail);
+      }
+    };
+
+    _mm.mail_view = function (mail) {
+      if (_mm.mail_current !== mail) {
+        return;
+      }
+      const mid = mail.mid;
+      const view = mail.view || {};
+      const db = mail.db;
+      const div = _mm.node.mail_view;
+      div.innerHTML = '';
+      if (!db) {
+        $element('p', div, [`ERROR: ${view.error}`, '.hvut-mm-loading']);
+        return;
+      }
+      div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
+
+      const type = db.filter === 'sent' ? 'To' : 'From';
+      const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : _mm.dts(db.read, 4);
+      $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>Sent</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>Subject</dt><dd>${db.subject}</dd><dt>Read</dt><dd>${read}</dd>`]);
+
+      _mm.node.mail_body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
+      const buttons = $element('div', div);
+      $input(['button', 'Close'], buttons, { dataset: { action: 'close', mid } });
+      if (view.reply) {
+        $input(['button', 'Reply'], buttons, { dataset: { action: 'reply', mid } });
+      }
+      if (view.take) {
+        $input(['button', 'Take all'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
+      }
+      if (view.return) {
+        $input(['button', 'Return'], buttons, { dataset: { action: 'return', mid } });
+      }
+      if (view.recall) {
+        $input(['button', 'Recall'], buttons, { dataset: { action: 'recall', mid } });
+      }
+      if (view.error) {
+        $input(['button', view.error], buttons);
+        div.classList.add('hvut-mm-failed');
+      } else {
+        div.classList.remove('hvut-mm-failed');
+      }
+      if (db.returned) {
+        $input(['button', `This message was returned from ${db.user}`], buttons);
+      }
+
+      if (view.take && !view.returned && $config.settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
+        $input(['button', 'Coupon Clipper'], buttons, { dataset: { action: 'itemshop', mid } });
+      }
+      if (view.take && !view.returned && $config.settings.moogleMailDarkDescent && /Dark Descent|reforge/i.test(db.subject + '\n' + db.text)) {
+        const [, cost] = _mm.reforge_parse(db.attach);
+        if (cost) {
+          $input(['button', `Dark Descent [${cost}]`], buttons, { dataset: { action: 'reforge', mid } });
+        }
+      }
+
+      mail.attach = [];
+      if (db.attach) {
+        const ul = $element('ul', div, null, { input: (e) => { _mm.mail_cod(e); } });
+        const li = $element('li', ul);
+        const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
+
+        let cod_text;
+        if (db.cod) {
+          if (db.read) {
+            cod_text = `CoD Paid: ${db.cod.toLocaleString()}`;
+          } else {
+            cod_text = `CoD: ${db.cod.toLocaleString()}`;
+          }
+        } else {
+          cod_text = 'No CoD';
+        }
+        $element('span', li, cod_text);
+        mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
+        mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+        mail.attach = JSON.parse(JSON.stringify(db.attach));
+        mail.attach.forEach((e) => {
+          const li = $element('li', ul);
+          const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
+          if (e.t === 'e') {
+            if (e.e && e.k) {
+              $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+            } else {
+              span.textContent = e.n;
+            }
+          } else {
+            span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+          }
+          e.node = {};
+          if (e.n === 'Credits') {
+            return;
+          }
+          e.node.price = $input('text', li, { className: 'hvut-mm-price' });
+          e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+        });
+      }
+    };
+
+    _mm.mail_click = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, mid, value } = target.dataset;
+      if (action === 'close') {
+        _mm.mail_close();
+      } else if (action === 'reply') {
+        location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
+      } else if (action === 'take') {
+        if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
+          return;
+        }
+        _mm.mail_read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+      } else if (action === 'return') {
+        if (!confirm('This will return the message to the sender.\nAre you sure?')) {
+          return;
+        }
+        _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
+      } else if (action === 'recall') {
+        if (!confirm('This will return the message to the sender.\nAre you sure?')) {
+          return;
+        }
+        _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
+      } else if (action === 'itemshop') {
+        _mm.itemshop_confirm(mid);
+      } else if (action === 'reforge') {
+        _mm.reforge_confirm(mid);
+      }
+    };
+
+    _mm.mail_close = function () {
+      if (_mm.mail_current) {
+        const mail = _mm.mail_current;
+        mail.node.page?.classList.remove('hvut-mm-current');
+        mail.node.search?.classList.remove('hvut-mm-current');
+      }
+      _mm.mail_current = null;
+      _mm.node.mail_view.classList.add('hvut-none');
+      _mm.node.mail_view.innerHTML = '';
+      _mm.mail_log('', true);
+      _mm.node.mail_log.parentNode.classList.add('hvut-none');
+    };
+
+    _mm.mail_cod = function () {
+      const mail = _mm.mail_current;
+      if (!mail) {
+        return;
+      }
+      const db = mail.db;
+      const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
+      const attach = mail.attach;
+      let sum = 0;
+
+      attach.forEach((e) => {
+        if (e.n === 'Credits') {
+          return;
+        }
+        const p = _mm.parse_price(e.node.price.value, true);
+        const cod = p * (e.c || 1);
+        e.node.cod.value = cod ? cod.toLocaleString() : '';
+        sum += cod;
+      });
+      mail.node.cod.value = sum ? sum.toLocaleString() : '';
+      if (db?.cod) {
+        mail.node.price.value = !sum ? wtx : db.cod === sum ? 'CoD =' : db.cod > sum ? 'CoD >' : 'CoD <';
+        mail.node.price.dataset.codMatch = db.cod === sum ? '1' : '0';
+        mail.node.cod.dataset.codMatch = db.cod === sum ? '1' : '0';
+      }
+    };
+
+    _mm.mail_log = function (text, clear) {
+      _mm.node.mail_log.parentNode.classList.remove('hvut-none');
+      if (clear) {
+        _mm.node.mail_log.value = '';
+      }
+      _mm.node.mail_log.value += text + '\n';
+      _mm.node.mail_log.scrollTop = _mm.node.mail_log.scrollHeight;
+    };
+
+    _mm.search_submit = function () {
+      const season = _mm.node.search_season?.value || _mm.db.season;
+      const filter = _mm.node.search_filter.value;
+      const name = _mm.node.search_name.value.trim().toLowerCase();
+      const subject = _mm.node.search_subject.value.trim().toLowerCase();
+      const text = _mm.node.search_text.value.trim().toLowerCase();
+      let attach = _mm.node.search_attach.value.trim();
+      let eid = null;
+      let cod = _mm.node.search_cod.value.replace(/\s/g, '').toLowerCase();
+      let cod_min = 0;
+      let cod_max = 0;
+      if (attach) {
+        if (isNaN(attach)) {
+          attach = attach.toLowerCase().replace(/\s+/g, ' ').split(' ');
+        } else {
+          eid = parseInt(attach);
+        }
+      }
+      if (/^([0-9.]+[ckm]?)$/i.test(cod)) {
+        cod = _mm.parse_price(RegExp.$1);
+      } else if (/^([0-9.]+[ckm]?)?[-~]([0-9.]+[ckm]?)?$/i.test(cod)) {
+        cod = false;
+        cod_min = _mm.parse_price(RegExp.$1);
+        cod_max = _mm.parse_price(RegExp.$2);
+      } else {
+        cod = false;
+      }
+      const query = { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max };
+      _mm.search(query);
+    };
+
+    _mm.search = function (query) {
+      _mm.mail_close();
+      _mm.node.search_div.innerHTML = '';
+      _mm.node.search_div.classList.remove('hvut-none');
+      $element('div', _mm.node.search_div, ['Searching...', '.hvut-mm-searching']);
+
+      _mm.db.search(query).then((results) => {
+        const table = $element('table', null, ['.hvut-mm-list']);
+        const tbody = $element('tbody', table);
+        $element('tr', tbody, [`/<td>Search</td><td>${results.length} mail(s)</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
+
+        results.sort((a, b) => b.db.mid - a.db.mid);
+        results.forEach((mail) => {
+          const db = mail.db;
+          if (!mail.node.search) {
+            mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
+            if (query.season === _mm.db.season) {
+              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
+            } else {
+              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: query.season } });
+            }
+          }
+          tbody.appendChild(mail.node.search);
+          _mm.search_modify(mail);
+        });
+
+        _mm.node.search_div.innerHTML = '';
+        _mm.node.search_div.appendChild(table);
+      });
+    };
+
+    _mm.search_modify = function (mail) {
+      const db = mail.db;
+      const tr = mail.node.search;
+      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[db.filter];
+      tr.cells[0].innerHTML = `<span>${type}</span> ${db.user}`;
+      tr.cells[1].firstElementChild.textContent = db.subject;
+      tr.cells[2].innerHTML = '';
+      tr.cells[3].innerHTML = '';
+
+      db.attach?.forEach((e) => {
+        const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
+        if (e.t === 'e') {
+          if (e.e && e.k) {
+            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+          } else {
+            span.textContent = e.n;
+          }
+        } else {
+          span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+        }
+      });
+      if (db.cod) {
+        tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
+      }
+      tr.cells[4].textContent = _mm.dts(db.sent);
+      tr.cells[5].textContent = db.read ? _mm.dts(db.read) : '';
+
+      tr.classList[db.read ? 'remove' : 'add']('hvut-mm-unread');
+      tr.classList[db.returned ? 'add' : 'remove']('hvut-mm-returned');
+    };
+
+    _mm.search_close = function () {
+      _mm.node.search_div.classList.add('hvut-none');
+      _mm.node.search_div.innerHTML = '';
+    };
+
+    _mm.search_keypress = function (e) {
+      if (e.key === 'Enter') {
+        _mm.search_submit();
+      }
+    };
+
+    _mm.search_toggle = function () {
+      if (_mm.node.search_form) {
+        _mm.node.search_form.classList.toggle('hvut-none');
+        return;
+      }
+      _mm.node.search_form = $element('div', _mm.node.bottom, null, { keypress: (e) => { _mm.search_keypress(e); } });
+      $input(['button', 'Close'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
+
+      if ($config.isekai) {
+        const seasons = Array.from(_mm.db.database.objectStoreNames);
+        _mm.node.search_season = $input(['select', seasons], _mm.node.search_form);
+        _mm.node.search_season.value = $config.isekai;
+      }
+      _mm.node.search_filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.node.search_form);
+      _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: 'User', style: 'width: 120px;' });
+      _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: 'Subject', style: 'width: 120px;' });
+      _mm.node.search_text = $input('text', _mm.node.search_form, { placeholder: 'Text', style: 'width: 120px;' });
+      _mm.node.search_attach = $input('text', _mm.node.search_form, { placeholder: 'Attachment', style: 'width: 120px;' });
+      _mm.node.search_cod = $input('text', _mm.node.search_form, { placeholder: 'CoD (min-max)', style: 'width: 100px;' });
+      $input(['button', 'Search'], _mm.node.search_form, null, () => { _mm.search_submit(); });
+      $input(['button', 'Close List'], _mm.node.search_form, null, () => { _mm.search_close(); });
+    };
+
+    _mm.dts = function (date, year = 2) { // date_to_string
+      const d = new Date(date * 1000);
+      const yy = d.getFullYear().toString().slice(-year);
+      const MM = (d.getMonth() + 1).toString().padStart(2, '0');
+      const dd = d.getDate().toString().padStart(2, '0');
+      const HH = d.getHours().toString().padStart(2, '0');
+      const mm = d.getMinutes().toString().padStart(2, '0');
+      return `${yy}-${MM}-${dd} ${HH}:${mm}`;
+    };
+
+    _mm.kill_asshole = function (obj) { // email-decode.min.js: usernames with '@' are encoded in html, then decoded
+      function h(e, t, r, a) {
+        for (r = '', a = '0x' + e.slice(t, t + 2) | 0, t += 2; t < e.length; t += 2) {
+          r += String.fromCharCode('0x' + e.slice(t, t + 2) ^ a);
+        }
+        return r;
+      }
+      $qsa('.__cf_email__', obj).forEach((a) => {
+        a.parentNode.replaceChild(document.createTextNode(h(a.dataset.cfemail, 0)), a);
+      });
+      return obj;
+    };
+
+    _mm.itemshop_confirm = async function (mid) {
+      const mail = _mm.mail_get(mid);
+      const items = _mm.itemshop_parse();
+      if (!items.length) {
+        alert('Invalid Request');
+        return;
+      }
+      await $item.load_shop();
+      const cost = $item.cost(items);
+      const credits = mail.db.attach.filter((e) => e.n === 'Credits').reduce((s, e) => (s + e.c), 0);
+      if (cost !== credits) {
+        if (!confirm(`The total price of the requested materials is ${cost.toLocaleString()} credits, but the amount of attached credits is ${credits.toLocaleString()}.\nAre you sure?`)) {
+          return;
+        }
+      }
+      _mm.itemshop(mid, items);
+    };
+
+    _mm.itemshop_parse = function (text = _mm.node.mail_body.value) {
+      const itemshop_list = [
+        'Health Draught',
+        'Health Potion',
+        'Health Elixir',
+        'Mana Draught',
+        'Mana Potion',
+        'Mana Elixir',
+        'Spirit Draught',
+        'Spirit Potion',
+        'Spirit Elixir',
+        'Crystal of Vigor',
+        'Crystal of Finesse',
+        'Crystal of Swiftness',
+        'Crystal of Fortitude',
+        'Crystal of Cunning',
+        'Crystal of Knowledge',
+        'Crystal of Flames',
+        'Crystal of Frost',
+        'Crystal of Lightning',
+        'Crystal of Tempest',
+        'Crystal of Devotion',
+        'Crystal of Corruption',
+        'Monster Chow',
+        'Monster Edibles',
+        'Monster Cuisine',
+        'Happy Pills',
+        'Scrap Cloth',
+        'Scrap Leather',
+        'Scrap Metal',
+        'Scrap Wood',
+        'Energy Cell',
+      ];
+      const items = [];
+      text.split('\n').forEach((t) => {
+        let exec;
+        let name;
+        let count;
+        if (t.startsWith('> ')) {
+          return;
+        } else if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
+          name = exec[1];
+          count = exec[3];
+        } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
+          name = exec[2];
+          count = exec[1];
+        } else {
+          return;
+        }
+        name = name.trim();
+        count = _mm.parse_count(count);
+        if (itemshop_list.includes(name) && count) {
+          const item = { name, count };
+          items.push(item);
+        }
+      });
+      return items;
+    };
+
+    _mm.itemshop = async function (mid, items) {
+      if (_mm.itemshop.current) {
+        popup('Processing other requests...');
+        return;
+      }
+      _mm.itemshop.current = mid;
+
+      _mm.mail_log('[Item Shop Request]', true);
+      _mm.mail_log('Receiving');
+      await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+      _mm.mail_log('Buying');
+
+      const result = await $item.buy(items);
+      if (!result) {
+        return;
+      }
+      _mm.mail_log('...');
+
+      const attach = items.map((item) => {
+        const name = item.name;
+        const id = $item.shop[name].id;
+        const count = item.count;
+        return { pane: 'item', id, name, count };
+      });
+      const mail = {
+        to_name: _mm.mail_get(mid).view.from,
+        subject: '[Item Shop Service]',
+        body: '[Item Shop Service]',
+        attach,
+      };
+      $mail.request(mail);
+    };
+
+    _mm.reforge_confirm = function (mid) {
+      const mail = _mm.mail_get(mid);
+      const equips = _mm.reforge_parse(mail.db.attach);
+      const cost = equips.reduce((s, eq) => (s + Math.ceil(eq.info.tier / 2)), 0);
+      if (!cost) {
+        alert('No equipment with potencies');
+        return;
+      }
+      const amnesia = mail.db.attach.filter((e) => e.n === 'Amnesia Shard').reduce((s, e) => (s + e.c), 0);
+      if (!amnesia) {
+        if (!confirm(`This costs ${cost} Amnesia Shard(s), but nothing attached.\nAre you sure?`)) {
+          return;
+        }
+      } else if (amnesia !== cost) {
+        if (!confirm(`This costs ${cost} Amnesia Shard(s), but the number of attached items is ${amnesia}.\nAre you sure?`)) {
+          return;
+        }
+      }
+      _mm.reforge(mid, equips);
+    };
+
+    _mm.reforge_parse = function (attach) {
+      const equips = attach.filter((e) => e.t === 'e').map((dbeq) => {
+        const eid = dbeq.e;
+        const dynjs = $equip.dynjs_eqstore[eid];
+        const key = dynjs.k;
+        const name = dynjs.t;
+        const html = dynjs.d;
+        const exec = $equip.reg.html.exec(html);
+        const category = exec[1];
+        const tier = parseInt(exec[6]);
+        const eq = {
+          info: { eid, key, name, category, tier },
+          data: {},
+          node: {},
+        };
+        //$equip.parse.name(eq.info.name, eq);
+        return eq;
+      });
+      return equips;
+    };
+
+    _mm.reforge = async function (mid, equips) {
+      if (_mm.reforge.current) {
+        popup('Processing other requests...');
+        return;
+      }
+      _mm.reforge.current = mid;
+
+      _mm.mail_log('[Reforge Request]', true);
+      _mm.mail_log('Receiving');
+      await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+
+      _mm.mail_log('Reforging');
+      const html = await $ajax.fetch('?s=Character&ss=in');
+      const uid = /var uid = (\d+);/.exec(html)[1];
+      const token = /var simple_token = "(\w+)";/.exec(html)[1];
+      _mm.mail_log('...');
+
+      async function reforge(eq) {
+        let html = await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid, token, eid: eq.info.eid, lock: 0 }, 'JSON');
+        const json = JSON.parse(html);
+        if (!json || json.eid != eq.info.eid || json.locked != 0) {
+          const error = 'Failed to unlock';
+          _mm.mail_log(error);
+          return false;
+        }
+        unlocked++;
+        _mm.mail_log(`Unlocked (${unlocked}/${total})`);
+
+        if (!eq.info.tier) {
+          reforged++;
+          _mm.mail_log(`Reforged (${reforged}/${total}): potency level 0`);
+          return true;
+        }
+
+        html = await $ajax.fetch('?s=Forge&ss=fo&filter=' + $equip.alias[eq.info.category], 'select_item=' + eq.info.eid);
+        const doc = $doc(html);
+        const error = get_message(doc);
+        if (error) {
+          _mm.mail_log(error);
+          return false;
+        }
+        reforged++;
+        _mm.mail_log(`Reforged (${reforged}/${total})`);
+        return true;
+      }
+
+      const total = equips.length;
+      let unlocked = 0;
+      let reforged = 0;
+      const requests = equips.map((eq) => reforge(eq));
+      const results = await Promise.all(requests);
+      if (!results.every((r) => r)) {
+        return;
+      }
+
+      const attach = equips.map((eq) => {
+        const id = eq.info.eid;
+        const name = eq.info.name;
+        return { pane: 'equip', id, name, count: 1 };
+      });
+      const mail = {
+        to_name: _mm.mail_get(mid).view.from,
+        subject: '[Reforge Service]',
+        body: '[Reforge Service]',
+        attach,
+      };
+      $mail.request(mail);
+    };
+
+    GM_addStyle(/*css*/`
       #mmail_outerlist { margin: 10px; overflow-y: scroll; }
       #mmail_list { display: none; }
       #mmail_pager { display: none; }
@@ -11213,17 +10012,13 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
 
       .hvut-mm-view { position: absolute; top: 81px; right: 14px; display: flex; flex-direction: column; width: 626px; height: 566px; padding: 5px; border: 2px solid; background-color: #EDEBDF; font-size: 10pt; line-height: 20px; text-align: left; z-index: 2; }
       .hvut-mm-failed { background-color: #eee; }
-      .hvut-mm-view > dl { list-style: none; margin: 5px 5px 0; padding: 0; }
-      .hvut-mm-view > dl::after { content: ''; display: block; clear: both; }
-      .hvut-mm-view dt { float: left; margin: 0; padding: 0; width: 50px; border: 1px solid; text-align: center; }
-      .hvut-mm-view dt:nth-of-type(2n+1) { width: 60px; clear: left; }
-      .hvut-mm-view dd { float: left; margin: 1px 0 5px 5px; padding: 0 5px; width: 110px; border-bottom: 1px solid; }
-      .hvut-mm-view dd:nth-of-type(2n+1) { width: 350px; margin-right: 5px; }
-      .hvut-mm-view dd:nth-of-type(2n) { white-space: nowrap; }
+      .hvut-mm-view > dl { display: grid; grid-template-columns: 80px auto 80px 120px; gap: 5px; margin: 5px; text-align: center; align-items: center; }
+      .hvut-mm-view dt { margin: 0; border: 1px solid; }
+      .hvut-mm-view dd { margin: 0; border-bottom: 1px solid; }
+      .hvut-mm-view dd:nth-of-type(2n+1) { padding: 0 5px; text-align: left; }
       .hvut-mm-rts dd:nth-of-type(1)::before { content: '[MoogleMail] '; color: #666; }
       .hvut-mm-view > textarea { flex-basis: 191px; }
       .hvut-mm-view > div { display: flex; margin: 5px 0; }
-      .hvut-mm-view > div .hvut-mm-edit { margin-left: auto; }
       .hvut-mm-view > ul { margin: 5px; padding: 5px; border: 1px solid; list-style: none; max-height: 242px; overflow: auto; flex-shrink: 0; }
       .hvut-mm-view li:first-child { margin-top: 0; padding: 0 0 0 5px; border: 1px solid; font-weight: bold; }
       .hvut-mm-view li:first-child > .hvut-mm-price { text-align: center; }
@@ -11239,137 +10034,45 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
       .hvut-mm-log { position: absolute; top: 81px; right: 652px; border: 2px solid; background-color: #EDEBDF; z-index: 2; }
     `);
 
-                            $id('mmail_outerlist').addEventListener('click', _mm.page_click);
-                            _mm.node.page_table = [];
+    $id('mmail_outerlist').addEventListener('click', _mm.page_click);
+    _mm.node.page_table = [];
 
-                            _mm.node.bottom = $element('div', $id('mmail_outer'), ['.hvut-mm-bottom']);
-                            $input(['button', '管理数据库'], _mm.node.bottom, null, () => { _mm.db.toggle(); });
-                            $input(['button', '搜索邮件'], _mm.node.bottom, null, () => { _mm.search_toggle(); });
+    _mm.node.bottom = $element('div', $id('mmail_outer'), ['.hvut-mm-bottom']);
+    $input(['button', 'Manage Database'], _mm.node.bottom, null, () => { _mm.db.toggle(); });
+    $input(['button', 'Search Mail'], _mm.node.bottom, null, () => { _mm.search_toggle(); });
 
-                            _mm.node.page_go = $input('text', _mm.node.bottom, { value: _mm.page_current, style: 'width: 30px; margin-left: auto; text-align: center;' });
-                            $input(['button', '前往'], _mm.node.bottom, null, () => { _mm.page_go(_mm.node.page_go.value); });
-                            _mm.node.page_prev = $input(['button', '上一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('prev'); });
-                            _mm.node.page_next = $input(['button', '下一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('next'); });
+    _mm.node.page_go = $input('text', _mm.node.bottom, { value: _mm.page_current, style: 'width: 30px; margin-left: auto; text-align: center;' });
+    $input(['button', 'GO'], _mm.node.bottom, null, () => { _mm.page_go(_mm.node.page_go.value); });
+    _mm.node.page_prev = $input(['button', 'Prev'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('prev'); });
+    _mm.node.page_next = $input(['button', 'Next'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('next'); });
 
-                            _mm.node.search_div = $element('div', $id('mmail_outer'), ['.hvut-mm-search hvut-none'], (e) => { _mm.page_click(e); });
-                            _mm.node.mail_view = $element('div', $id('mmail_outer'), ['.hvut-mm-view hvut-none'], (e) => { _mm.mail_click(e); });
-                            _mm.node.mail_log = $element('div', $id('mmail_outer'), ['.hvut-mm-log hvut-none']).appendChild($element('textarea', null, { readOnly: true, spellcheck: false, style: 'width: 300px; height: 300px;' }));
-                            $mail.log = _mm.mail_log;
+    _mm.node.search_div = $element('div', $id('mmail_outer'), ['.hvut-mm-search hvut-none'], (e) => { _mm.page_click(e); });
+    _mm.node.mail_view = $element('div', $id('mmail_outer'), ['.hvut-mm-view hvut-none'], (e) => { _mm.mail_click(e); });
+    _mm.node.mail_log = $element('div', $id('mmail_outer'), ['.hvut-mm-log hvut-none']).appendChild($element('textarea', null, { readOnly: true, spellcheck: false, style: 'width: 300px; height: 300px;' }));
+    $mail.log = _mm.mail_log;
 
-                            _mm.db.init();
-                            _mm.db.open(_mm.page_init);
-                          }
-                        } else
-                          //* [13] Bazaar - MoogleMail */
-
-
-                          //* [14] Bazaar - Lottery
-                          if (settings.lottery && _query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-                            if (settings.showLottery && $qs('img[src$="lottery_next_d.png"]')) {
-                              _lt.toggle = function (show) {
-                                _lt.json.hide = !show;
-                                setValue(_query.ss + '_show', _lt.json);
-                              };
-                              _lt.json = getValue(_query.ss + '_show', {});
-                              $input(['checkbox', '在每个页面上均展示本次头奖装备'], $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']), { checked: !_lt.json.hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
-                            }
-
-                            confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', '你确定要使用黄金彩票券吗?');
+    _mm.db.init();
+    _mm.db.open(_mm.page_init);
+  }
+} else
+// [END 13] Bazaar - MoogleMail */
 
 
-                            // 发起 AJAX 请求以获取页面内容
-                            $ajax.fetch('https://e-hentai.org/exchange.php?t=gp')
-                              .then(response => {
-                              // 解析响应并提取所需的数据
-                              const html = response;
-                              const parser = new DOMParser();
-                              const doc = parser.parseFromString(html, 'text/html');
-                              const priceElement = doc.querySelector('td:nth-of-type(5)'); // 获取第5个 td 元素
-                              if (priceElement) {
-                                const priceString = priceElement.textContent.trim(); // 获取价格数据
-                                // 使用正则表达式提取数字部分
-                                const match = priceString.match(/[\d,]+/); // 匹配数字或逗号
-                                if (match) {
-                                  const price = parseInt(match[0].replace(',', '')); // 将匹配到的字符串转换为整数（去除逗号）
-                                  // 显示价格数据在指定的数据框体中
-                                  const dataDisplay = $element('div', null, ['!position: absolute; top: 158px; left: 950px; width: 120px; height: 15px; border: 1px solid #000000; padding: 5px; font-size: 12px;']); // 修改了位置
-                                  dataDisplay.textContent = '每1000GP 价格：' + price;
-                                  document.body.appendChild(dataDisplay);
-                                } else {
-                                  console.error('无法提取价格数据');
-                                }
-                              } else {
-                                console.error('无法找到 GP 价格数据');
-                              }
-                            })
-                              .catch(error => {
-                              console.error('请求失败：', error);
-                            });
+//* [14] Bazaar - Lottery
+if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
+  if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
+    _lt.toggle = function (show) {
+      _lt.json[_query.ss].hide = !show;
+      $config.set('lt_notif', _lt.json, 'hvut_');
+    };
+    _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
-                            // 用于计算购买彩票的GP消耗
-                            const resultDisplayElement = document.createElement('input');
-                            resultDisplayElement.setAttribute('type', 'text'); // 设置显示框的类型为文本框
+    const div = $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']);
+    $input(['checkbox', 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
+  }
 
-                            // 设置显示框的样式
-                            resultDisplayElement.style.position = 'absolute';
-                            resultDisplayElement.style.top = '187px';
-                            resultDisplayElement.style.left = '688px';
-                            resultDisplayElement.style.width = '125px';
-                            resultDisplayElement.style.whiteSpace = 'normal';
-
-                            // 获取包含 GP 数量的文本
-                            const gpText = document.body.textContent.match(/You currently have (\d+(,\d+)*) GP/);
-
-                            if (gpText && gpText.length > 1) {
-                              const gpAmountString = gpText[1].replace(/,/g, ''); // 去除逗号
-                              let gpAmount = parseInt(gpAmountString); // 将去除逗号后的字符串转换为整数并乘以1000
-
-                              // 获取输入框中的数字
-                              const ticketInput = document.getElementById('ticket_temp');
-
-                              // 定义一个函数用于更新结果文本框中的数字
-                              function updateResult() {
-                                // 检查输入框中是否有有效的数字
-                                if (ticketInput.value.trim() === '' || isNaN(parseInt(ticketInput.value))) {
-                                  // 如果输入框中没有有效的数字，则清空结果文本框
-                                  resultDisplayElement.value = '';
-                                  return;
-                                }
-                                const ticketAmount = parseInt(ticketInput.value) * 1000;
-
-                                // 计算结果
-                                const difference = gpAmount - ticketAmount;
-
-                                // 将结果显示在新创建的文本框中，添加剩余GP文本
-                                resultDisplayElement.value = `剩余GP: ${difference}`;
-                                // 如果结果小于0，将文本框字体颜色设为红色，否则恢复默认颜色
-                                resultDisplayElement.style.color = difference < 0 ? 'red' : 'black';
-                              }
-
-                              // 在输入框内容变化时更新结果
-                              ticketInput.addEventListener('input', updateResult);
-
-                              // 初始化结果文本框
-                              updateResult();
-                            } else {
-                              resultDisplayElement.value = 'GP 数量未找到'; // 如果未找到匹配的文本，则文本框中会显示提示信息
-                            }
-
-                            // 添加文本框
-                            document.body.appendChild(resultDisplayElement);
-
-                            // 新增一个购买GP的快捷按钮
-                            var buyGPButton = $element('button', null, ['!position: absolute; top: 160px; left: 880px;']);
-                            buyGPButton.style.zIndex = '99'; // Ensure it's on top of other elements
-                            buyGPButton.textContent = '购买GP';
-                            buyGPButton.addEventListener('click', function () {
-                              window.open('https://e-hentai.org/exchange.php?t=gp', '_blank');
-                            });
-                            document.body.appendChild(buyGPButton);
-                          } else {
-
-                          }
-
+  confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', 'Are you sure that you wish to spend a Golden Lottery Ticket?');
+} else
 // [END 14] Bazaar - Lottery */
 
 
@@ -11385,7 +10088,7 @@ if (_query.s === 'Battle' && $id('initform')) {
     #arena_list tbody > tr > th:nth-child(6) { width: 90px; }
     #arena_list tbody > tr > th:nth-child(7) { width: 120px; }
     #arena_list tbody > tr > th:nth-child(8) { width: 90px; }
-    #arena_list tbody > tr > th:nth-child(8) > input { width: 70px; }
+    #arena_list tbody > tr > th:nth-child(8) > input { width: 80px; }
     #arena_list tbody > tr > td > div { width: 100% !important; left: 0; }
 
     .hvut-bt-on #arena_list tr > th:nth-child(1) { width: 302px; }
@@ -11408,149 +10111,147 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
   //* [16] Battle - Arena
-  if (settings.arena && _query.ss === 'ar') {
+  if (_query.ss === 'ar') {
     _ar.split_colspan($id('arena_list'));
-    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '收起', $id('mainpane'), 'hvut-bt-on', true);
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $id('mainpane'), 'hvut-bt-on', true);
     $element('div', [$id('mainpane'), 'afterbegin'], ['#arena_outer']).append($id('arena_list'));
   } else
-    // [END 16] Battle - Arena */
+  // [END 16] Battle - Arena */
 
 
-    //* [17] Battle - Ring of Blood
-    if (settings.ringofblood && _query.ss === 'rb') {
-      _ar.split_colspan($id('arena_list'));
-      toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '收起', $id('mainpane'), 'hvut-bt-on', true);
-      $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
-    } else
-      // [END 17] Battle - Ring of Blood */
+  //* [17] Battle - Ring of Blood
+  if (_query.ss === 'rb') {
+    _ar.split_colspan($id('arena_list'));
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $id('mainpane'), 'hvut-bt-on', true);
+    $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
+  } else
+  // [END 17] Battle - Ring of Blood */
 
 
-      //* [18] Battle - GrindFest
-      if (settings.grindfest && _query.ss === 'gr') {
+  //* [18] Battle - GrindFest
+  if (_query.ss === 'gr') {
 
-      } else
-        // [END 18] Battle - GrindFest */
-
-
-        //* [19] Battle - Item World
-        if (settings.itemWorld && _query.ss === 'iw') {
-          _iw.pxp_mod = !_isekai ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
-
-          _iw.click = function (e) {
-            const target = e.target.closest('[data-action]');
-            if (!target) {
-              return;
-            }
-            const { action, eid } = target.dataset;
-            const eq = eid && _iw.equiplist.find((eq) => eq.info.eid == eid);
-            if (action === 'select') {
-              _iw.select(eq);
-            } else if (action === 'calc') {
-              _iw.calc(eq);
-            } else if (action === 'reforge') {
-              _iw.reforge(eq);
-            }
-          };
-
-          _iw.select = function (eq) {
-            _iw.set_latest(eq);
-            if (!eq.info.round) {
-              eq.info.round = Math.round(75 * Math.pow((eq.info.pxp - 0.5 - 100) / 250, 3));
-              if (eq.info.round > 100) {
-                eq.info.round = 100;
-              } else if (eq.info.round < 20) {
-                eq.info.round = 20;
-              }
-              eq.info.round_ = eq.info.round;
-              if (eq.info.tier) {
-                _iw.load(eq);
-              }
-            }
-            _iw.update(eq);
-          };
-
-          _iw.calc = function (eq) {
-            let round = parseInt(prompt('输入道具界回合数', eq.info.round));
-            if (!round) {
-              return;
-            }
-            if (round > 100) {
-              round = 100;
-            } else if (round < 20) {
-              round = 20;
-            }
-            eq.info.round_ = round;
-            _iw.update(eq);
-          };
-
-          _iw.update = function (eq) {
-            let gear_exp = eq.info.round_ * _iw.pxp_mod[_player.dfct];
-            if (eq.info.soulbound) {
-              gear_exp *= 2;
-            }
-            let tier = eq.info.tier;
-            let pxp1 = eq.info.pxp1 + gear_exp;
-            let pxp2 = eq.info.pxp2;
-            while (tier < 10 && pxp1 >= pxp2) {
-              tier++;
-              pxp1 -= pxp2;
-              pxp2 = Math.ceil(eq.info.pxp * Math.pow(1 + eq.info.pxp / 1000, tier));
-            }
-            const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(MAX)';
-
-            eq.node.sub.innerHTML = '';
-            $element('span', eq.node.sub, [`潜能等级 ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
-            $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
-            $element('span', eq.node.sub, [`+${gear_exp} (${eq.info.round_})`, '.hvut-iw-up hvut-cphu', { dataset: { action: 'calc', eid: eq.info.eid } }]);
-            $element('span', eq.node.sub, '=>');
-            $element('span', eq.node.sub, [`潜能等级 ${tier}`, (tier ? '.hvut-iw-tier' : '')]);
-            $element('span', eq.node.sub, pxp_text);
+  } else
+  // [END 18] Battle - GrindFest */
 
 
+  //* [19] Battle - Item World
+  if (_query.ss === 'iw') {
+    _iw.pxp_mod = !$config.isekai ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
 
-            if (!eq.data.potencies?.length) {
-              return;
-            }
-            $element('span', eq.node.sub, ['重铸', '.hvut-iw-reforge hvut-cphu', { dataset: { action: 'reforge', eid: eq.info.eid } }]);
-            eq.data.potencies.forEach((p) => {
-              $element('span', eq.node.sub, p);
-            });
-          };
+    _iw.click = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, eid } = target.dataset;
+      const eq = eid && _iw.equiplist.find((eq) => eq.info.eid == eid);
+      if (action === 'select') {
+        _iw.select(eq);
+      } else if (action === 'calc') {
+        _iw.calc(eq);
+      } else if (action === 'reforge') {
+        _iw.reforge(eq);
+      }
+    };
 
-          _iw.load = async function (eq) {
-            const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
-            const doc = $doc(html);
-            const eq_ = $equip.parse.extended($id('equip_extended', doc));
-            eq.info.tier = eq_.info.tier;
-            eq.info.pxp1 = eq_.info.pxp1;
-            eq.info.pxp2 = eq_.info.pxp2;
-            eq.data.potencies = $qsa('#ep > span', doc).map((p) => p.textContent);
-            _iw.update(eq);
-          };
+    _iw.select = function (eq) {
+      _iw.set_latest(eq);
+      if (!eq.info.round) {
+        eq.info.round = Math.round(75 * Math.pow((eq.info.pxp - 0.5 - 100) / 250, 3));
+        if (eq.info.round > 100) {
+          eq.info.round = 100;
+        } else if (eq.info.round < 20) {
+          eq.info.round = 20;
+        }
+        eq.info.round_ = eq.info.round;
+        if (eq.info.tier) {
+          _iw.load(eq);
+        }
+      }
+      _iw.update(eq);
+    };
 
-          _iw.reforge = async function (eq) {
-            if (!eq.node.lock.classList.contains('iu')) {
-              alert('重铸装备前请先解锁.');
-              return;
-            }
-            if (!confirm(`[${eq.info.name}]\n你确定要重铸这件装备吗?\n这会移除它所有的潜能并将其潜能等级归0.`)) {
-              return;
-            }
-            const html = await $ajax.fetch(`?s=Forge&ss=fo&filter=${_iw.filter}`, `select_item=${eq.info.eid}`);
-            const doc = $doc(html);
-            const error = get_message(doc);
-            if (error) {
-              popup(error);
-            }
-            _iw.load(eq);
-          };
+    _iw.calc = function (eq) {
+      let round = parseInt(prompt('Enter the number of rounds', eq.info.round));
+      if (!round) {
+        return;
+      }
+      if (round > 100) {
+        round = 100;
+      } else if (round < 20) {
+        round = 20;
+      }
+      eq.info.round_ = round;
+      _iw.update(eq);
+    };
 
-          _iw.set_latest = function (eq) {
-            _iw.json[_iw.filter] = eq.info.eid;
-            setValue('iw_latest', _iw.json);
-          };
+    _iw.update = function (eq) {
+      let gear_exp = eq.info.round_ * _iw.pxp_mod[_player.difficulty];
+      if (eq.info.soulbound) {
+        gear_exp *= 2;
+      }
+      let tier = eq.info.tier;
+      let pxp1 = eq.info.pxp1 + gear_exp;
+      let pxp2 = eq.info.pxp2;
+      while (tier < 10 && pxp1 >= pxp2) {
+        tier++;
+        pxp1 -= pxp2;
+        pxp2 = Math.ceil(eq.info.pxp * Math.pow(1 + eq.info.pxp / 1000, tier));
+      }
+      const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(MAX)';
 
-          GM_addStyle(/*css*/`
+      eq.node.sub.innerHTML = '';
+      $element('span', eq.node.sub, [`IW ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
+      $element('span', eq.node.sub, [`+${gear_exp} (${eq.info.round_})`, '.hvut-iw-up hvut-cphu', { dataset: { action: 'calc', eid: eq.info.eid } }]);
+      $element('span', eq.node.sub, '=>');
+      $element('span', eq.node.sub, [`IW ${tier}`, (tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, pxp_text);
+
+      if (!eq.data.potencies?.length) {
+        return;
+      }
+      $element('span', eq.node.sub, ['Reforge', '.hvut-iw-reforge hvut-cphu', { dataset: { action: 'reforge', eid: eq.info.eid } }]);
+      eq.data.potencies.forEach((p) => {
+        $element('span', eq.node.sub, p);
+      });
+    };
+
+    _iw.load = async function (eq) {
+      const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
+      const doc = $doc(html);
+      const eq_ = $equip.parse.extended($id('equip_extended', doc));
+      eq.info.tier = eq_.info.tier;
+      eq.info.pxp1 = eq_.info.pxp1;
+      eq.info.pxp2 = eq_.info.pxp2;
+      eq.data.potencies = $qsa('#ep > span', doc).map((p) => p.textContent);
+      _iw.update(eq);
+    };
+
+    _iw.reforge = async function (eq) {
+      if (!eq.node.lock.classList.contains('iu')) {
+        alert('Unlock before reforge.');
+        return;
+      }
+      if (!confirm(`Are you sure that you wish to reforge this item?\n[${eq.info.name}]\nThis will remove all potencies and reset its level to zero.`)) {
+        return;
+      }
+      const html = await $ajax.fetch(`?s=Forge&ss=fo&filter=${_iw.filter}`, `select_item=${eq.info.eid}`);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        popup(error);
+      }
+      _iw.load(eq);
+    };
+
+    _iw.set_latest = function (eq) {
+      _iw.json[_iw.filter] = eq.info.eid;
+      $config.set('iw_latest', _iw.json);
+    };
+
+    GM_addStyle(/*css*/`
       #itemworld_right { display: none; }
       #itemworld_left { float: none; margin: 0 auto; }
       #itemworld_left .cspp { overflow-y: scroll; }
@@ -11565,380 +10266,301 @@ if (_query.s === 'Battle' && $id('initform')) {
       .hvut-iw-reforge { color: #c00; font-weight: bold; margin-left: 5px; }
     `);
 
-          $id('itemworld_left').firstElementChild.prepend($id('accept_button').parentNode);
+    $id('itemworld_left').firstElementChild.prepend($id('accept_button').parentNode);
 
-          $id('item_pane').addEventListener('click', _iw.click);
+    $id('item_pane').addEventListener('click', _iw.click);
 
-          _iw.equiplist = $equip.list($qs('#item_pane .equiplist'));
-          _iw.equiplist.forEach((eq) => {
-            eq.node.div.dataset.action = 'select';
-            eq.node.lock = eq.node.wrapper.firstElementChild;
-            eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-iw-sub']);
-            $element('span', eq.node.sub, [`潜能等级 ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
-            $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
-          });
+    _iw.equiplist = $equip.list($qs('#item_pane .equiplist'));
+    _iw.equiplist.forEach((eq) => {
+      eq.node.div.dataset.action = 'select';
+      eq.node.lock = eq.node.wrapper.firstElementChild;
+      eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-iw-sub']);
+      $element('span', eq.node.sub, [`IW ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
+    });
 
-          _iw.json = getValue('iw_latest', {});
-          _iw.filter = _query.filter || '1handed';
-          _iw.latest = $id('e' + _iw.json[_iw.filter]);
-          if (_iw.latest) {
-            $qs('#item_pane > .equiplist').prepend(_iw.latest.parentNode);
-            _iw.latest.parentNode.classList.add('hvut-iw-latest');
-            _iw.latest.click();
-          }
-        } else
-          // [END 19] Battle - Item World */
+    _iw.json = $config.get('iw_latest', {});
+    _iw.filter = _query.filter || '1handed';
+    _iw.latest = $id('e' + _iw.json[_iw.filter]);
+    if (_iw.latest) {
+      $qs('#item_pane > .equiplist').prepend(_iw.latest.parentNode);
+      _iw.latest.parentNode.classList.add('hvut-iw-latest');
+      _iw.latest.click();
+    }
+  } else
+  // [END 19] Battle - Item World */
 
-          // eslint-disable-next-line brace-style
-        { } // END OF [else if]; DO NOT REMOVE THIS LINE!
+  // eslint-disable-next-line brace-style
+  {} // END OF [else if]; DO NOT REMOVE THIS LINE!
 
-
-  //* [0] Battle - Equipment Enchant and Repair
-  $supply.display_inventory('bt');
-  // [END 0] Battle - Equipment Enchant and Repair */
+  $battle.init();
 } else
-  // Battle
+// Battle
 
 
-  //* [21] Forge - Upgrade
-  if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
-    _up.exp = { 'Low-Grade': 1, 'Mid-Grade': 5, 'High-Grade': 20, 'Wispy Catalyst': 3, 'Diluted Catalyst': 13, 'Regular Catalyst': 25, 'Robust Catalyst': 63, 'Vibrant Catalyst': 125, 'Coruscating Catalyst': 250 };
-    _up.catalysts = ['Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst'];
+//* [21] Forge - Upgrade
+if (_query.s === 'Forge' && _query.ss === 'up') {
+  _up.exp = { 'Low-Grade': 1, 'Mid-Grade': 5, 'High-Grade': 20, 'Wispy Catalyst': 3, 'Diluted Catalyst': 13, 'Regular Catalyst': 25, 'Robust Catalyst': 63, 'Vibrant Catalyst': 125, 'Coruscating Catalyst': 250 };
+  _up.catalysts = ['Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst'];
 
-    _up.sort = function (object) {
-      const index = ['Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst', 'Low-Grade', 'Mid-Grade', 'High-Grade', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of'];
-      Object.keys(object).sort((a, b) => index.findIndex((e) => a.includes(e)) - index.findIndex((e) => b.includes(e))).forEach((k) => {
-        const v = object[k];
-        delete object[k];
-        object[k] = v;
-      });
-    };
+  _up.sort = function (object) {
+    const index = ['Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst', 'Low-Grade', 'Mid-Grade', 'High-Grade', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of'];
+    Object.keys(object).sort((a, b) => index.findIndex((e) => a.includes(e)) - index.findIndex((e) => b.includes(e))).forEach((k) => {
+      const v = object[k];
+      delete object[k];
+      object[k] = v;
+    });
+  };
 
-    _up.set = function (eq) {
-      eq.upgrade.type = { 'One-handed Weapon': 'Metals', 'Two-handed Weapon': 'Metals', 'Staff': 'Wood', 'Shield': 'Wood', 'Cloth Armor': 'Cloth', 'Light Armor': 'Leather', 'Heavy Armor': 'Metals' }[eq.info.category];
-      eq.upgrade.rare = { 'Phase': 'Crystallized Phazon', 'Shade': 'Shade Fragment', 'Power': 'Repurposed Actuator', 'Force Shield': 'Defense Matrix Modulator' }[eq.info.type];
+  _up.set = function (eq) {
+    eq.upgrade.type = { 'One-handed Weapon': 'Metals', 'Two-handed Weapon': 'Metals', 'Staff': 'Wood', 'Shield': 'Wood', 'Cloth Armor': 'Cloth', 'Light Armor': 'Leather', 'Heavy Armor': 'Metals' }[eq.info.category];
+    eq.upgrade.rare = { 'Phase': 'Crystallized Phazon', 'Shade': 'Shade Fragment', 'Power': 'Repurposed Actuator', 'Force Shield': 'Defense Matrix Modulator' }[eq.info.type];
 
-      let array = new Array(150);
-      array.fill([6, 0, 0], 0);
-      array.fill([5, 1, 0], 5);
-      array.fill([4, 2, 0], 12);
-      array.fill([3, 3, 0], 20);
-      array.fill([2, 4, 0], 27);
-      array.fill([1, 5, 0], 35);
-      array.fill([0, 6, 0], 42);
-      array.fill([0, 5, 1], 55);
-      array.fill([0, 4, 2], 62);
-      array.fill([0, 3, 3], 70);
-      array.fill([0, 2, 4], 77);
-      array.fill([0, 1, 5], 85);
-      array.fill([0, 0, 6], 92);
-      array = array.slice({ 'Sup': 0, 'Exq': 15, 'Mag': 30, 'Leg': 50 }[eq.upgrade.quality] || 0);
-      const catalysts = _up.catalysts.slice({ 'Sup': 0, 'Exq': 1, 'Mag': 2, 'Leg': 3 }[eq.upgrade.quality] || 0);
+    let array = new Array(150);
+    array.fill([6, 0, 0], 0);
+    array.fill([5, 1, 0], 5);
+    array.fill([4, 2, 0], 12);
+    array.fill([3, 3, 0], 20);
+    array.fill([2, 4, 0], 27);
+    array.fill([1, 5, 0], 35);
+    array.fill([0, 6, 0], 42);
+    array.fill([0, 5, 1], 55);
+    array.fill([0, 4, 2], 62);
+    array.fill([0, 3, 3], 70);
+    array.fill([0, 2, 4], 77);
+    array.fill([0, 1, 5], 85);
+    array.fill([0, 0, 6], 92);
+    array = array.slice({ 'Sup': 0, 'Exq': 15, 'Mag': 30, 'Leg': 50 }[eq.upgrade.quality] || 0);
+    const catalysts = _up.catalysts.slice({ 'Sup': 0, 'Exq': 1, 'Mag': 2, 'Leg': 3 }[eq.upgrade.quality] || 0);
 
-      eq.upgrade.requires_50.length = 0;
-      eq.upgrade.requires_100.length = 0;
-      array.slice(0, 100).forEach((e, i) => {
-        const _100 = { materials: {} };
-        if (e[0]) { _100.materials['Low-Grade ' + eq.upgrade.type] = e[0]; }
-        if (e[1]) { _100.materials['Mid-Grade ' + eq.upgrade.type] = e[1]; }
-        if (e[2]) { _100.materials['High-Grade ' + eq.upgrade.type] = e[2]; }
-        if (i > 4 && !_isekai) {
-          _100.binding = true;
+    eq.upgrade.requires_50.length = 0;
+    eq.upgrade.requires_100.length = 0;
+    array.slice(0, 100).forEach((e, i) => {
+      const _100 = { materials: {} };
+      if (e[0]) { _100.materials['Low-Grade ' + eq.upgrade.type] = e[0]; }
+      if (e[1]) { _100.materials['Mid-Grade ' + eq.upgrade.type] = e[1]; }
+      if (e[2]) { _100.materials['High-Grade ' + eq.upgrade.type] = e[2]; }
+      if (i > 4 && !$config.isekai) {
+        _100.binding = true;
+      }
+      _100.forge_exp = _up.exp['Low-Grade'] * e[0] + _up.exp['Mid-Grade'] * e[1] + _up.exp['High-Grade'] * e[2];
+
+      if (i < 5 || i < 95 && i % 2 === 0) {
+        const j = i < 5 ? i : 4 + (i - 4) / 2;
+        const _50 = JSON.parse(JSON.stringify(_100));
+        const c = catalysts[j < 13 ? 0 : j < 25 ? 1 : 2];
+        _50.materials[c] = 1;
+        _50.forge_exp += _up.exp[c];
+        _50.gear_exp = Math.ceil(_50.forge_exp / 10);
+        eq.upgrade.requires_50.push(_50);
+      }
+
+      const c = catalysts[i < 25 ? 0 : i < 50 ? 1 : 2];
+      _100.materials[c] = 1;
+      _100.forge_exp += _up.exp[c];
+      _100.gear_exp = Math.ceil(_100.forge_exp / 10);
+      eq.upgrade.requires_100.push(_100);
+    });
+  };
+
+  _up.calc = function (eq, up, t) {
+    up.materials = {};
+    up.forge_exp = 0;
+    up.gear_exp = 0;
+    let from;
+    let to;
+    if (t) {
+      from = up.level;
+      to = up.to;
+    } else {
+      from = 0;
+      to = up.level;
+    }
+    up.requires.slice(from, to).forEach((c) => {
+      Object.keys(c.materials).forEach((n) => {
+        if (!up.materials[n]) {
+          up.materials[n] = 0;
         }
-        _100.forge_exp = _up.exp['Low-Grade'] * e[0] + _up.exp['Mid-Grade'] * e[1] + _up.exp['High-Grade'] * e[2];
-
-        if (i < 5 || i < 95 && i % 2 === 0) {
-          const j = i < 5 ? i : 4 + (i - 4) / 2;
-          const _50 = JSON.parse(JSON.stringify(_100));
-          const c = catalysts[j < 13 ? 0 : j < 25 ? 1 : 2];
-          _50.materials[c] = 1;
-          _50.forge_exp += _up.exp[c];
-          _50.gear_exp = Math.ceil(_50.forge_exp / 10);
-          eq.upgrade.requires_50.push(_50);
-        }
-
-        const c = catalysts[i < 25 ? 0 : i < 50 ? 1 : 2];
-        _100.materials[c] = 1;
-        _100.forge_exp += _up.exp[c];
-        _100.gear_exp = Math.ceil(_100.forge_exp / 10);
-        eq.upgrade.requires_100.push(_100);
+        up.materials[n] += c.materials[n];
       });
-    };
+      if (c.binding) {
+        if (!up.materials[up.binding]) {
+          up.materials[up.binding] = 0;
+        }
+        up.materials[up.binding]++;
+      }
+      up.forge_exp += c.forge_exp;
+      up.gear_exp += c.gear_exp;
+    });
+    if (eq.upgrade.rare && to > eq.upgrade.level) {
+      up.materials[eq.upgrade.rare] = to - eq.upgrade.level;
+    }
+    _up.sort(up.materials);
+  };
 
-    _up.calc = function (eq, up, t) {
-      up.materials = {};
-      up.forge_exp = 0;
-      up.gear_exp = 0;
-      let from;
-      let to;
+  _up.sum = function (eq, t) {
+    const materials = {};
+    let level = 0;
+    let forge_exp = 0;
+    let gear_exp = 0;
+    eq.upgrade.list.forEach((up) => {
       if (t) {
-        from = up.level;
-        to = up.to;
-      } else {
-        from = 0;
-        to = up.level;
-      }
-      up.requires.slice(from, to).forEach((c) => {
-        Object.keys(c.materials).forEach((n) => {
-          if (!up.materials[n]) {
-            up.materials[n] = 0;
-          }
-          up.materials[n] += c.materials[n];
-        });
-        if (c.binding) {
-          if (!up.materials[up.binding]) {
-            up.materials[up.binding] = 0;
-          }
-          up.materials[up.binding]++;
+        if (!up.valid || !up.to || up.to === up.level) {
+          return;
         }
-        up.forge_exp += c.forge_exp;
-        up.gear_exp += c.gear_exp;
-      });
-      if (eq.upgrade.rare && to > eq.upgrade.level) {
-        up.materials[eq.upgrade.rare] = to - eq.upgrade.level;
+        if (level < up.to) {
+          level = up.to;
+        }
       }
-      _up.sort(up.materials);
+      Object.keys(up.materials).forEach((n) => {
+        if (!materials[n]) {
+          materials[n] = 0;
+        }
+        materials[n] += up.materials[n];
+      });
+      forge_exp += up.forge_exp;
+      gear_exp += up.gear_exp;
+    });
+    if (eq.info?.soulbound) {
+      gear_exp *= 2;
+    }
+    if (t) {
+      if (eq.upgrade.rare && level > eq.upgrade.level) {
+        materials[eq.upgrade.rare] = level - eq.upgrade.level;
+      }
+    } else {
+      if (eq.upgrade.rare) {
+        materials[eq.upgrade.rare] = eq.upgrade.level;
+      }
+    }
+    _up.sort(materials);
+
+    const prices = $price.get('Materials');
+    const credits = Object.keys(materials).reduce((s, e) => (s + materials[e] * (prices[e] || 0)), 0);
+
+    return { materials, credits, forge_exp, gear_exp };
+  };
+
+  _up.salvage_calc = function (q) {
+    let text = _up.node.salvage_equip.value.trim();
+    if (!text) {
+      return;
+    }
+    text = split2(text, 'Current Owner:')[0].replace(/( (?:of|the))\n/g, '$1 ').replace(/\n((?:Of|The) )/g, ' $1');
+    let eq = text.split('\n').map((t) => t.trim()).reverse().find((t) => $equip.parse.name(t).info.type);
+    if (!eq) {
+      alert('Couldn\'t find the name of the equipment.');
+      return;
+    }
+    eq = $equip.parse.name(eq);
+    let pxp = null;
+    let quality;
+    if (q) {
+      pxp = 0;
+      quality = q;
+    } else if (/Potency Tier: (\d+) \(\d+ \/ (\d+)\)/.test(text)) {
+      pxp = $equip.calcpxp(RegExp.$2, RegExp.$1);
+      quality = pxp >= 348 ? 'Leg' : pxp >= 335 ? 'Mag' : pxp >= 313 ? 'Exq' : 'Sup';
+    } else {
+      quality = { 'Superior': 'Sup', 'Exquisite': 'Exq', 'Magnificent': 'Mag', 'Legendary': 'Leg', 'Peerless': 'Leg' }[eq.info.quality] || 'Sup';
+    }
+    _up.node.salvage_quality.value = '';
+
+    eq.upgrade = {
+      list: [],
+      quality: quality,
+      level: 0,
+      requires_50: [],
+      requires_100: [],
     };
 
-    _up.sum = function (eq, t) {
-      const materials = {};
-      let level = 0;
-      let forge_exp = 0;
-      let gear_exp = 0;
-      eq.upgrade.list.forEach((up) => {
-        if (t) {
-          if (!up.valid || !up.to || up.to === up.level) {
-            return;
-          }
-          if (level < up.to) {
-            level = up.to;
-          }
-        }
-        Object.keys(up.materials).forEach((n) => {
-          if (!materials[n]) {
-            materials[n] = 0;
-          }
-          materials[n] += up.materials[n];
-        });
-        forge_exp += up.forge_exp;
-        gear_exp += up.gear_exp;
-      });
-      if (eq.info?.soulbound) {
-        gear_exp *= 2;
-      }
-      if (t) {
-        if (eq.upgrade.rare && level > eq.upgrade.level) {
-          materials[eq.upgrade.rare] = level - eq.upgrade.level;
-        }
-      } else {
-        if (eq.upgrade.rare) {
-          materials[eq.upgrade.rare] = eq.upgrade.level;
-        }
-      }
-      _up.sort(materials);
-
-      const prices = $price.get('Materials');
-      const credits = Object.keys(materials).reduce((s, e) => s + materials[e] * (prices[e] || 0), 0);
-
-      return { materials, credits, forge_exp, gear_exp };
-    };
-
-    _up.salvage_calc = function (q) {
-      let text = _up.node.salvage_equip.value.trim();
-      if (!text) {
+    Array.from(text.matchAll(/([\w ]+) Lv\.(\d+)/g)).forEach((m) => {
+      const forge = m[1].trim();
+      const [name, stat] = Object.entries($equip.stats).find(([, s]) => s.forge === forge) || [];
+      if (!name) {
         return;
       }
-      text = text.replace(/( (?:of|the))\n/g, '$1 ').replace(/\n((?:Of|The) )/g, ' $1');
-      let eq = text.split('\n').reverse().find((t) => $equip.parse.name(t.trim()).info.type);
-      if (!eq) {
-        alert("无法找到装备名称.");
-        return;
-      }
-      eq = $equip.parse.name(eq);
-      let pxp = null;
-      let quality;
-      if (q) {
-        pxp = 0;
-        quality = q;
-      } else if (/Potency Tier: (\d+) \(\d+ \/ (\d+)\)/.test(text)) {
-        pxp = $equip.calcpxp(RegExp.$2, RegExp.$1);
-        quality = pxp >= 348 ? 'Leg' : pxp >= 335 ? 'Mag' : pxp >= 313 ? 'Exq' : 'Sup';
-      } else {
-        quality = { 'Superior': 'Sup', 'Exquisite': 'Exq', 'Magnificent': 'Mag', 'Legendary': 'Leg', 'Peerless': 'Leg' }[eq.info.quality] || 'Sup';
-      }
-      _up.node.salvage_quality.value = '';
-
-      eq.upgrade = {
-        list: [],
-        quality: quality,
-        level: 0,
-        requires_50: [],
-        requires_100: [],
+      const max = forge === 'Physical Damage' || forge === 'Magical Damage' ? 100 : 50;
+      const up = {
+        name: name,
+        forge: forge,
+        binding: stat.binding,
+        level: parseInt(m[2]),
+        requires: max === 100 ? eq.upgrade.requires_100 : eq.upgrade.requires_50,
+        materials: {},
+        forge_exp: 0,
+        gear_exp: 0,
       };
+      if (eq.upgrade.level < up.level) {
+        eq.upgrade.level = up.level;
+      }
+      eq.upgrade.list.push(up);
+    });
 
-      Array.from(text.matchAll(/([\w ]+) Lv\.(\d+)/g)).forEach((m) => {
-        const forge = m[1].trim();
-        const [name, stat] = Object.entries($equip.stats).find(([, s]) => s.forge === forge) || [];
-        if (!name) {
-          return;
-        }
-        const max = forge === 'Physical Damage' || forge === 'Magical Damage' ? 100 : 50;
-        const up = {
-          name: name,
-          forge: forge,
-          binding: stat.binding,
-          level: parseInt(m[2]),
-          requires: max === 100 ? eq.upgrade.requires_100 : eq.upgrade.requires_50,
-          materials: {},
-          forge_exp: 0,
-          gear_exp: 0,
-        };
-        if (eq.upgrade.level < up.level) {
-          eq.upgrade.level = up.level;
-        }
-        eq.upgrade.list.push(up);
-      });
+    _up.set(eq);
+    eq.upgrade.list.forEach((up) => { _up.calc(eq, up); });
 
-      _up.set(eq);
-      eq.upgrade.list.forEach((up) => { _up.calc(eq, up); });
+    const { materials, credits } = _up.sum(eq);
+    const return_materials = {};
+    let return_credits = 0;
+    const prices = $price.get('Materials');
+    Object.keys(materials).forEach((n) => {
+      if (n.includes('Catalyst')) {
+        return;
+      }
+      return_materials[n] = Math.floor(materials[n] * 0.9);
+      return_credits += return_materials[n] * (prices[n] || 0);
+    });
 
-      const { materials, credits } = _up.sum(eq);
-      const return_materials = {};
-      let return_credits = 0;
-      const prices = $price.get('Materials');
-      Object.keys(materials).forEach((n) => {
-        if (n.includes('Catalyst')) {
-          return;
-        }
-        return_materials[n] = Math.floor(materials[n] * 0.9);
-        return_credits += return_materials[n] * (prices[n] || 0);
-      });
-
-      const pxp_text = pxp ? `${quality} (${pxp})`
+    const pxp_text = pxp ? `${quality} (${pxp})`
       : pxp === 0 ? `${quality} (Selected)`
-      : `${quality} ?? (无法计算这件装备的潜经验,可能是潜能等级已满)`;
+      : `${quality} ?? (Unable to calculate the base PXP of this equipment)`;
 
-      _up.node.salvage_summary.innerHTML = `
+    _up.node.salvage_summary.innerHTML = `
       <li>${eq.info.name}</li>
-      <li>PXP 质量: ${pxp_text}</li>
-      <li>升级开销: ${credits.toLocaleString()}</li>
-      <li>分解返还: ${return_credits.toLocaleString()}</li>`;
+      <li>PXP Quality: ${pxp_text}</li>
+      <li>Upgrade Cost: ${credits.toLocaleString()}</li>
+      <li>Returns Value: ${return_credits.toLocaleString()}</li>`;
 
-      const materialMapping = {
-        'Binding of Slaughter': '粘合剂 基础攻击伤害',
-        'Binding of Balance': '粘合剂 物理命中率',
-        'Binding of Isaac': '粘合剂 物理暴击率',
-        'Binding of Destruction': '粘合剂 基础魔法伤害',
-        'Binding of Focus': '粘合剂 魔法命中率',
-        'Binding of Friendship': '粘合剂 魔法暴击率',
-        'Binding of Protection': '粘合剂 物理减伤',
-        'Binding of Warding': '粘合剂 魔法减伤',
-        'Binding of the Fleet': '粘合剂 回避率',
-        'Binding of the Barrier': '粘合剂 格挡率',
-        'Binding of the Nimble': '粘合剂 招架率',
-        'Binding of Negation': '粘合剂 抵抗率',
-        'Binding of the Ox': '粘合剂 力量',
-        'Binding of the Raccoon': '粘合剂 灵巧',
-        'Binding of the Cheetah': '粘合剂 敏捷',
-        'Binding of the Turtle': '粘合剂 体质',
-        'Binding of the Fox': '粘合剂 智力',
-        'Binding of the Owl': '粘合剂 智慧',
-        'Binding of the Elementalist': '粘合剂 元素魔法熟练度',
-        'Binding of the Heaven-sent': '粘合剂 神圣魔法熟练度',
-        'Binding of the Demon-fiend': '粘合剂 黑暗魔法熟练度',
-        'Binding of the Curse-weaver': '粘合剂 减益魔法熟练度',
-        'Binding of the Earth-walker': '粘合剂 增益魔法熟练度',
-        'Binding of Surtr': '粘合剂 火属性咒语伤害',
-        'Binding of Niflheim': '粘合剂 冰属性咒语伤害',
-        'Binding of Mjolnir': '粘合剂 雷属性咒语伤害',
-        'Binding of Freyr': '粘合剂 风属性咒语伤害',
-        'Binding of Heimdall': '粘合剂 圣属性咒语伤害',
-        'Binding of Fenrir': '粘合剂 暗属性咒语伤害',
-        'Binding of Dampening': '粘合剂 打击减伤',
-        'Binding of Stoneskin': '粘合剂 斩击减伤',
-        'Binding of Deflection': '粘合剂 刺击减伤',
-        'Binding of the Fire-eater': '粘合剂 火属性减伤',
-        'Binding of the Frost-born': '粘合剂 冰属性减伤',
-        'Binding of the Thunder-child': '粘合剂 雷属性减伤',
-        'Binding of the Wind-waker': '粘合剂 风属性减伤',
-        'Binding of the Thrice-blessed': '粘合剂 圣属性减伤',
-        'Binding of the Spirit-ward': '粘合剂 暗属性减伤',
-        'Wispy Catalyst': '纤细 催化剂',
-        'Diluted Catalyst': '稀释 催化剂',
-        'Regular Catalyst': '平凡 催化剂',
-        'Robust Catalyst': '稳健 催化剂',
-        'Vibrant Catalyst': '活力 催化剂',
-        'Coruscating Catalyst': '闪耀 催化剂',
-        'Low-Grade Cloth': '低级布料',
-        'Mid-Grade Cloth': '中级布料',
-        'High-Grade Cloth': '高级布料',
-        'Low-Grade Leather': '低级皮革',
-        'Mid-Grade Leather': '中级皮革',
-        'High-Grade Leather': '高级皮革',
-        'Low-Grade Metals': '低级金属',
-        'Mid-Grade Metals': '中级金属',
-        'High-Grade Metals': '高级金属',
-        'Low-Grade Wood': '低级木材',
-        'Mid-Grade Wood': '中级木材',
-        'High-Grade Wood': '高级木材',
-        'Scrap Metal': '金属废料',
-        'Scrap Leather': '皮革废料',
-        'Scrap Wood': '木材废料',
-        'Scrap Cloth': '废布料',
-        'Energy Cell': '能量元',
-        'Defense Matrix Modulator': '力场碎片(盾)',
-        'Repurposed Actuator': '动力碎片(重)',
-        'Shade Fragment': '暗影碎片(轻)',
-        'Crystallized Phazon': '相位碎片(布)',
-      };
-
-      _up.node.salvage_returns.innerHTML = '<tr><td>已花费升级材料名称</td><td>数量</td><td>返还数量</td><td>单价</td></tr>';
-      Object.keys(materials).forEach((n) => {
-        const translatedName = materialMapping[n] || n;
-        const u = materials[n] || '';
-        const r = return_materials[n] || '';
-        const p = prices[n] || '';
-        if (u) {
-          $element('tr', _up.node.salvage_returns, [`/<td>${translatedName}</td><td>${u}</td><td>${r}</td><td>${p}</td>`]);
-        }
-      });
-    };
-
-    _up.salvage_init = function () {
-      if (_up.salvage_init.inited) {
-        return;
+    _up.node.salvage_returns.innerHTML = '<tr><td>Materials</td><td>Upgrade</td><td>Returns</td><td>Unit Price</td></tr>';
+    Object.keys(materials).forEach((n) => {
+      const u = materials[n] || '';
+      const r = return_materials[n] || '';
+      const p = prices[n] || '';
+      if (u) {
+        $element('tr', _up.node.salvage_returns, [`/<td>${n}</td><td>${u}</td><td>${r}</td><td>${p}</td>`]);
       }
-      _up.salvage_init.inited = true;
+    });
+  };
 
-      _up.node.salvage = $element('div', $id('mainpane'), ['.hvut-up-salvage']);
-      const left = $element('div', _up.node.salvage);
-      const right = $element('div', _up.node.salvage);
-      if (_up.equip) {
-        $input(['button', _up.equip.info.name], left, { style: 'min-width: 350px; margin-bottom: 20px;' }, () => { _up.node.salvage_equip.value = $id('leftpane').textContent; _up.salvage_calc(_up.equip.upgrade.quality); });
-        $element('br', left);
-      }
-      _up.node.salvage_quality = $element('select', left);
-      _up.node.salvage_quality.append(
-        $element('option', null, { text: 'PXP Quality', value: '' }),
-        $element('option', null, { text: 'Leg (348~)', value: 'Leg' }),
-        $element('option', null, { text: 'Mag (335~348)', value: 'Mag' }),
-        $element('option', null, { text: 'Exq (313~335)', value: 'Exq' }),
-        $element('option', null, { text: 'Sup (~313)', value: 'Sup' })
-      );
-      $input(['button', '计算'], left, null, () => { _up.salvage_calc(_up.node.salvage_quality.value); });
-      $input(['button', '材料价格'], left, null, () => { $price.edit('Materials', _up.salvage_calc); });
-      $input(['button', '关闭'], left, null, () => { _up.salvage_toggle(); });
-      _up.node.salvage_equip = $element('textarea', left, { placeholder: '使用原文切换功能将装备的英文数据复制至此,包括装备名称' });
-      _up.node.salvage_summary = $element('ul', right);
-      _up.node.salvage_returns = $element('table', right);
-    };
+  _up.salvage_init = function () {
+    if (_up.salvage_init.inited) {
+      return;
+    }
+    _up.salvage_init.inited = true;
 
-    _up.salvage_toggle = function () {
-      _up.node.salvage?.classList.toggle('hvut-none');
-      _up.salvage_init();
-    };
+    _up.node.salvage = $element('div', $id('mainpane'), ['.hvut-up-salvage']);
+    const left = $element('div', _up.node.salvage);
+    const right = $element('div', _up.node.salvage);
+    if (_up.equip) {
+      $input(['button', _up.equip.info.name], left, { style: 'min-width: 350px; margin-bottom: 20px;' }, () => { _up.node.salvage_equip.value = $id('leftpane').textContent; _up.salvage_calc(_up.equip.upgrade.quality); });
+      $element('br', left);
+    }
+    _up.node.salvage_quality = $input(['select', [':PXP Quality', 'Leg:Leg (348~)', 'Mag:Mag (335~348)', 'Exq:Exq (313~335)', 'Sup:Sup (~313)']], left);
+    $input(['button', 'Calculate'], left, null, () => { _up.salvage_calc(_up.node.salvage_quality.value); });
+    $input(['button', 'Item Prices'], left, null, () => { $price.edit('Materials', 'ma', _up.salvage_calc); });
+    $input(['button', 'Close'], left, null, () => { _up.salvage_toggle(); });
+    _up.node.salvage_equip = $element('textarea', left, { placeholder: 'Copy the full text of the equipment pop-up and paste it here.' });
+    _up.node.salvage_summary = $element('ul', right);
+    _up.node.salvage_returns = $element('table', right);
+  };
 
-    GM_addStyle(/*css*/`
+  _up.salvage_toggle = function () {
+    _up.node.salvage?.classList.toggle('hvut-none');
+    _up.salvage_init();
+  };
+
+  GM_addStyle(/*css*/`
     .hvut-up-salvage { position: absolute; top: 27px; left: 0; width: 100%; height: 675px; display: flex; justify-content: center; align-items: center; background-color: #EDEBDF; font-size: 10pt; line-height: 20px; z-index: 3; }
     .hvut-up-salvage > div { height: 550px; margin: 0 30px; white-space: nowrap; }
     .hvut-up-salvage > div:first-child { width: 400px; }
@@ -11953,352 +10575,192 @@ if (_query.s === 'Battle' && $id('initform')) {
     .hvut-up-salvage td:nth-child(4) { width: 80px; }
   `);
 
-    _up.node = {};
+  _up.node = {};
 
-    if ($id('equip_extended')) {
-      _up.upgrade_change = function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, forge } = target.dataset;
-        const up = forge && _up.equip.upgrade.list.find((up) => up.forge === forge);
-        if (action === 'calc') {
-          _up.upgrade_calc(up);
-        }
-      };
+  if ($id('equip_extended')) {
+    _up.upgrade_change = function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) {
+        return;
+      }
+      const { action, forge } = target.dataset;
+      const up = forge && _up.equip.upgrade.list.find((up) => up.forge === forge);
+      if (action === 'calc') {
+        _up.upgrade_calc(up);
+      }
+    };
 
-      _up.upgrade_validate = function (up) {
-        const eq = _up.equip;
-        if (up.node.to.validity.valid) {
-          if (up.node.to.value) {
-            up.to = parseInt(up.node.to.value);
-          } else {
-            up.to = up.level;
-          }
-          up.valid = true;
+    _up.upgrade_validate = function (up) {
+      const eq = _up.equip;
+      if (up.node.to.validity.valid) {
+        if (up.node.to.value) {
+          up.to = parseInt(up.node.to.value);
         } else {
           up.to = up.level;
-          up.valid = false;
         }
-        _up.calc(eq, up, true);
-        up.node.table.innerHTML = '';
+        up.valid = true;
+      } else {
+        up.to = up.level;
+        up.valid = false;
+      }
+      _up.calc(eq, up, true);
+      up.node.table.innerHTML = '';
+      const prices = $price.get('Materials');
+      Object.entries(up.materials).forEach(([name, count]) => {
+        const stock = $item.count(name);
+        const price = prices[name];
+        const className = stock < count ? '.hvut-up-nostock' : '';
+        $element('tr', up.node.table, [`/<td>${name}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
+      });
+    };
 
-        const materialMapping = {
-          'Binding of Slaughter': '粘合剂 基础攻击伤害',
-          'Binding of Balance': '粘合剂 物理命中率',
-          'Binding of Isaac': '粘合剂 物理暴击率',
-          'Binding of Destruction': '粘合剂 基础魔法伤害',
-          'Binding of Focus': '粘合剂 魔法命中率',
-          'Binding of Friendship': '粘合剂 魔法暴击率',
-          'Binding of Protection': '粘合剂 物理减伤',
-          'Binding of Warding': '粘合剂 魔法减伤',
-          'Binding of the Fleet': '粘合剂 回避率',
-          'Binding of the Barrier': '粘合剂 格挡率',
-          'Binding of the Nimble': '粘合剂 招架率',
-          'Binding of Negation': '粘合剂 抵抗率',
-          'Binding of the Ox': '粘合剂 力量',
-          'Binding of the Raccoon': '粘合剂 灵巧',
-          'Binding of the Cheetah': '粘合剂 敏捷',
-          'Binding of the Turtle': '粘合剂 体质',
-          'Binding of the Fox': '粘合剂 智力',
-          'Binding of the Owl': '粘合剂 智慧',
-          'Binding of the Elementalist': '粘合剂 元素魔法熟练度',
-          'Binding of the Heaven-sent': '粘合剂 神圣魔法熟练度',
-          'Binding of the Demon-fiend': '粘合剂 黑暗魔法熟练度',
-          'Binding of the Curse-weaver': '粘合剂 减益魔法熟练度',
-          'Binding of the Earth-walker': '粘合剂 增益魔法熟练度',
-          'Binding of Surtr': '粘合剂 火属性咒语伤害',
-          'Binding of Niflheim': '粘合剂 冰属性咒语伤害',
-          'Binding of Mjolnir': '粘合剂 雷属性咒语伤害',
-          'Binding of Freyr': '粘合剂 风属性咒语伤害',
-          'Binding of Heimdall': '粘合剂 圣属性咒语伤害',
-          'Binding of Fenrir': '粘合剂 暗属性咒语伤害',
-          'Binding of Dampening': '粘合剂 打击减伤',
-          'Binding of Stoneskin': '粘合剂 斩击减伤',
-          'Binding of Deflection': '粘合剂 刺击减伤',
-          'Binding of the Fire-eater': '粘合剂 火属性减伤',
-          'Binding of the Frost-born': '粘合剂 冰属性减伤',
-          'Binding of the Thunder-child': '粘合剂 雷属性减伤',
-          'Binding of the Wind-waker': '粘合剂 风属性减伤',
-          'Binding of the Thrice-blessed': '粘合剂 圣属性减伤',
-          'Binding of the Spirit-ward': '粘合剂 暗属性减伤',
-          'Wispy Catalyst': '纤细 催化剂',
-          'Diluted Catalyst': '稀释 催化剂',
-          'Regular Catalyst': '平凡 催化剂',
-          'Robust Catalyst': '稳健 催化剂',
-          'Vibrant Catalyst': '活力 催化剂',
-          'Coruscating Catalyst': '闪耀 催化剂',
-          'Low-Grade Cloth': '低级布料',
-          'Mid-Grade Cloth': '中级布料',
-          'High-Grade Cloth': '高级布料',
-          'Low-Grade Leather': '低级皮革',
-          'Mid-Grade Leather': '中级皮革',
-          'High-Grade Leather': '高级皮革',
-          'Low-Grade Metals': '低级金属',
-          'Mid-Grade Metals': '中级金属',
-          'High-Grade Metals': '高级金属',
-          'Low-Grade Wood': '低级木材',
-          'Mid-Grade Wood': '中级木材',
-          'High-Grade Wood': '高级木材',
-          'Scrap Metal': '金属废料',
-          'Scrap Leather': '皮革废料',
-          'Scrap Wood': '木材废料',
-          'Scrap Cloth': '废布料',
-          'Energy Cell': '能量元',
-          'Defense Matrix Modulator': '力场碎片(盾)',
-          'Repurposed Actuator': '动力碎片(重)',
-          'Shade Fragment': '暗影碎片(轻)',
-          'Crystallized Phazon': '相位碎片(布)',
-        };
+    _up.upgrade_calc = function (up) {
+      _up.upgrade_validate(up);
 
-        Object.entries(up.materials).forEach(([n, c]) => {
-          const translatedName = materialMapping[n] || n;
-          const s = $item.count(n);
-          $element('tr', up.node.table, [`/<td>${translatedName}</td><td>${c}</td><td>${s}</td>`, s < c ? '.hvut-up-nostock' : '']);
-        });
-      };
-
-      _up.upgrade_calc = function (up) {
-        _up.upgrade_validate(up);
-
-        const eq = _up.equip;
-        const stat = eq.stats[up.name];
-        if (up.to === up.level) {
-          stat.span.textContent = stat.value;
+      const eq = _up.equip;
+      const stat = eq.stats[up.name];
+      if (up.to === up.level) {
+        stat.span.textContent = stat.value;
+      } else {
+        const value = Math.round($equip.forge(up.name, stat.unforged, up.to, eq.info.pxp, eq.info.level || _player.level, eq.upgrades) * 100) / 100;
+        if ($equip.stats[up.name].multi) {
+          const increase = (1 - (1 - value / 100) / (1 - stat.value / 100)) * 100;
+          const title = 'Multiplicative Increase';
+          stat.span.innerHTML = `${value}<br><span class="hvut-up-span" title="${title}">~${Math.round(increase * 100) / 100} %</span>`;
         } else {
-          const value = Math.round($equip.forge(up.name, stat.unforged, up.to, eq.info.pxp, eq.info.level || _player.level, eq.upgrades) * 100) / 100;
-          if ($equip.stats[up.name].multi) {
-            const increase = (1 - (1 - value / 100) / (1 - stat.value / 100)) * 100;
-            const title = 'Multiplicative Increase';
-            stat.span.innerHTML = `${value}<br><span class="hvut-up-span" title="${title}">~${Math.round(increase * 100) / 100} %</span>`;
-          } else {
-            const increase = value - stat.value;
-            const title = 'Additive Increase';
-            stat.span.innerHTML = `${value}<br><span class="hvut-up-span" title="${title}">+${Math.round(increase * 100) / 100}</span>`;
-          }
+          const increase = value - stat.value;
+          const title = 'Additive Increase';
+          stat.span.innerHTML = `${value}<br><span class="hvut-up-span" title="${title}">+${Math.round(increase * 100) / 100}</span>`;
         }
-        _up.upgrade_sum();
-      };
+      }
+      _up.upgrade_sum();
+    };
 
-      _up.upgrade_sum = function () {
-        const eq = _up.equip;
-        const { materials, credits, forge_exp, gear_exp } = _up.sum(eq, true);
-        eq.upgrade.materials = materials;
+    _up.upgrade_sum = function () {
+      const eq = _up.equip;
+      const { materials, credits, forge_exp, gear_exp } = _up.sum(eq, true);
+      eq.upgrade.materials = materials;
 
-        let tier = eq.info.tier;
-        let pxp1 = eq.info.pxp1 + gear_exp;
-        let pxp2 = eq.info.pxp2;
-        while (tier < 10 && pxp1 >= pxp2) {
-          tier++;
-          pxp1 -= pxp2;
-          pxp2 = Math.ceil(eq.info.pxp * Math.pow(1 + eq.info.pxp / 1000, tier));
-        }
-        const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(已满)';
+      let tier = eq.info.tier;
+      let pxp1 = eq.info.pxp1 + gear_exp;
+      let pxp2 = eq.info.pxp2;
+      while (tier < 10 && pxp1 >= pxp2) {
+        tier++;
+        pxp1 -= pxp2;
+        pxp2 = Math.ceil(eq.info.pxp * Math.pow(1 + eq.info.pxp / 1000, tier));
+      }
+      const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(MAX)';
 
-        _up.node.summary.innerHTML = `
-        <li><span>获得锻造经验</span><span>${forge_exp.toLocaleString()}</span></li>
-        <li><span>获得潜经验</span><span>${gear_exp.toLocaleString()}</span></li>
-        <li><span>潜经验</span><span>${tier} ${pxp_text}</span></li>
-        <li><span>预计强化成本</span><span>${credits.toLocaleString()}</span></li>`;
+      _up.node.summary.innerHTML = `
+        <li><span>Forge EXP</span><span>${forge_exp.toLocaleString()}</span></li>
+        <li><span>Gear EXP</span><span>${gear_exp.toLocaleString()}</span></li>
+        <li><span>Potency Tier</span><span>${tier} ${pxp_text}</span></li>
+        <li><span>Total Cost</span><span>${credits.toLocaleString()}</span></li>`;
 
-        const materialMapping = {
-          'Binding of Slaughter': '粘合剂 基础攻击伤害',
-          'Binding of Balance': '粘合剂 物理命中率',
-          'Binding of Isaac': '粘合剂 物理暴击率',
-          'Binding of Destruction': '粘合剂 基础魔法伤害',
-          'Binding of Focus': '粘合剂 魔法命中率',
-          'Binding of Friendship': '粘合剂 魔法暴击率',
-          'Binding of Protection': '粘合剂 物理减伤',
-          'Binding of Warding': '粘合剂 魔法减伤',
-          'Binding of the Fleet': '粘合剂 回避率',
-          'Binding of the Barrier': '粘合剂 格挡率',
-          'Binding of the Nimble': '粘合剂 招架率',
-          'Binding of Negation': '粘合剂 抵抗率',
-          'Binding of the Ox': '粘合剂 力量',
-          'Binding of the Raccoon': '粘合剂 灵巧',
-          'Binding of the Cheetah': '粘合剂 敏捷',
-          'Binding of the Turtle': '粘合剂 体质',
-          'Binding of the Fox': '粘合剂 智力',
-          'Binding of the Owl': '粘合剂 智慧',
-          'Binding of the Elementalist': '粘合剂 元素魔法熟练度',
-          'Binding of the Heaven-sent': '粘合剂 神圣魔法熟练度',
-          'Binding of the Demon-fiend': '粘合剂 黑暗魔法熟练度',
-          'Binding of the Curse-weaver': '粘合剂 减益魔法熟练度',
-          'Binding of the Earth-walker': '粘合剂 增益魔法熟练度',
-          'Binding of Surtr': '粘合剂 火焰魔法伤害',
-          'Binding of Niflheim': '粘合剂 冰冷魔法伤害',
-          'Binding of Mjolnir': '粘合剂 闪电魔法伤害',
-          'Binding of Freyr': '粘合剂 疾风魔法伤害',
-          'Binding of Heimdall': '粘合剂 神圣魔法伤害',
-          'Binding of Fenrir': '粘合剂 黑暗魔法伤害',
-          'Binding of Dampening': '粘合剂 打击减伤',
-          'Binding of Stoneskin': '粘合剂 斩击减伤',
-          'Binding of Deflection': '粘合剂 刺击减伤',
-          'Binding of the Fire-eater': '粘合剂 火焰减伤',
-          'Binding of the Frost-born': '粘合剂 冰冷减伤',
-          'Binding of the Thunder-child': '粘合剂 闪电减伤',
-          'Binding of the Wind-waker': '粘合剂 疾风减伤',
-          'Binding of the Thrice-blessed': '粘合剂 神圣减伤',
-          'Binding of the Spirit-ward': '粘合剂 黑暗减伤',
-          'Wispy Catalyst': '纤细 催化剂',
-          'Diluted Catalyst': '稀释 催化剂',
-          'Regular Catalyst': '平凡 催化剂',
-          'Robust Catalyst': '稳健 催化剂',
-          'Vibrant Catalyst': '活力 催化剂',
-          'Coruscating Catalyst': '闪耀 催化剂',
-          'Low-Grade Cloth': '低级布料',
-          'Mid-Grade Cloth': '中级布料',
-          'High-Grade Cloth': '高级布料',
-          'Low-Grade Leather': '低级皮革',
-          'Mid-Grade Leather': '中级皮革',
-          'High-Grade Leather': '高级皮革',
-          'Low-Grade Metals': '低级金属',
-          'Mid-Grade Metals': '中级金属',
-          'High-Grade Metals': '高级金属',
-          'Low-Grade Wood': '低级木材',
-          'Mid-Grade Wood': '中级木材',
-          'High-Grade Wood': '高级木材',
-          'Scrap Metal': '金属废料',
-          'Scrap Leather': '皮革废料',
-          'Scrap Wood': '木材废料',
-          'Scrap Cloth': '废布料',
-          'Energy Cell': '能量元',
-          'Defense Matrix Modulator': '力场碎片(盾)',
-          'Repurposed Actuator': '动力碎片(重)',
-          'Shade Fragment': '暗影碎片(轻)',
-          'Crystallized Phazon': '相位碎片(布)',
-        };
+      _up.node.costs.innerHTML = '<tr><td>Materials</td><td>Req.</td><td>Stock</td><td>Price</td></tr>';
+      const prices = $price.get('Materials');
+      Object.entries(materials).forEach(([name, count]) => {
+        const stock = $item.count(name);
+        const price = prices[name];
+        const className = stock < count ? '.hvut-up-nostock' : '';
+        $element('tr', _up.node.costs, [`/<td>${name}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
+      });
 
+      let valid = false;
+      _up.node.run.disabled = true;
+      if (_up.upgrade_run.done) {
+        //
+      } else if (eq.upgrade.list.some((up) => !up.valid)) {
+        _up.node.run.value = 'Invalid input';
+      } else if (eq.upgrade.list.some((up) => up.to > up.level && up.to > up.cap)) {
+        _up.node.run.value = 'Low Forge level';
+      } else if ($qs('.hvut-up-nostock', _up.node.costs)) {
+        _up.node.run.value = 'Not enough materials';
+      } else {
+        valid = true;
+        _up.node.run.disabled = false;
+        _up.node.run.value = 'Upgrade ALL';
+      }
+      return valid;
+    };
 
-        _up.node.costs.innerHTML = '<tr><td>升级材料</td><td>需求量</td><td>库存</td></tr>';
-        Object.entries(materials).forEach(([n, c]) => {
-          const translatedName = materialMapping[n] || n; // 使用映射表翻译材料名称，如果找不到对应的中文名称，则保留原名称
-          const s = $item.count(n);
-          $element('tr', _up.node.costs, [`/<td>${translatedName}</td><td>${c}</td><td>${s}</td>`, s < c ? '.hvut-up-nostock' : '']);
-        });
+    _up.upgrade_run = async function () {
+      if (_up.upgrade_run.done || !_up.upgrade_sum() || !confirm('Are you sure that you wish to upgrade this equipment?')) {
+        return;
+      }
+      _up.upgrade_run.done = true;
+      _up.node.run.disabled = true;
 
-        let valid = false;
-        _up.node.run.disabled = true;
-        if (_up.upgrade_run.done) {
-          //
-        } else if (eq.upgrade.list.some((up) => !up.valid)) {
-          _up.node.run.value = '无效输入';
-        } else if (eq.upgrade.list.some((up) => up.to > up.level && up.to > up.cap)) {
-          _up.node.run.value = '锻造等级不足';
-        } else if ($qs('.hvut-up-nostock', _up.node.costs)) {
-          _up.node.run.value = '材料不足';
-        } else {
-          valid = true;
-          _up.node.run.disabled = false;
-          _up.node.run.value = '强化全部';
-        }
-        return valid;
-      };
-
-      _up.upgrade_run = async function () {
-        if (_up.upgrade_run.done || !_up.upgrade_sum() || !confirm('确定要开始强化这件装备吗?')) {
-          return;
-        }
-        _up.upgrade_run.done = true;
-        _up.node.run.disabled = true;
-
-        async function upgrade(eid, stat) {
-          const html = await $ajax.fetch(location.href, `select_item=${eid}&upgrade_stat=${stat}`);
-          const doc = $doc(html);
-          const error = get_message(doc);
-          if (error) { // Equipment Potency Unlocked!
-            popup(error);
-          }
-          done++;
-          _up.node.run.value = `${done}/${total}`;
-        }
-
-        let total = 0;
-        let done = 0;
-        const requests = _up.equip.upgrade.list.filter((up) => up.to > up.level).map((up) => {
-          const count = up.to - up.level;
-          total += count;
-          return $ajax.repeat(count, upgrade, _up.equip.info.eid, up.id);
-        }).flat();
-        await Promise.all(requests);
-        alert('完成!\n请刷新页面.');
-      };
-
-      _up.buy_catalysts = async function () {
-        const catalysts = {
-          'Wispy Catalyst': { id: 60301 },
-          'Diluted Catalyst': { id: 60302 },
-          'Regular Catalyst': { id: 60303 },
-          'Robust Catalyst': { id: 60304 },
-          'Vibrant Catalyst': { id: 60305 },
-          'Coruscating Catalyst': { id: 60306 },
-        };
-        _up.node.catalysts.disabled = true;
-
-        const html = await $ajax.fetch('?s=Bazaar&ss=is');
+      async function upgrade(eid, stat) {
+        const html = await $ajax.fetch(location.href, `select_item=${eid}&upgrade_stat=${stat}`);
         const doc = $doc(html);
-        const reg = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
-        const storetoken = $id('shopform', doc).elements.storetoken.value;
-        const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-        let sum = 0;
-        let total = 0;
+        const error = get_message(doc);
+        if (error) { // Equipment Potency Unlocked!
+          popup(error);
+        }
+        done++;
+        _up.node.run.value = `${done}/${total}`;
+      }
 
-        Array.from($qs('#shop_pane .itemlist', doc).rows).forEach((tr) => {
-          const exec = reg.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-          const item = tr.cells[0].textContent.trim();
-          const price = parseInt(exec[3]);
+      let total = 0;
+      let done = 0;
+      const requests = _up.equip.upgrade.list.filter((up) => up.to > up.level).map((up) => {
+        const count = up.to - up.level;
+        total += count;
+        return $ajax.repeat(count, upgrade, _up.equip.info.eid, up.id);
+      }).flat();
+      await Promise.all(requests);
+      alert('Completed!\nReload the page.');
+    };
 
-          if (catalysts[item] && _up.equip.upgrade.materials[item]) {
-            const count = _up.equip.upgrade.materials[item] - $item.count(item);
-            if (count > 0) {
-              catalysts[item].count = count;
-              sum += count * price;
-              total++;
-            }
+    _up.buy_catalysts = async function () {
+      _up.node.catalysts.disabled = true;
+
+      await $item.once();
+      const catalysts = [
+        'Wispy Catalyst',
+        'Diluted Catalyst',
+        'Regular Catalyst',
+        'Robust Catalyst',
+        'Vibrant Catalyst',
+        'Coruscating Catalyst',
+      ];
+      const requires = _up.equip.upgrade.materials;
+      const items = [];
+      catalysts.forEach((name) => {
+        if (requires[name]) {
+          const count = requires[name] - $item.count(name);
+          if (count > 0) {
+            items.push({ name, count });
           }
-        });
-        if (!total) {
-          alert('你已经有足够的催化剂了.');
-          _up.node.catalysts.disabled = false;
-          return;
         }
-        if (sum > networth) {
-          alert('你没有足够的credits.');
-          _up.node.catalysts.disabled = false;
-          return;
-        }
-        if (!confirm('你确定要购买缺少的催化剂吗?')) {
-          _up.node.catalysts.disabled = false;
-          return;
-        }
+      });
 
-        async function buy(item, count) {
-          const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item}&select_count=${count}`);
-          const doc = $doc(html);
-          const error = get_message(doc);
-          if (error) {
-            popup(error);
-          }
-          done++;
-          _up.node.catalysts.value = `${done}/${total}`;
-        }
-
-        let done = 0;
-        const requests = Object.values(catalysts).filter((c) => c.count > 0).map((c) => buy(c.id, c.count));
-        await Promise.all(requests);
-        _up.node.catalysts.value = '购买催化剂';
-        _up.load_inventory();
-      };
-
-      _up.load_inventory = async function () {
-        await $item.load();
+      if (!items.length) {
+        alert('You already have enough catalysts.');
         _up.node.catalysts.disabled = false;
-        _up.equip.upgrade.list.forEach((up) => { _up.upgrade_validate(up); });
-        _up.upgrade_sum();
-      };
+        return;
+      }
+      if (!confirm('Are you sure that you wish to purchase catalysts?')) {
+        _up.node.catalysts.disabled = false;
+        return;
+      }
 
-      GM_addStyle(/*css*/`
+      const result = await $item.buy(items);
+      if (!result) {
+        //return;
+      }
+      _up.load_inventory();
+    };
+
+    _up.load_inventory = async function () {
+      await $item.load();
+      _up.node.catalysts.disabled = false;
+      _up.equip.upgrade.list.forEach((up) => { _up.upgrade_validate(up); });
+      _up.upgrade_sum();
+    };
+
+    GM_addStyle(/*css*/`
       #forge_outer { width: 1100px; }
       #forge_outer + div { width: 370px !important; margin: 0 0 0 64px !important; }
       #forge_outer #leftpane { width: 370px !important; margin-left: 0 !important; }
@@ -12328,126 +10790,96 @@ if (_query.s === 'Battle' && $id('initform')) {
       .hvut-up-costs { table-layout: fixed; border-collapse: collapse; margin: 10px; width: 330px; font-size: 10pt; line-height: 20px; white-space: nowrap; }
       .hvut-up-div .hvut-up-costs tr:first-child { font-weight: bold; }
       .hvut-up-costs td { border: 1px solid #5C0D11; overflow: hidden; text-overflow: ellipsis; }
-      .hvut-up-costs td:nth-child(2) { width: 60px; }
-      .hvut-up-costs td:nth-child(3) { width: 60px; }
+      .hvut-up-costs td:nth-child(2) { width: 50px; }
+      .hvut-up-costs td:nth-child(3) { width: 50px; }
+      .hvut-up-costs td:nth-child(4) { width: 60px; }
       .hvut-up-nostock { color: #c00; }
     `);
 
-      _up.node.list = $id('rightpane').children[1].firstElementChild;
-      _up.node.list.classList.add('hvut-up-list');
-      _up.node.list.addEventListener('input', _up.upgrade_change);
-      _up.node.div = $element('div', $id('forge_outer'), ['.hvut-up-div hvut-scrollbar-none']);
+    _up.node.list = $id('rightpane').children[1].firstElementChild;
+    _up.node.list.classList.add('hvut-up-list');
+    _up.node.list.addEventListener('input', _up.upgrade_change);
+    _up.node.div = $element('div', $id('forge_outer'), ['.hvut-up-div hvut-scrollbar-none']);
 
-      $element('div', _up.node.div, ['.hvut-up-buttons']).append(
-        _up.node.run = $input(['button', '强化全部'], null, { tabIndex: -1, style: 'width: 160px;' }, () => { _up.upgrade_run(); }),
-        _up.node.catalysts = $input(['button', '购买催化剂'], null, { tabIndex: -1, style: 'width: 100px;' }, () => { _up.buy_catalysts(); }),
-        $input(['button', '参考价格'], null, { tabIndex: -1, style: 'width: 80px;' }, () => { $price.edit('Materials', _up.upgrade_sum); })
-      );
-      _up.node.summary = $element('ul', _up.node.div, ['.hvut-up-summary']);
-      _up.node.costs = $element('table', _up.node.div, ['.hvut-up-costs']);
+    $element('div', _up.node.div, ['.hvut-up-buttons']).append(
+      _up.node.run = $input(['button', 'Upgrade ALL'], null, { tabIndex: -1, style: 'width: 160px;' }, () => { _up.upgrade_run(); }),
+      _up.node.catalysts = $input(['button', 'Buy Catalysts'], null, { tabIndex: -1, style: 'width: 100px;' }, () => { _up.buy_catalysts(); }),
+      $input(['button', 'Item Prices'], null, { tabIndex: -1, style: 'width: 80px;' }, () => { $price.edit('Materials', 'ma', _up.upgrade_sum); })
+    );
+    _up.node.summary = $element('ul', _up.node.div, ['.hvut-up-summary']);
+    _up.node.costs = $element('table', _up.node.div, ['.hvut-up-costs']);
 
-      _up.equip = $equip.parse.extended($id('equip_extended'));
-      _up.equip.info.eid = $id('forgeform').elements.select_item.value;
-      if (!$equip.names[_up.equip.info.eid]) {
-        $equip.names[_up.equip.info.eid] = _up.equip.info.name;
-        setValue('equipnames', $equip.names);
-      }
-
-      _up.equip.upgrade = {
-        list: [],
-        quality: null,
-        level: 0,
-        requires_50: [],
-        requires_100: [],
-      };
-
-      Array.from(_up.node.list.rows).forEach((tr) => {
-        const eq = _up.equip;
-        const forge = tr.cells[0].textContent;
-        const [name, stat] = Object.entries($equip.stats).find(([, s]) => s.forge === forge) || [];
-        const max = forge === 'Physical Damage' || forge === 'Magical Damage' ? 100 : 50;
-        const up = {
-          id: /'costpane_(\w+)'/.test(tr.getAttribute('onmouseout')) && RegExp.$1,
-          name: name,
-          forge: forge,
-          binding: stat.binding,
-          level: parseInt(tr.cells[1].textContent),
-          cap: parseInt(tr.cells[3].textContent),
-          max: max,
-          requires: max === 100 ? eq.upgrade.requires_100 : eq.upgrade.requires_50,
-          materials: {},
-          forge_exp: 0,
-          gear_exp: 0,
-          node: {},
-        };
-
-
-        up.node.to = $input('number', $element('td', tr), {
-          className: 'hvut-up-input',
-          dataset: { action: 'calc', forge: forge },
-          value: up.level || '',
-          min: up.level,
-          max: up.max,
-          // 添加滚轮事件监听器
-          onWheel: function (event) {
-            // 阻止默认滚动行为
-            event.preventDefault();
-            // 调整数字
-            const step = 1; // 调整步长
-            const currentValue = parseInt(this.value) || 0;
-            const newValue = currentValue + (event.deltaY > 0 ? step : -step);
-            // 更新输入框的值
-            this.value = newValue;
-            // 在数值变化时调用更新计算结果的函数
-            updateResult();
-          }
-        });
-        up.node.table = $element('table', $id('costpane_' + up.id), ['.hvut-up-sub hvut-up-costs']);
-        function updateResult() {
-          // 获取所有输入框
-          const inputs = document.querySelectorAll('.hvut-up-input');
-          // 初始化变量用于存储总和
-          let total = 0;
-          // 遍历所有输入框，计算总和
-          inputs.forEach(function (input) {
-            total += parseInt(input.value) || 0;
-          });
-        }
-
-        if (eq.upgrade.level < up.level) {
-          eq.upgrade.level = up.level;
-        }
-        if (!eq.upgrade.quality && /(\w+ Catalyst)/.test($id('costpane_' + up.id).textContent)) {
-          const index = (up.level < up.max / 4) ? 0 : (up.level < up.max / 2) ? 1 : 2;
-          const catalysts = _up.catalysts.slice(index);
-          eq.upgrade.quality = ['Sup', 'Exq', 'Mag', 'Leg'][catalysts.indexOf(RegExp.$1)];
-        }
-        eq.upgrade.list.push(up);
-      });
-
-      _up.set(_up.equip);
-      _up.load_inventory();
-
-      $input(['button', '分解计算器'], $id('leftpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
-    } else {
-      $input(['button', '分解计算器'], $id('rightpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
+    _up.equip = $equip.parse.extended($id('equip_extended'));
+    _up.equip.info.eid = $id('forgeform').elements.select_item.value;
+    if (_up.equip.info.tier === 10 && !$equip.names[_up.equip.info.eid]) {
+      $equip.names[_up.equip.info.eid] = _up.equip.info.name;
+      $config.set('equipnames', $equip.names);
     }
-  } else
-    // [END 21] Forge - Upgrade */
 
+    _up.equip.upgrade = {
+      list: [],
+      quality: null,
+      level: 0,
+      requires_50: [],
+      requires_100: [],
+    };
 
-    //* [23] Forge - Salvage
-    if (settings.salvage && _query.s === 'Forge' && _query.ss === 'sa') {
-      $element('div', $id('rightpane'), ['This will permanently destroy the item', '!margin-top: 30px; font-size: 12pt; font-weight: bold; color: #c00;']);
+    Array.from(_up.node.list.rows).forEach((tr) => {
+      const eq = _up.equip;
+      const forge = tr.cells[0].textContent;
+      const [name, stat] = Object.entries($equip.stats).find(([, s]) => s.forge === forge) || [];
+      const max = forge === 'Physical Damage' || forge === 'Magical Damage' ? 100 : 50;
+      const up = {
+        id: /'costpane_(\w+)'/.exec(tr.getAttribute('onmouseout'))[1],
+        name: name,
+        forge: forge,
+        binding: stat.binding,
+        level: parseInt(tr.cells[1].textContent),
+        cap: parseInt(tr.cells[3].textContent),
+        max: max,
+        requires: max === 100 ? eq.upgrade.requires_100 : eq.upgrade.requires_50,
+        materials: {},
+        forge_exp: 0,
+        gear_exp: 0,
+        node: {},
+      };
+      up.node.to = $input('number', $element('td', tr), { className: 'hvut-up-input', dataset: { action: 'calc', forge: forge }, value: up.level || '', min: up.level, max: up.max });
+      up.node.table = $element('table', $id('costpane_' + up.id), ['.hvut-up-sub hvut-up-costs']);
 
-      if ($id('salvage_button')) {
-        confirm_event($id('salvage_button').parentNode, 'click', '你确定要分解这件装备吗?', () => $id('salvage_button').src.includes('salvage.png'));
+      if (eq.upgrade.level < up.level) {
+        eq.upgrade.level = up.level;
       }
-    } else
-      // [END 23] Forge - Salvage */
+      if (!eq.upgrade.quality && /(\w+ Catalyst)/.test($id('costpane_' + up.id).textContent)) {
+        const index = (up.level < up.max / 4) ? 0 : (up.level < up.max / 2) ? 1 : 2;
+        const catalysts = _up.catalysts.slice(index);
+        eq.upgrade.quality = ['Sup', 'Exq', 'Mag', 'Leg'][catalysts.indexOf(RegExp.$1)];
+      }
+      eq.upgrade.list.push(up);
+    });
 
-      // eslint-disable-next-line brace-style
-    { } // END OF [else if]; DO NOT REMOVE THIS LINE!
+    _up.set(_up.equip);
+    _up.load_inventory();
+
+    $input(['button', 'Salvage Calculator'], $id('leftpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
+  } else {
+    $input(['button', 'Salvage Calculator'], $id('rightpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
+  }
+} else
+// [END 21] Forge - Upgrade */
+
+
+//* [23] Forge - Salvage
+if (_query.s === 'Forge' && _query.ss === 'sa') {
+  $element('div', $id('rightpane'), ['This will permanently destroy the item', '!margin-top: 30px; font-size: 12pt; font-weight: bold; color: #c00;']);
+
+  if ($id('salvage_button')) {
+    confirm_event($id('salvage_button').parentNode, 'click', 'Are you sure that you wish to salvage this item?', () => $id('salvage_button').src.includes('salvage.png'));
+  }
+} else
+// [END 23] Forge - Salvage */
+
+// eslint-disable-next-line brace-style
+{} // END OF [else if]; DO NOT REMOVE THIS LINE!
 
 
 // Sort Equipment List
