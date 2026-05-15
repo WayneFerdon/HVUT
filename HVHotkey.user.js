@@ -7,10 +7,56 @@
 // @exclude        http*://*hentaiverse.org/isekai/equip/*
 // @connect        hentaiverse.org
 // @connect        e-hentai.org
+// @grant        GM_setValue
+// @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVHotkey.user.js
 // ==/UserScript==
+
+/*
+// const autoBuyItems = {
+//   11191: 100, // 体力药水
+//   11195: 100, // 体力长效药
+//   11199: 30, // 体力秘药
+//   11291: 100, // 魔力药水
+//   11295: 100, // 魔力长效药
+//   11299: 30, // 魔力秘药
+//   11391: 100, // 灵力药水
+//   11395: 100, // 灵力长效药
+//   11399: 30, // 灵力秘药
+//   // 11401: 0, // 能量饮料
+//   // 11402: 0, // 咖啡因糖果
+//   11501: 30, // 终极秘药
+//   // 12101: 0, // 火焰魔药
+//   // 12201: 0, // 冰冷魔药
+//   // 12301: 0, // 闪电魔药
+//   // 12401: 0, // 风暴魔药
+//   // 12501: 0, // 神圣魔药
+//   // 12601: 0, // 黑暗魔药
+//   // 13101: 0, // 加速卷轴
+//   // 13111: 0, // 守护卷轴
+//   // 13199: 30, // 化身卷轴
+//   // 13201: 0, // 吸收卷轴
+//   // 13211: 0, // 幻影卷轴
+//   // 13221: 30, // 生命卷轴
+//   // 13299: 30, // 众神卷轴
+//   // 19111: 30, // 花瓶
+//   // 19131: 30, // 泡泡糖
+// }
+
+// const quality = 'Flimsy|Crude|Fair|Average|Fine|Superior|Exquisite|Magnificent|Legendary|Peerless';
+// const prefix = 'Ethereal|Fiery|Arctic|Shocking|Tempestuous|Hallowed|Demonic|Ruby|Cobalt|Amber|Jade|Zircon|Onyx|Charged|Frugal|Radiant|Mystic|Agile|Reinforced|Savage|Shielding|Mithril';
+// const slot = 'Cap|Robe|Gloves|Pants|Shoes|Helmet|Breastplate|Gauntlets|Leggings|Boots|Cuirass|Armor|Greaves|Sabatons|Coif|Hauberk|Mitons|Chausses|Boots';
+// const onehanded = 'Axe|Club|Rapier|Shortsword|Wakizashi|Dagger|Sword Chucks';
+// const twohanded = 'Estoc|Longsword|Mace|Katana|Scythe|Great Mace|Swordchucks';
+// const staff = 'Oak Staff|Willow Staff|Katalox Staff|Redwood Staff|Ebony Staff';
+// const shield = 'Buckler|Kite Shield|Force Shield|Tower Shield';
+// const acloth = 'Cotton|Phase|Gossamer|Silk|Ironsilk';
+// const alight = 'Leather|Shade|Kevlar|Dragon Hide|Drakehide';
+// const aheavy = 'Plate|Power|Shield|Chainmail|Chain|Reactive';
+*/
+
 if (window.self !== window.top) {
   return;
 }
@@ -27,42 +73,8 @@ var version = {
 };
 const v091 = version.main >= 91;
 
-const autoSellItems = [
-  13101, 13111, 13201, 13211, 13221, 60001, 60002, 60003, 60004, 60007, 60010, 60011, 60012, 60051, 60101, 60105, 60402, 60412, 60422].concat(
-  isIsekai ?
-  [12101, 12201, 12301, 12401, 12501, 12601, 61001, 61101, 61501,
-   60005, 60006, 60008, 60009, 60052, 65001, 60102, 60104, 60105, 60402, 60412, 60422
-   // 61901, 61902, 61903,
-   // 62001, 62002, 63001, 63002, 63011, 63012, 63021, 63022, 63031, 63032, 63041, 63042, 63081, 63082, 63091, 63092, 63101, 63102, 63111, 63112, 63121, 63122, 63131, 63132, 63151, 63152, 63401, 63402, 63411, 63412, 63421, 63422, 63431, 63432, 63441, 63442, 63451, 63452, 64011, 64012, 64021, 64022, 64031, 64032, 64041, 64042, 64081, 64082, 64091, 64092, 64101, 64102, 64111, 64112
-  ] :
-  [30016, 30017, 30018, 30019, 30020, 30021, 30022, 30023, 30024, 30025, 30026, 30027, 30028, 30029, 30030, 30031, 30032]
-);
-
-const sellEquips = [].concat(
-  isIsekai ?
-  [/Flimsy|Crude|Fair|Average|Fine|Superior|'/,//Exquisite/,
-   /Plate|Chain|Reactive/,
-   /Longsword|Shortsword|Dagger|Axe|Club|Wakizashi|Katana|Mace|Estoc|Scythe|Cotton|Gossamer|Staff|Leather|Shade|Ironsilk|Phase|Drakehide|Kevlar|Kite|Tower|Buckler/]
-  :
-  [/Flimsy|Crude|Fair|Average|Fine|Superior|Exquisite/],
-  [/Cotton|Gossamer|Silk|Ironsilk/],
-  [/Buckler|Kite Shield|Tower Shield/],
-  [/Axe|Club|Shortsword|Dagger|Sword Chucks/],
-  [/Estoc|Longsword|Mace|Scythe|Great Mace|Swordchucks/],
-  [/Leather|Kevlar|Dragon Hide|Drakehide/],
-  [/Plate|Chainmail|Chain|Reactive/],
-);
-
-// const quality = 'Flimsy|Crude|Fair|Average|Fine|Superior|Exquisite|Magnificent|Legendary|Peerless';
-// const prefix = 'Ethereal|Fiery|Arctic|Shocking|Tempestuous|Hallowed|Demonic|Ruby|Cobalt|Amber|Jade|Zircon|Onyx|Charged|Frugal|Radiant|Mystic|Agile|Reinforced|Savage|Shielding|Mithril';
-// const slot = 'Cap|Robe|Gloves|Pants|Shoes|Helmet|Breastplate|Gauntlets|Leggings|Boots|Cuirass|Armor|Greaves|Sabatons|Coif|Hauberk|Mitons|Chausses|Boots';
-// const onehanded = 'Axe|Club|Rapier|Shortsword|Wakizashi|Dagger|Sword Chucks';
-// const twohanded = 'Estoc|Longsword|Mace|Katana|Scythe|Great Mace|Swordchucks';
-// const staff = 'Oak Staff|Willow Staff|Katalox Staff|Redwood Staff|Ebony Staff';
-// const shield = 'Buckler|Kite Shield|Force Shield|Tower Shield';
-// const acloth = 'Cotton|Phase|Gossamer|Silk|Ironsilk';
-// const alight = 'Leather|Shade|Kevlar|Dragon Hide|Drakehide';
-// const aheavy = 'Plate|Power|Shield|Chainmail|Chain|Reactive';
+const autoSellItems = JSON.parse(GM_getValue('autoSellItems_default', '[]')).concat(JSON.parse(GM_getValue(isIsekai ? 'autoSellItems_isekai' : 'autoSellItems_persistent', '[]')));
+const sellEquips = JSON.parse(GM_getValue('sellEquips_default', '[]')).concat(JSON.parse(GM_getValue(isIsekai ? 'sellEquips_isekai' : 'sellEquips_persistent', '[]'))).map(r=>new RegExp(r));
 
 let items, credits;
 let marketoken;
@@ -280,7 +292,27 @@ async function autoOnMarket() { try {
       await $ajax.fetch(`?s=Bazaar&ss=mk&itemid=${id}`, `marketoken=${marketoken}&sellorder_batchcount=${item.count - keepCount}&sellorder_batchprice=${item.price}&sellorder_update=update`);
       await pauseAsync(2000);
     }
+    // if (Object.keys(autoBuyItems).includes(id)) {
+    //   const require = autoBuyItems[id] - (item.count ?? 0);
+    //   if (require <= 0) continue;
+    //   totalBuyCost += require * item.buyPrice;
+    //   toBuy[id] = autoBuyItems[id] - item.count;
+    //   console.log(id, item.count, '<' , autoBuyItems[id], item.buyPrice);
+    // }
   }
+  // console.log(toBuy, totalBuyCost);
+  // if (1*credits[0]+1*credits[1] >= totalBuyCost) {
+  //   const toTransfer = totalBuyCost - 1*credits[1]
+  //   if (toTransfer > 0) {
+  //     await $ajax.fetch(`?s=Bazaar&ss=mk`, `account_withdraw='▼   Deposit   ▼'&markettoken=${marketoken}&account_amount=${toTransfer}`);
+  //     await pauseAsync(2000);
+  //   }
+  //   for (const id in toBuy){
+  //     await $ajax.fetch(`?s=Bazaar&ss=mk&itemid=${id}`, `marketoken=${marketoken}&buyorder_batchcount=${toBuy[id]}&sellorder_batchprice=${items[id].price}&sellorder_update=update`);
+  //     await pauseAsync(2000);
+  //   };
+  // }
+
   // console.log('Done autoOnMarket');
 } catch(e) { console.error(e) }}
 
