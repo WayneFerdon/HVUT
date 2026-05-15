@@ -4,6 +4,9 @@
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
+// @homepage    https://github.com/WayneFerdon/HVUT
+// @downloadURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils%E6%B1%89%E5%8C%96.user.js
+// @updateURL https://github.com/WayneFerdon/HVUT/raw/refs/heads/master/HVUtils%E6%B1%89%E5%8C%96.user.js
 // @version        4.0.0
 // @date           2025-11-15
 // @author         sssss2
